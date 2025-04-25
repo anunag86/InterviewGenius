@@ -22,6 +22,7 @@ export interface InterviewQuestion {
 }
 
 export interface InterviewPrep {
+  id?: string;
   jobDetails: JobDetails;
   behavioralQuestions: InterviewQuestion[];
   technicalQuestions: InterviewQuestion[];

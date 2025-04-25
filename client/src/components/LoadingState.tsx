@@ -37,28 +37,28 @@ const LoadingState = ({ currentStep }: LoadingStateProps) => {
   ];
 
   return (
-    <section className="mb-12 bg-white rounded-xl shadow-sm p-8 text-center">
+    <section className="mb-12 bg-card rounded-xl shadow-sm p-8 text-center border border-border">
       <div className="max-w-md mx-auto">
-        <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-indigo-600 mx-auto mb-4"></div>
-        <h2 className="text-xl font-medium text-gray-900 mb-2">Preparing your interview questions</h2>
-        <p className="text-gray-600">Our AI agents are analyzing the job posting and your qualifications...</p>
+        <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary mx-auto mb-4"></div>
+        <h2 className="text-xl font-medium bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent mb-2">Preparing your interview questions</h2>
+        <p className="text-muted-foreground">Our AI agents are analyzing the job posting and your qualifications...</p>
         
-        <div className="mt-6 bg-gray-50 rounded-lg p-4">
+        <div className="mt-6 bg-muted rounded-lg p-4 border border-border/50">
           <ul className="space-y-3" id="progress-list">
             {progressItems.map((item) => (
               <li 
                 key={item.id}
                 className={`flex items-center text-sm ${
                   item.id <= currentStep 
-                    ? "text-indigo-600" 
-                    : "text-gray-500"
+                    ? "text-primary" 
+                    : "text-muted-foreground"
                 }`}
               >
                 <span 
                   className={`h-6 w-6 flex items-center justify-center rounded-full mr-3 ${
                     item.id <= currentStep 
-                      ? "bg-indigo-100 text-indigo-800" 
-                      : "bg-gray-100 text-gray-400"
+                      ? "bg-primary/10 text-primary" 
+                      : "bg-muted-foreground/10 text-muted-foreground"
                   }`}
                 >
                   {item.id < currentStep ? (
