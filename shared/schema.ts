@@ -31,6 +31,24 @@ export const interviewPreps = pgTable("interview_preps", {
   userId: text("user_id"), // Optional for anonymous users
 });
 
+// Feedback table
+export const feedback = pgTable("feedback", {
+  id: serial("id").primaryKey(),
+  name: text("name"),
+  email: text("email"),
+  comment: text("comment").notNull(),
+  npsScore: integer("nps_score").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull()
+});
+
+export const insertFeedbackSchema = createInsertSchema(feedback, {
+  comment: (schema) => schema.min(3, "Feedback must be at least 3 characters"),
+  npsScore: (schema) => schema.min(0, "Score must be between 0 and 10").max(10, "Score must be between 0 and 10")
+}).omit({ id: true, createdAt: true });
+
+export type InsertFeedback = z.infer<typeof insertFeedbackSchema>;
+export type Feedback = typeof feedback.$inferSelect;
+
 export const insertInterviewPrepSchema = createInsertSchema(interviewPreps);
 export type InterviewPrep = typeof interviewPreps.$inferSelect;
 export type InsertInterviewPrep = z.infer<typeof insertInterviewPrepSchema>;

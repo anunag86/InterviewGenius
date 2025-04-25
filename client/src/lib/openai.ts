@@ -10,6 +10,14 @@ export interface InterviewHistoryItem {
   expiresAt: string;
 }
 
+// Interface for feedback data
+export interface FeedbackData {
+  name?: string;
+  email?: string;
+  comment: string;
+  npsScore: number;
+}
+
 export async function generateInterviewPrep(
   formData: FormData
 ): Promise<InterviewPrep> {
@@ -59,5 +67,35 @@ export async function getInterviewHistory(
   } catch (error) {
     console.error("Error fetching interview history:", error);
     throw new Error("Failed to fetch interview history. Please try again.");
+  }
+}
+
+export async function submitFeedback(feedbackData: FeedbackData): Promise<{ success: boolean; message: string }> {
+  try {
+    const response = await fetch('/api/feedback', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(feedbackData),
+      credentials: 'include',
+    });
+    
+    const data = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to submit feedback');
+    }
+    
+    return {
+      success: true,
+      message: data.message || 'Feedback submitted successfully'
+    };
+  } catch (error) {
+    console.error('Error submitting feedback:', error);
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : 'Failed to submit feedback'
+    };
   }
 }
