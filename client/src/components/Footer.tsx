@@ -8,27 +8,46 @@ const Footer = () => {
           <div className="flex items-center mb-4 md:mb-0">
             <span className="text-primary text-xl font-bold mr-2">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
               </svg>
             </span>
-            <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent font-medium">InterviewPrepAI</span>
+            <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent font-medium">PrepTalk</span>
           </div>
-          <div className="flex space-x-6">
-            <Link href="/privacy" className="text-muted-foreground hover:text-primary transition-colors duration-200">
-              <span className="sr-only">Privacy</span>
-              Privacy Policy
-            </Link>
-            <Link href="/terms" className="text-muted-foreground hover:text-primary transition-colors duration-200">
-              <span className="sr-only">Terms</span>
-              Terms of Service
-            </Link>
-            <Link href="/contact" className="text-muted-foreground hover:text-primary transition-colors duration-200">
-              <span className="sr-only">Contact</span>
-              Contact Us
-            </Link>
+          
+          <div className="flex items-center mb-4 md:mb-0">
+            <div className="flex items-center space-x-3">
+              <div className="h-10 w-10 rounded-full overflow-hidden bg-primary/10 flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+              </div>
+              <div className="text-sm">
+                <p className="font-medium text-foreground">Anunag Jayanti</p>
+                <a 
+                  href="https://www.linkedin.com/in/anunagjayanti/" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-primary hover:text-primary/80 transition-colors duration-200 text-xs"
+                >
+                  LinkedIn Profile
+                </a>
+              </div>
+            </div>
           </div>
-          <div className="mt-4 md:mt-0 text-sm text-muted-foreground">
-            &copy; {new Date().getFullYear()} InterviewPrepAI. All rights reserved.
+          
+          <div className="flex flex-col md:flex-row space-y-3 md:space-y-0 md:space-x-6">
+            <Link href="/feedback" className="text-muted-foreground hover:text-primary transition-colors duration-200">
+              <span className="flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+                </svg>
+                Share Feedback
+              </span>
+            </Link>
+            
+            <div className="text-sm text-muted-foreground">
+              &copy; {new Date().getFullYear()} PrepTalk. All rights reserved.
+            </div>
           </div>
         </div>
       </div>

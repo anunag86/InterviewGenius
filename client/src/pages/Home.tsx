@@ -98,19 +98,29 @@ const Home = () => {
         {/* Hero Section */}
         {showHero && (
           <section className="mb-12" id="hero-section">
-            <div className="bg-gradient-to-r from-primary via-secondary to-accent rounded-xl shadow-lg p-8 text-foreground">
-              <div className="max-w-3xl mx-auto text-center">
-                <h1 className="text-3xl md:text-4xl font-bold mb-4 drop-shadow-sm">Prepare for Your Interview with AI-Powered Insights</h1>
-                <p className="text-lg mb-8 opacity-90">Our intelligent agents analyze job postings and your resume to generate tailored interview questions and talking points that help you stand out.</p>
-                <div className="flex justify-center">
-                  <Button
-                    id="get-started-btn"
-                    onClick={handleGetStarted}
-                    className="bg-white text-primary hover:bg-accent hover:text-accent-foreground px-8 py-6 h-auto rounded-lg font-medium transition-all duration-300 shadow-md hover:shadow-lg"
-                  >
-                    Get Started
-                  </Button>
-                </div>
+            <div className="max-w-3xl mx-auto py-6">
+              <div className="text-center mb-8">
+                <h1 className="text-3xl font-bold mb-3 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">AI-Powered Interview Prep</h1>
+                <p className="text-muted-foreground max-w-xl mx-auto">Answer questions tailored for your specific job opportunity.</p>
+              </div>
+              
+              <div className="flex justify-center gap-4">
+                <Button
+                  id="new-prep-btn"
+                  onClick={handleGetStarted}
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground px-6 py-2 rounded-md font-medium transition-all duration-200 shadow-sm"
+                >
+                  New Preparation
+                </Button>
+                
+                <Button
+                  id="view-history-btn"
+                  onClick={() => window.location.href = '/history'}
+                  className="bg-muted hover:bg-muted/80 text-foreground px-6 py-2 rounded-md font-medium transition-all duration-200"
+                  variant="outline"
+                >
+                  View History
+                </Button>
               </div>
             </div>
           </section>
