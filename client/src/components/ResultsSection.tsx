@@ -73,12 +73,17 @@ const ResultsSection = ({ data }: ResultsSectionProps) => {
         {/* Questions and Talking Points */}
         <div className="p-6">
           {/* Question Categories Navigation */}
-          <TabsNav>
-            <TabsList id="question-tabs">
+          <TabsNav className="mb-6">
+            <TabsList id="question-tabs" className="bg-muted p-1 rounded-lg flex flex-wrap justify-start gap-1">
               <TabButton
                 id="tab-behavioral"
                 active={activeTab === QuestionType.BEHAVIORAL}
                 onClick={() => setActiveTab(QuestionType.BEHAVIORAL)}
+                className={`px-4 py-2 rounded-md transition-colors duration-200 ${
+                  activeTab === QuestionType.BEHAVIORAL 
+                  ? "bg-primary/10 text-primary font-medium" 
+                  : "hover:bg-muted-foreground/10"
+                }`}
               >
                 Behavioral Questions
               </TabButton>
@@ -86,6 +91,11 @@ const ResultsSection = ({ data }: ResultsSectionProps) => {
                 id="tab-technical"
                 active={activeTab === QuestionType.TECHNICAL}
                 onClick={() => setActiveTab(QuestionType.TECHNICAL)}
+                className={`px-4 py-2 rounded-md transition-colors duration-200 ${
+                  activeTab === QuestionType.TECHNICAL 
+                  ? "bg-primary/10 text-primary font-medium" 
+                  : "hover:bg-muted-foreground/10"
+                }`}
               >
                 Technical Questions
               </TabButton>
@@ -93,6 +103,11 @@ const ResultsSection = ({ data }: ResultsSectionProps) => {
                 id="tab-role-specific"
                 active={activeTab === QuestionType.ROLE_SPECIFIC}
                 onClick={() => setActiveTab(QuestionType.ROLE_SPECIFIC)}
+                className={`px-4 py-2 rounded-md transition-colors duration-200 ${
+                  activeTab === QuestionType.ROLE_SPECIFIC 
+                  ? "bg-primary/10 text-primary font-medium" 
+                  : "hover:bg-muted-foreground/10"
+                }`}
               >
                 Role-Specific Questions
               </TabButton>
@@ -106,16 +121,16 @@ const ResultsSection = ({ data }: ResultsSectionProps) => {
           >
             <div className="space-y-8">
               {data.behavioralQuestions.map((question) => (
-                <div key={question.id} className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-                  <div className="p-4 bg-gray-50 border-b border-gray-200">
-                    <h3 className="text-lg font-medium text-gray-900">{question.question}</h3>
+                <div key={question.id} className="bg-card rounded-lg border border-border overflow-hidden shadow-sm hover:shadow transition-shadow duration-200">
+                  <div className="p-4 bg-muted/50 border-b border-border">
+                    <h3 className="text-lg font-medium text-foreground">{question.question}</h3>
                   </div>
                   <div className="p-4">
-                    <h4 className="text-sm font-medium text-gray-500 uppercase tracking-wider mb-3">Talking Points</h4>
-                    <ul className="space-y-3 text-gray-700">
+                    <h4 className="text-sm font-medium text-primary/80 uppercase tracking-wider mb-3">Talking Points</h4>
+                    <ul className="space-y-3 text-foreground">
                       {question.talkingPoints.map((point) => (
                         <li key={point.id} className="flex items-start">
-                          <span className="h-5 w-5 text-indigo-500 mr-2">
+                          <span className="h-5 w-5 text-primary mr-2">
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
@@ -137,16 +152,16 @@ const ResultsSection = ({ data }: ResultsSectionProps) => {
           >
             <div className="space-y-8">
               {data.technicalQuestions.map((question) => (
-                <div key={question.id} className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-                  <div className="p-4 bg-gray-50 border-b border-gray-200">
-                    <h3 className="text-lg font-medium text-gray-900">{question.question}</h3>
+                <div key={question.id} className="bg-card rounded-lg border border-border overflow-hidden shadow-sm hover:shadow transition-shadow duration-200">
+                  <div className="p-4 bg-muted/50 border-b border-border">
+                    <h3 className="text-lg font-medium text-foreground">{question.question}</h3>
                   </div>
                   <div className="p-4">
-                    <h4 className="text-sm font-medium text-gray-500 uppercase tracking-wider mb-3">Talking Points</h4>
-                    <ul className="space-y-3 text-gray-700">
+                    <h4 className="text-sm font-medium text-primary/80 uppercase tracking-wider mb-3">Talking Points</h4>
+                    <ul className="space-y-3 text-foreground">
                       {question.talkingPoints.map((point) => (
                         <li key={point.id} className="flex items-start">
-                          <span className="h-5 w-5 text-indigo-500 mr-2">
+                          <span className="h-5 w-5 text-primary mr-2">
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
@@ -168,16 +183,16 @@ const ResultsSection = ({ data }: ResultsSectionProps) => {
           >
             <div className="space-y-8">
               {data.roleSpecificQuestions.map((question) => (
-                <div key={question.id} className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-                  <div className="p-4 bg-gray-50 border-b border-gray-200">
-                    <h3 className="text-lg font-medium text-gray-900">{question.question}</h3>
+                <div key={question.id} className="bg-card rounded-lg border border-border overflow-hidden shadow-sm hover:shadow transition-shadow duration-200">
+                  <div className="p-4 bg-muted/50 border-b border-border">
+                    <h3 className="text-lg font-medium text-foreground">{question.question}</h3>
                   </div>
                   <div className="p-4">
-                    <h4 className="text-sm font-medium text-gray-500 uppercase tracking-wider mb-3">Talking Points</h4>
-                    <ul className="space-y-3 text-gray-700">
+                    <h4 className="text-sm font-medium text-primary/80 uppercase tracking-wider mb-3">Talking Points</h4>
+                    <ul className="space-y-3 text-foreground">
                       {question.talkingPoints.map((point) => (
                         <li key={point.id} className="flex items-start">
-                          <span className="h-5 w-5 text-indigo-500 mr-2">
+                          <span className="h-5 w-5 text-primary mr-2">
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
