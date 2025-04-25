@@ -18,18 +18,18 @@ const Header = () => {
           <nav>
             <ul className="flex space-x-4">
               <li>
-                <Link href="/">
-                  <a className="text-gray-700 hover:text-indigo-600 font-medium">Home</a>
+                <Link href="/" className="text-gray-700 hover:text-indigo-600 font-medium">
+                  Home
                 </Link>
               </li>
               <li>
-                <Link href="/how-it-works">
-                  <a className="text-gray-700 hover:text-indigo-600 font-medium">How it Works</a>
+                <Link href="/how-it-works" className="text-gray-700 hover:text-indigo-600 font-medium">
+                  How it Works
                 </Link>
               </li>
               <li>
-                <Link href="/about">
-                  <a className="text-gray-700 hover:text-indigo-600 font-medium">About</a>
+                <Link href="/about" className="text-gray-700 hover:text-indigo-600 font-medium">
+                  About
                 </Link>
               </li>
             </ul>
