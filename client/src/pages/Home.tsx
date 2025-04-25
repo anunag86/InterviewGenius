@@ -61,7 +61,18 @@ const Home = () => {
     
     try {
       const response = await generateInterviewPrep(formData);
-      setPrepId(response.id);
+      // Since id is optional, use type assertion to help TypeScript
+      const prepId = response.id as string | undefined;
+      if (prepId) {
+        setPrepId(prepId);
+      } else {
+        console.error("No prep ID returned from API");
+        toast({
+          title: "Warning",
+          description: "Could not track preparation progress. Please wait...",
+          variant: "default",
+        });
+      }
       // The rest will be handled by the polling effect
     } catch (error) {
       console.error("Error submitting form:", error);
