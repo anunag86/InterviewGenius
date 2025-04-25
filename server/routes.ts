@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import multer from "multer";
-import { generateInterview, getInterviewStatus } from "./controllers/interview";
+import { generateInterview, getInterviewStatus, getInterviewHistory } from "./controllers/interview";
 
 // Configure multer for memory storage (files are processed in memory)
 const upload = multer({
@@ -31,6 +31,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   );
   
   app.get("/api/interview/status/:id", getInterviewStatus);
+  
+  // Interview history endpoint
+  app.get("/api/interview/history", getInterviewHistory);
 
   const httpServer = createServer(app);
 
