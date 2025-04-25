@@ -1,23 +1,39 @@
 import { db } from "@db";
 import { interviewPreps } from "@shared/schema";
-import { eq } from "drizzle-orm";
+import { eq, lt, desc, and, isNull } from "drizzle-orm";
+import { addDays } from "date-fns";
 
 /**
  * Storage interface for persisting and retrieving data
  */
 export const storage = {
   // Save an interview preparation to the database
-  saveInterviewPrep: async (id: string, data: any) => {
+  saveInterviewPrep: async (id: string, data: any, jobUrl: string, resumeText: string, linkedinUrl?: string) => {
     try {
+      const jobDetails = data.jobDetails || {};
+      
+      const thirtyDaysFromNow = addDays(new Date(), 30);
+      
       await db.insert(interviewPreps).values({
         id,
-        data: JSON.stringify(data),
-        createdAt: new Date()
+        jobTitle: jobDetails.title || 'Untitled Position',
+        company: jobDetails.company || 'Unknown Company',
+        jobUrl,
+        resumeText,
+        linkedinUrl: linkedinUrl || null,
+        data,
+        createdAt: new Date(),
+        expiresAt: thirtyDaysFromNow
       }).onConflictDoUpdate({
         target: interviewPreps.id,
         set: {
-          data: JSON.stringify(data),
-          updatedAt: new Date()
+          jobTitle: jobDetails.title || 'Untitled Position',
+          company: jobDetails.company || 'Unknown Company',
+          jobUrl,
+          resumeText,
+          linkedinUrl: linkedinUrl || null,
+          data,
+          expiresAt: thirtyDaysFromNow
         }
       });
       return true;
@@ -39,29 +55,33 @@ export const storage = {
         return null;
       }
       
-      return {
-        ...result[0],
-        data: JSON.parse(result[0].data)
-      };
+      return result[0];
     } catch (error) {
       console.error("Error getting interview prep:", error);
       return null;
     }
   },
 
-  // Get all interview preparations from the database
-  getAllInterviewPreps: async () => {
+  // Get all recent interview preparations from the database (only non-expired ones)
+  getRecentInterviewPreps: async (limit = 10) => {
     try {
-      const results = await db.select()
+      const now = new Date();
+      const results = await db.select({
+        id: interviewPreps.id,
+        jobTitle: interviewPreps.jobTitle,
+        company: interviewPreps.company,
+        createdAt: interviewPreps.createdAt,
+        expiresAt: interviewPreps.expiresAt
+      })
         .from(interviewPreps)
-        .orderBy(interviewPreps.createdAt);
+        // No WHERE condition - we'll filter in JS
+        .orderBy(desc(interviewPreps.createdAt))
+        .limit(limit);
       
-      return results.map(item => ({
-        ...item,
-        data: JSON.parse(item.data)
-      }));
+      // Filter out expired items in JS since we can't directly compare with the current date in the query
+      return results.filter(item => new Date(item.expiresAt) > now);
     } catch (error) {
-      console.error("Error getting all interview preps:", error);
+      console.error("Error getting recent interview preps:", error);
       return [];
     }
   },
@@ -75,6 +95,22 @@ export const storage = {
     } catch (error) {
       console.error("Error deleting interview prep:", error);
       return false;
+    }
+  },
+
+  // Delete expired interview preparations
+  deleteExpiredInterviewPreps: async () => {
+    try {
+      const now = new Date();
+      const result = await db.delete(interviewPreps)
+        .where(lt(interviewPreps.expiresAt, now))
+        .returning({ id: interviewPreps.id });
+      
+      console.log(`Deleted ${result.length} expired interview preparations`);
+      return result.length;
+    } catch (error) {
+      console.error("Error deleting expired interview preps:", error);
+      return 0;
     }
   }
 };

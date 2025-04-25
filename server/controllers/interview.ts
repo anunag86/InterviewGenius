@@ -8,6 +8,26 @@ import { validateInterviewPrep } from "../agents/qualityAgent";
 import { storage } from "../storage";
 import { AgentStep } from "@/types";
 
+// Extend Request type to include file property from multer
+declare global {
+  namespace Express {
+    interface Request {
+      file?: any;
+    }
+    
+    namespace Multer {
+      interface File {
+        buffer: Buffer;
+        fieldname: string;
+        originalname: string;
+        encoding: string;
+        mimetype: string;
+        size: number;
+      }
+    }
+  }
+}
+
 // In-memory storage for interview preparation requests (will be replaced with DB in production)
 const interviewPreps = new Map();
 
@@ -81,6 +101,28 @@ export const getInterviewStatus = async (req: Request, res: Response) => {
   }
 };
 
+// Get recent interview preps (history)
+export const getInterviewHistory = async (req: Request, res: Response) => {
+  try {
+    const limit = req.query.limit ? parseInt(req.query.limit as string) : 10;
+    
+    // Get recent interview preparations
+    const history = await storage.getRecentInterviewPreps(limit);
+    
+    // Clean up expired interview preparations in the background
+    storage.deleteExpiredInterviewPreps().catch(err => {
+      console.error("Error cleaning up expired interview preps:", err);
+    });
+    
+    return res.status(200).json({
+      history
+    });
+  } catch (error) {
+    console.error("Error getting interview history:", error);
+    return res.status(500).json({ error: "Failed to get interview preparation history" });
+  }
+};
+
 async function processInterviewPrep(prepId: string, resumeFile: Express.Multer.File, jobUrl: string, linkedinUrl: string) {
   try {
     // Step 1: Analyze the job posting
@@ -127,16 +169,22 @@ async function processInterviewPrep(prepId: string, resumeFile: Express.Multer.F
       result: validatedPrep
     });
     
-    // Persist the interview prep in the database
-    await storage.saveInterviewPrep(prepId, validatedPrep);
+    // Persist the interview prep in the database with all metadata
+    await storage.saveInterviewPrep(
+      prepId, 
+      validatedPrep, 
+      jobUrl, 
+      resumeText, 
+      linkedinUrl
+    );
     
     return validatedPrep;
-  } catch (error) {
+  } catch (error: any) {
     // Update the status to failed if there was an error
     interviewPreps.set(prepId, {
       ...interviewPreps.get(prepId),
       status: "failed",
-      error: error.message
+      error: error.message || "Unknown error occurred"
     });
     
     throw error;
