@@ -57,8 +57,8 @@ const InterviewForm = ({ onSubmit, isSubmitting }: InterviewFormProps) => {
   };
 
   return (
-    <section className="mb-12 bg-white rounded-xl shadow-sm p-6 md:p-8" id="input-form">
-      <h2 className="text-2xl font-bold text-gray-900 mb-6">Tell us about the opportunity</h2>
+    <section className="mb-12 bg-card rounded-xl shadow-sm p-6 md:p-8 border border-border" id="input-form">
+      <h2 className="text-2xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent mb-6">Tell us about the opportunity</h2>
       
       <Form {...form}>
         <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-6">

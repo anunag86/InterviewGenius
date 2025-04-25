@@ -87,15 +87,15 @@ const Home = () => {
         {/* Hero Section */}
         {showHero && (
           <section className="mb-12" id="hero-section">
-            <div className="bg-gradient-to-r from-indigo-600 to-blue-700 rounded-xl shadow-lg p-8 text-white">
+            <div className="bg-gradient-to-r from-primary via-secondary to-accent rounded-xl shadow-lg p-8 text-foreground">
               <div className="max-w-3xl mx-auto text-center">
-                <h1 className="text-3xl md:text-4xl font-bold mb-4">Prepare for Your Interview with AI-Powered Insights</h1>
-                <p className="text-lg mb-6 opacity-90">Our intelligent agents analyze job postings and your experience to generate tailored interview questions and talking points.</p>
+                <h1 className="text-3xl md:text-4xl font-bold mb-4 drop-shadow-sm">Prepare for Your Interview with AI-Powered Insights</h1>
+                <p className="text-lg mb-8 opacity-90">Our intelligent agents analyze job postings and your resume to generate tailored interview questions and talking points that help you stand out.</p>
                 <div className="flex justify-center">
                   <Button
                     id="get-started-btn"
                     onClick={handleGetStarted}
-                    className="bg-white text-indigo-700 hover:bg-gray-100 px-6 py-6 h-auto rounded-lg font-medium transition"
+                    className="bg-white text-primary hover:bg-accent hover:text-accent-foreground px-8 py-6 h-auto rounded-lg font-medium transition-all duration-300 shadow-md hover:shadow-lg"
                   >
                     Get Started
                   </Button>
