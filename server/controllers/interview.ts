@@ -87,19 +87,35 @@ export const getInterviewStatus = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     
-    if (!interviewPreps.has(id)) {
+    // First check in memory cache
+    if (interviewPreps.has(id)) {
+      const prepData = interviewPreps.get(id);
+      
+      // Include agent thoughts for showing the thinking process
+      return res.status(200).json({
+        status: prepData.status,
+        progress: prepData.progress,
+        result: prepData.result,
+        error: prepData.error,
+        agentThoughts: prepData.agentThoughts
+      });
+    }
+    
+    // If not in memory, check the database
+    const savedPrep = await storage.getInterviewPrep(id);
+    
+    // If not found in database either, return 404
+    if (!savedPrep) {
       return res.status(404).json({ error: "Interview preparation request not found" });
     }
     
-    const prepData = interviewPreps.get(id);
-    
-    // Include agent thoughts for showing the thinking process
+    // Return the saved data from the database
     return res.status(200).json({
-      status: prepData.status,
-      progress: prepData.progress,
-      result: prepData.result,
-      error: prepData.error,
-      agentThoughts: prepData.agentThoughts
+      status: "completed", // If it's in the database, it's completed
+      progress: 7, // AgentStep.COMPLETED
+      result: savedPrep.data,
+      error: null,
+      agentThoughts: [] // Thoughts might not be stored in DB
     });
   } catch (error) {
     console.error("Error getting interview status:", error);
