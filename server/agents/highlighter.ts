@@ -1,5 +1,11 @@
 import { callOpenAIWithJSON } from "../utils/openai";
-import { AgentThought } from "../../client/src/types";
+import { AgentThought, CandidateHighlights } from "../../client/src/types";
+
+// Interface for highlight result
+interface HighlightResult {
+  relevantPoints: string[];
+  gapAreas: string[];
+}
 
 // Highlighter Agent that extracts relevant resume points and identifies gaps
 export async function highlightResumePoints(
@@ -73,7 +79,7 @@ export async function highlightResumePoints(
     });
     
     // Call the OpenAI API to analyze the resume
-    const highlightResult = await callOpenAIWithJSON(highlightPrompt);
+    const highlightResult = await callOpenAIWithJSON<HighlightResult>(highlightPrompt);
     
     // Check if we have valid results
     if (!highlightResult.relevantPoints || !highlightResult.gapAreas) {
@@ -94,8 +100,14 @@ export async function highlightResumePoints(
       sourcesConsulted: ["Resume", "Job Analysis"]
     });
     
-    return { analysis: highlightResult, thoughts };
-  } catch (error) {
+    // Create a properly typed result
+    const analysis: CandidateHighlights = {
+      relevantPoints: highlightResult.relevantPoints,
+      gapAreas: highlightResult.gapAreas
+    };
+    
+    return { analysis, thoughts };
+  } catch (error: any) {
     console.error("Error in highlighter agent:", error);
     
     thoughts.push({

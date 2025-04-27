@@ -49,7 +49,14 @@ export interface AgentThought {
   sourcesConsulted?: string[];
 }
 
-export interface InterviewPrep {
+// Legacy question arrays for backward compatibility
+export interface LegacyInterviewQuestions {
+  behavioralQuestions?: InterviewQuestion[];
+  technicalQuestions?: InterviewQuestion[];
+  roleSpecificQuestions?: InterviewQuestion[];
+}
+
+export interface InterviewPrep extends Partial<LegacyInterviewQuestions> {
   id?: string;
   jobDetails: JobDetails;
   companyInfo: CompanyInfo;
