@@ -1,5 +1,5 @@
 import { apiRequest } from "./queryClient";
-import { InterviewFormData, InterviewPrep } from "@/types";
+import { InterviewFormData, InterviewPrep, AgentThought } from "@/types";
 
 // Interface for history items
 export interface InterviewHistoryItem {
@@ -18,9 +18,18 @@ export interface FeedbackData {
   npsScore: number;
 }
 
+// Interface for interview prep status response
+export interface InterviewPrepStatusResponse {
+  status: string;
+  progress: number;
+  result?: InterviewPrep;
+  error?: string;
+  agentThoughts?: AgentThought[];
+}
+
 export async function generateInterviewPrep(
   formData: FormData
-): Promise<InterviewPrep> {
+): Promise<{ id?: string; message?: string }> {
   try {
     const response = await apiRequest("POST", "/api/interview/generate", formData);
     const data = await response.json();
@@ -33,7 +42,7 @@ export async function generateInterviewPrep(
 
 export async function checkInterviewPrepStatus(
   id: string
-): Promise<{ status: string; progress: number; result?: InterviewPrep }> {
+): Promise<InterviewPrepStatusResponse> {
   try {
     const response = await fetch(`/api/interview/status/${id}`, {
       credentials: "include",

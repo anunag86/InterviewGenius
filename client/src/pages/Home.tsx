@@ -6,7 +6,7 @@ import InterviewForm from "@/components/InterviewForm";
 import LoadingState from "@/components/LoadingState";
 import ResultsSection from "@/components/ResultsSection";
 import { generateInterviewPrep, checkInterviewPrepStatus } from "@/lib/openai";
-import { InterviewPrep, AgentStep } from "@/types";
+import { InterviewPrep, AgentStep, AgentThought } from "@/types";
 import { Button } from "@/components/ui/button";
 
 const Home = () => {
@@ -16,6 +16,7 @@ const Home = () => {
   const [currentStep, setCurrentStep] = useState<AgentStep>(AgentStep.JOB_RESEARCH);
   const [prepId, setPrepId] = useState<string | null>(null);
   const [interviewPrep, setInterviewPrep] = useState<InterviewPrep | null>(null);
+  const [agentThoughts, setAgentThoughts] = useState<AgentThought[]>([]);
 
   useEffect(() => {
     // If we have a prep ID, poll for updates
@@ -24,6 +25,11 @@ const Home = () => {
         try {
           const result = await checkInterviewPrepStatus(prepId);
           setCurrentStep(result.progress as AgentStep);
+          
+          // Update agent thoughts if available
+          if (result.agentThoughts) {
+            setAgentThoughts(result.agentThoughts);
+          }
           
           if (result.status === "completed" && result.result) {
             setInterviewPrep(result.result);
@@ -58,6 +64,7 @@ const Home = () => {
     setIsLoading(true);
     setCurrentStep(AgentStep.JOB_RESEARCH);
     setInterviewPrep(null);
+    setAgentThoughts([]); // Reset agent thoughts
     
     try {
       const response = await generateInterviewPrep(formData);
@@ -101,7 +108,9 @@ const Home = () => {
             <div className="max-w-3xl mx-auto py-6">
               <div className="text-center mb-8">
                 <h1 className="text-3xl font-bold mb-3 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">AI-Powered Interview Prep</h1>
-                <p className="text-muted-foreground max-w-xl mx-auto">Answer questions tailored for your specific job opportunity.</p>
+                <p className="text-muted-foreground max-w-xl mx-auto">
+                  Get comprehensive interview preparation tailored to your specific job opportunity
+                </p>
               </div>
               
               <div className="flex justify-center gap-4">
@@ -131,9 +140,12 @@ const Home = () => {
           <InterviewForm onSubmit={handleFormSubmit} isSubmitting={isLoading} />
         )}
 
-        {/* Loading State */}
+        {/* Loading State with Agent Thoughts */}
         {isLoading && (
-          <LoadingState currentStep={currentStep} />
+          <LoadingState 
+            currentStep={currentStep} 
+            agentThoughts={agentThoughts} 
+          />
         )}
 
         {/* Results Section */}

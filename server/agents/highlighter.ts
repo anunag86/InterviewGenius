@@ -1,9 +1,9 @@
-import { analyzeDocument, callOpenAIWithJSON } from "../utils/openai";
+import { callOpenAIWithJSON } from "../utils/openai";
 import { AgentThought } from "../../client/src/types";
 
-// Highlighter agent that identifies relevant and non-relevant points from the resume
+// Highlighter Agent that extracts relevant resume points and identifies gaps
 export async function highlightResumePoints(
-  resumeText: string, 
+  resumeText: string,
   jobAnalysis: any,
   profileAnalysis: any
 ) {
@@ -12,82 +12,89 @@ export async function highlightResumePoints(
   thoughts.push({
     timestamp: Date.now(),
     agent: "Highlighter",
-    thought: "Starting analysis to identify relevant and non-relevant points from the resume for this job position.",
-    sourcesConsulted: ["Resume document", "Job analysis", "Profile analysis"]
+    thought: "Starting analysis to highlight resume strengths and identify gaps for this specific job.",
+    sourcesConsulted: ["Resume", "Job Analysis", "Profile Analysis"]
   });
   
-  // Create a condensed version of job analysis for the prompt
-  const jobSummary = await callOpenAIWithJSON(`
-    Summarize the following job analysis in a concise format focusing only on the key requirements,
-    skills, and qualifications. Keep it under 500 words.
-    
-    ${JSON.stringify(jobAnalysis)}
-  `);
-  
-  thoughts.push({
-    timestamp: Date.now(),
-    agent: "Highlighter",
-    thought: "Extracted key job requirements and qualifications from the job analysis.",
-    sourcesConsulted: ["Job analysis"]
-  });
-  
-  const systemPrompt = `
-    You are an expert Highlighter agent. Your task is to analyze a candidate's resume against a specific job
-    posting and identify the relevant matches and gaps.
-    
-    Think like a recruiting manager who is screening resumes for an open position.
-    
-    Focus on two main sections:
-    
-    1. RELEVANT POINTS: Identify 4-6 bullet points from the candidate's resume that align well with
-       the job requirements. These should be the candidate's strongest selling points for this specific role.
-       For each point, briefly explain why it's relevant to the job posting.
-       
-    2. GAP AREAS: Identify 2-4 bullet points where the candidate's resume shows potential gaps compared
-       to the job requirements. These could be missing skills, insufficient experience in certain areas,
-       or other factors that might raise questions during the hiring process.
-       For each gap, provide a brief explanation of why it might be a concern.
-    
-    Make your analysis objective and focused on the specific job requirements.
-    
-    Job Analysis Summary:
-    ${JSON.stringify(jobSummary)}
-    
-    Respond with a JSON object containing these details organized in a structured format.
-    
-    JSON Format:
-    {
-      "relevantPoints": [
-        "Point 1: Why it's relevant",
-        "Point 2: Why it's relevant",
-        ...
-      ],
-      "gapAreas": [
-        "Gap 1: Why it's a potential gap",
-        "Gap 2: Why it's a potential gap",
-        ...
-      ]
-    }
-  `;
-
   try {
-    thoughts.push({
-      timestamp: Date.now(),
-      agent: "Highlighter",
-      thought: "Analyzing resume content against job requirements to identify matches and gaps.",
-      sourcesConsulted: ["Resume document", "Job analysis"]
-    });
-    
-    const highlightAnalysis = await analyzeDocument(resumeText, systemPrompt);
+    // Get the job details and required skills
+    const jobTitle = jobAnalysis.jobTitle || "the role";
+    const companyName = jobAnalysis.companyName || "the company";
+    const requiredSkills = jobAnalysis.requiredSkills || [];
     
     thoughts.push({
       timestamp: Date.now(),
       agent: "Highlighter",
-      thought: "Completed highlighting of relevant points and gap areas in the resume.",
-      sourcesConsulted: ["Resume document", "Job analysis"]
+      thought: `Analyzing resume against ${requiredSkills.length} identified required skills for ${jobTitle} at ${companyName}.`,
+      sourcesConsulted: ["Job Analysis"]
     });
     
-    return { analysis: highlightAnalysis, thoughts };
+    // Create a prompt to highlight the resume strengths and gaps based on the job requirements
+    const highlightPrompt = `
+      You are a Resume Highlighter Agent specializing in identifying strengths and gaps in candidate profiles.
+      Your task is to analyze a candidate's resume text and profile against a specific job description
+      and highlight relevant points that match the job requirements as well as identify potential gaps.
+      
+      Resume Text:
+      ${resumeText}
+      
+      Profile Analysis:
+      ${JSON.stringify(profileAnalysis)}
+      
+      Job Analysis:
+      ${JSON.stringify(jobAnalysis)}
+      
+      Please identify:
+      1. Relevant points from the resume that directly match the job requirements (skills, experience, qualifications)
+      2. Gaps or potential weaknesses in the candidate's profile compared to the job requirements
+      
+      Focus on substantive matches and gaps, not just keyword matches. Consider both technical and soft skills.
+      
+      Response format:
+      {
+        "relevantPoints": [
+          "Point 1 - specific experience or skill that matches the job requirements",
+          "Point 2 - ...",
+          ...
+        ],
+        "gapAreas": [
+          "Gap 1 - specific skill or experience missing or weak compared to requirements",
+          "Gap 2 - ...",
+          ...
+        ]
+      }
+    `;
+    
+    thoughts.push({
+      timestamp: Date.now(),
+      agent: "Highlighter",
+      thought: "Extracting relevant strengths and identifying potential gaps between resume and job requirements.",
+      sourcesConsulted: ["Resume", "Job Analysis", "Profile Analysis"]
+    });
+    
+    // Call the OpenAI API to analyze the resume
+    const highlightResult = await callOpenAIWithJSON(highlightPrompt);
+    
+    // Check if we have valid results
+    if (!highlightResult.relevantPoints || !highlightResult.gapAreas) {
+      thoughts.push({
+        timestamp: Date.now(),
+        agent: "Highlighter",
+        thought: "Failed to extract proper highlights from resume. Output format was incorrect.",
+        sourcesConsulted: []
+      });
+      
+      throw new Error("Failed to extract proper highlights from resume");
+    }
+    
+    thoughts.push({
+      timestamp: Date.now(),
+      agent: "Highlighter",
+      thought: `Successfully identified ${highlightResult.relevantPoints.length} relevant strengths and ${highlightResult.gapAreas.length} potential gap areas.`,
+      sourcesConsulted: ["Resume", "Job Analysis"]
+    });
+    
+    return { analysis: highlightResult, thoughts };
   } catch (error) {
     console.error("Error in highlighter agent:", error);
     
@@ -95,7 +102,7 @@ export async function highlightResumePoints(
       timestamp: Date.now(),
       agent: "Highlighter",
       thought: `Error highlighting resume points: ${error.message}`,
-      sourcesConsulted: ["Resume document", "Job analysis"]
+      sourcesConsulted: []
     });
     
     throw new Error("Failed to highlight resume points: " + error.message);
