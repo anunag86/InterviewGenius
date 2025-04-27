@@ -34,12 +34,24 @@ export async function researchInterviewPatterns(companyName: string, jobTitle: s
       sourcesConsulted: []
     });
     
-    const interviewQueries = await callOpenAIWithJSON(interviewProcessPrompt);
+    // Get search queries with proper typing
+    const interviewQueriesResult = await callOpenAIWithJSON<string[]>(interviewProcessPrompt);
+    
+    // Ensure we have an array even if the API response was not as expected
+    const interviewQueries = Array.isArray(interviewQueriesResult) ? interviewQueriesResult : [];
+    
+    // Default queries if empty
+    const safeInterviewQueries = interviewQueries.length > 0 ? interviewQueries : [
+      `${companyName} ${jobTitle} interview process structure rounds`,
+      `${companyName} ${jobTitle} technical assessment coding challenges`,
+      `${companyName} ${jobTitle} behavioral interview questions`,
+      `${companyName} interview process unique practices`
+    ];
     
     thoughts.push({
       timestamp: Date.now(),
       agent: "Interview Pattern Researcher",
-      thought: `Generated interview process search queries: ${JSON.stringify(interviewQueries)}`,
+      thought: `Generated interview process search queries: ${JSON.stringify(safeInterviewQueries)}`,
       sourcesConsulted: []
     });
     
@@ -50,7 +62,7 @@ export async function researchInterviewPatterns(companyName: string, jobTitle: s
       timestamp: Date.now(),
       agent: "Interview Pattern Researcher",
       thought: "Researching general interview structure and rounds.",
-      sourcesConsulted: [interviewQueries[0]]
+      sourcesConsulted: safeInterviewQueries.length > 0 ? [safeInterviewQueries[0]] : []
     });
     
     // Research technical assessments
@@ -58,7 +70,7 @@ export async function researchInterviewPatterns(companyName: string, jobTitle: s
       timestamp: Date.now(),
       agent: "Interview Pattern Researcher",
       thought: "Researching technical and skill assessment methods.",
-      sourcesConsulted: [interviewQueries[1]]
+      sourcesConsulted: safeInterviewQueries.length > 1 ? [safeInterviewQueries[1]] : []
     });
     
     // Research behavioral questions
@@ -66,7 +78,7 @@ export async function researchInterviewPatterns(companyName: string, jobTitle: s
       timestamp: Date.now(),
       agent: "Interview Pattern Researcher",
       thought: "Researching behavioral interview questions and format.",
-      sourcesConsulted: [interviewQueries[2]]
+      sourcesConsulted: safeInterviewQueries.length > 2 ? [safeInterviewQueries[2]] : []
     });
     
     // Research company-specific practices
@@ -74,7 +86,7 @@ export async function researchInterviewPatterns(companyName: string, jobTitle: s
       timestamp: Date.now(),
       agent: "Interview Pattern Researcher",
       thought: "Researching company-specific interview practices.",
-      sourcesConsulted: [interviewQueries[3]]
+      sourcesConsulted: safeInterviewQueries.length > 3 ? [safeInterviewQueries[3]] : []
     });
     
     // Compile interview process research
@@ -115,21 +127,31 @@ export async function researchInterviewPatterns(companyName: string, jobTitle: s
       timestamp: Date.now(),
       agent: "Interview Pattern Researcher",
       thought: "Compiling comprehensive research summary about the company's interview process.",
-      sourcesConsulted: interviewQueries
+      sourcesConsulted: safeInterviewQueries
     });
     
     // Simulate fetching and analyzing web content
-    const interviewPatternResearch = await callOpenAIWithJSON(interviewPatternPrompt);
+    const interviewPatternResearch = await callOpenAIWithJSON<any>(interviewPatternPrompt);
     
     thoughts.push({
       timestamp: Date.now(),
       agent: "Interview Pattern Researcher",
       thought: "Successfully compiled research on the company's interview process.",
-      sourcesConsulted: interviewQueries
+      sourcesConsulted: safeInterviewQueries
     });
     
-    return { analysis: interviewPatternResearch, thoughts };
-  } catch (error) {
+    // Create a normalized pattern research object
+    const normalizedResearch = {
+      overallProcess: typeof interviewPatternResearch?.overallProcess === 'string' 
+        ? interviewPatternResearch.overallProcess 
+        : `The interview process at ${companyName} for ${jobTitle} roles typically consists of multiple rounds covering both technical and behavioral aspects.`,
+      interviewRounds: Array.isArray(interviewPatternResearch?.interviewRounds) ? interviewPatternResearch.interviewRounds : [],
+      keySuccessFactors: Array.isArray(interviewPatternResearch?.keySuccessFactors) ? interviewPatternResearch.keySuccessFactors : [],
+      preparationTips: Array.isArray(interviewPatternResearch?.preparationTips) ? interviewPatternResearch.preparationTips : []
+    };
+    
+    return { analysis: normalizedResearch, thoughts };
+  } catch (error: any) {
     console.error("Error in interview pattern researcher agent:", error);
     
     thoughts.push({
