@@ -1,95 +1,169 @@
-import { combineResults } from "../utils/openai";
+import { combineResults, callOpenAIWithJSON } from "../utils/openai";
 import { v4 as uuidv4 } from "uuid";
+import { AgentThought, InterviewRound } from "../../client/src/types";
 
 // Interviewer preparer agent that generates tailored questions
-export async function generateInterviewQuestions(jobAnalysis: any, resumeAnalysis: any) {
-  const systemPrompt = `
-    You are an expert Interview Preparer agent. Your task is to generate tailored interview questions
-    and corresponding talking points based on a job analysis and candidate profile.
+export async function generateInterviewQuestions(
+  jobAnalysis: any, 
+  profileAnalysis: any, 
+  companyResearch: any, 
+  interviewPatterns: any
+) {
+  const thoughts: AgentThought[] = [];
+  
+  thoughts.push({
+    timestamp: Date.now(),
+    agent: "Interview Preparer",
+    thought: "Starting preparation of tailored interview questions based on job requirements, candidate profile, company research, and interview patterns.",
+    sourcesConsulted: ["Job analysis", "Profile analysis", "Company research", "Interview patterns"]
+  });
+  
+  try {
+    // First, structure the interview rounds based on the interview patterns research
+    thoughts.push({
+      timestamp: Date.now(),
+      agent: "Interview Preparer",
+      thought: "Identifying interview rounds structure based on research.",
+      sourcesConsulted: ["Interview patterns"]
+    });
     
-    You were trained on hundreds of interview questions and resumes and understand the nuances of interview processes.
+    // Extract rounds information from the interview patterns
+    const interviewRounds = interviewPatterns.interviewRounds || [];
     
-    Generate exactly:
-    1. At least 5 behavioral questions with 4-5 talking points for each
-    2. At least 5 technical questions with 4-5 talking points for each
-    3. At least 5 role-specific questions with 4-5 talking points for each
-    
-    Also extract:
-    1. Company name
-    2. Job title
-    3. Job location
-    4. Key required skills (as an array)
-    
-    Every question should be:
-    - Tailored to both the specific job and the candidate's profile
-    - Realistic and commonly asked in interviews
-    - Designed to assess fit for the specific role
-    
-    Every talking point should:
-    - Reference the candidate's actual experience from their resume
-    - Be specific and actionable
-    - Include examples, metrics, or achievements when possible
-    
-    Format your response as a JSON object with the following structure:
-    {
-      "jobDetails": {
-        "company": "Company Name",
-        "title": "Job Title",
-        "location": "Job Location",
-        "skills": ["Skill 1", "Skill 2", ...]
+    // If no rounds were found in the research, create default rounds
+    let rounds = interviewRounds.length > 0 ? interviewRounds : [
+      {
+        roundName: "Initial Screen",
+        focus: "Basic qualifications and fit",
+        format: "Phone or video call with HR or recruiter"
       },
-      "behavioralQuestions": [
+      {
+        roundName: "Technical Assessment",
+        focus: "Technical skills and knowledge",
+        format: "Technical interview with team members"
+      },
+      {
+        roundName: "Behavioral Interview",
+        focus: "Soft skills and cultural fit",
+        format: "In-person or video interview with hiring manager"
+      }
+    ];
+    
+    thoughts.push({
+      timestamp: Date.now(),
+      agent: "Interview Preparer",
+      thought: `Identified ${rounds.length} interview rounds: ${rounds.map(r => r.roundName).join(', ')}`,
+      sourcesConsulted: ["Interview patterns"]
+    });
+    
+    // For each round, generate appropriate questions
+    const enhancedRounds: InterviewRound[] = [];
+    
+    for (const round of rounds) {
+      thoughts.push({
+        timestamp: Date.now(),
+        agent: "Interview Preparer",
+        thought: `Generating questions for ${round.roundName} which focuses on ${round.focus}`,
+        sourcesConsulted: ["Job analysis", "Profile analysis", "Company research"]
+      });
+      
+      const roundPrompt = `
+        You are an expert Interview Question Generator. Your task is to generate tailored interview
+        questions and corresponding talking points for a specific interview round.
+        
+        Interview Round: ${round.roundName}
+        Focus: ${round.focus}
+        Format: ${round.format}
+        
+        Job Analysis: ${JSON.stringify(jobAnalysis)}
+        Candidate Profile: ${JSON.stringify(profileAnalysis)}
+        Company Research: ${JSON.stringify(companyResearch)}
+        
+        Generate at least 5 highly relevant questions for this specific interview round with 3-5 talking points for each.
+        
+        Questions should:
+        - Be directly relevant to the focus of this interview round
+        - Be tailored to both the specific job and the candidate's profile
+        - Incorporate company-specific elements when appropriate
+        - Be realistic and commonly asked in this type of interview round
+        
+        Talking points should:
+        - Reference the candidate's actual experience and skills
+        - Be specific and actionable
+        - Include examples, metrics, or achievements when possible
+        - Help the candidate demonstrate their fit for this specific role at this company
+        
+        Format your response as a JSON object with the following structure:
         {
-          "id": "unique-id",
-          "question": "Question text",
-          "talkingPoints": [
-            {"id": "unique-id", "text": "Talking point 1"},
+          "questions": [
+            {
+              "question": "Question text",
+              "talkingPoints": ["Talking point 1", "Talking point 2", ...]
+            },
             ...
           ]
-        },
-        ...
-      ],
-      "technicalQuestions": [...],
-      "roleSpecificQuestions": [...]
-    }
-  `;
-
-  try {
-    let result = await combineResults(jobAnalysis, resumeAnalysis, systemPrompt);
-    
-    // Ensure proper IDs for all questions and talking points
-    function addMissingIds(questionsArray) {
-      if (!questionsArray) return [];
-      
-      return questionsArray.map(question => {
-        const questionWithId = {
-          ...question,
-          id: question.id || uuidv4()
-        };
-        
-        if (question.talkingPoints) {
-          questionWithId.talkingPoints = question.talkingPoints.map(point => ({
-            ...point,
-            id: point.id || uuidv4()
-          }));
-        } else {
-          questionWithId.talkingPoints = [];
         }
-        
-        return questionWithId;
+      `;
+      
+      const roundQuestions = await callOpenAIWithJSON(roundPrompt);
+      
+      // Ensure all questions have IDs
+      const questionsWithIds = roundQuestions.questions.map(q => ({
+        id: uuidv4(),
+        question: q.question,
+        talkingPoints: (q.talkingPoints || []).map(tp => ({
+          id: uuidv4(),
+          text: tp
+        }))
+      }));
+      
+      enhancedRounds.push({
+        id: uuidv4(),
+        name: round.roundName,
+        focus: round.focus,
+        questions: questionsWithIds
+      });
+      
+      thoughts.push({
+        timestamp: Date.now(),
+        agent: "Interview Preparer",
+        thought: `Generated ${questionsWithIds.length} questions for ${round.roundName} round.`,
+        sourcesConsulted: ["Job analysis", "Profile analysis", "Company research"]
       });
     }
     
-    result = {
-      ...result,
-      behavioralQuestions: addMissingIds(result.behavioralQuestions),
-      technicalQuestions: addMissingIds(result.technicalQuestions),
-      roleSpecificQuestions: addMissingIds(result.roleSpecificQuestions)
+    // Extract basic job details
+    const jobDetails = {
+      company: jobAnalysis.companyName || "",
+      title: jobAnalysis.jobTitle || "",
+      location: jobAnalysis.location || "",
+      skills: jobAnalysis.requiredSkills || []
     };
     
-    return result;
+    thoughts.push({
+      timestamp: Date.now(),
+      agent: "Interview Preparer",
+      thought: "Successfully generated tailored questions for all interview rounds.",
+      sourcesConsulted: ["Job analysis", "Profile analysis", "Company research", "Interview patterns"]
+    });
+    
+    // Construct final result
+    const result = {
+      jobDetails,
+      interviewRounds: enhancedRounds
+    };
+    
+    return { result, thoughts };
   } catch (error) {
     console.error("Error in interview preparer agent:", error);
+    
+    thoughts.push({
+      timestamp: Date.now(),
+      agent: "Interview Preparer",
+      thought: `Error generating interview questions: ${error.message}`,
+      sourcesConsulted: ["Job analysis", "Profile analysis", "Company research", "Interview patterns"]
+    });
+    
     throw new Error("Failed to generate interview questions: " + error.message);
   }
 }

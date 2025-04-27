@@ -1,12 +1,15 @@
 import { Request, Response } from "express";
 import { v4 as uuidv4 } from "uuid";
 import * as mammoth from "mammoth";
-import { analyzeJobPosting } from "../agents/jobResearcher";
-import { analyzeResume } from "../agents/profiler";
+import { analyzeJobPosting, researchCompanyCareerPage } from "../agents/jobResearcher";
+import { analyzeResume, findSpecificSkills } from "../agents/profiler";
+import { highlightResumePoints } from "../agents/highlighter";
+import { researchCompanyAndRole } from "../agents/companyResearcher";
+import { researchInterviewPatterns } from "../agents/interviewPatternResearcher";
 import { generateInterviewQuestions } from "../agents/interviewPreparer";
 import { validateInterviewPrep } from "../agents/qualityAgent";
 import { storage } from "../storage";
-import { AgentStep } from "@/types";
+import { AgentStep, AgentThought } from "../../client/src/types";
 
 // Extend Request type to include file property from multer
 declare global {
@@ -55,11 +58,12 @@ export const generateInterview = async (req: Request, res: Response) => {
       jobUrl,
       linkedinUrl,
       result: null,
-      error: null
+      error: null,
+      agentThoughts: []
     });
     
     // Start the processing in the background
-    processInterviewPrep(prepId, req.file, jobUrl, linkedinUrl).catch(error => {
+    processInterviewPrep(prepId, req.file, jobUrl, linkedinUrl || null).catch(error => {
       console.error("Error processing interview prep:", error);
       interviewPreps.set(prepId, {
         ...interviewPreps.get(prepId),
@@ -89,11 +93,13 @@ export const getInterviewStatus = async (req: Request, res: Response) => {
     
     const prepData = interviewPreps.get(id);
     
+    // Include agent thoughts for showing the thinking process
     return res.status(200).json({
       status: prepData.status,
       progress: prepData.progress,
       result: prepData.result,
-      error: prepData.error
+      error: prepData.error,
+      agentThoughts: prepData.agentThoughts
     });
   } catch (error) {
     console.error("Error getting interview status:", error);
@@ -123,15 +129,27 @@ export const getInterviewHistory = async (req: Request, res: Response) => {
   }
 };
 
-async function processInterviewPrep(prepId: string, resumeFile: Express.Multer.File, jobUrl: string, linkedinUrl: string) {
+async function processInterviewPrep(prepId: string, resumeFile: Express.Multer.File, jobUrl: string, linkedinUrl: string | null) {
   try {
+    // Keep track of all agent thoughts
+    let allThoughts: AgentThought[] = [];
+    
     // Step 1: Analyze the job posting
     interviewPreps.set(prepId, {
       ...interviewPreps.get(prepId),
       progress: AgentStep.JOB_RESEARCH
     });
     
-    const jobAnalysis = await analyzeJobPosting(jobUrl);
+    // Get job analysis with agents' thoughts
+    const jobResearchResult = await analyzeJobPosting(jobUrl, linkedinUrl);
+    const jobAnalysis = jobResearchResult.analysis;
+    allThoughts = [...allThoughts, ...jobResearchResult.thoughts];
+    
+    // Update in-memory storage with agent thoughts
+    interviewPreps.set(prepId, {
+      ...interviewPreps.get(prepId),
+      agentThoughts: allThoughts
+    });
     
     // Step 2: Analyze the resume
     interviewPreps.set(prepId, {
@@ -143,30 +161,137 @@ async function processInterviewPrep(prepId: string, resumeFile: Express.Multer.F
     const extractedText = await mammoth.extractRawText({ buffer: resumeFile.buffer });
     const resumeText = extractedText.value;
     
-    const resumeAnalysis = await analyzeResume(resumeText, linkedinUrl);
+    // Get profile analysis with agents' thoughts
+    const profileResult = await analyzeResume(resumeText, linkedinUrl);
+    const profileAnalysis = profileResult.analysis;
+    allThoughts = [...allThoughts, ...profileResult.thoughts];
     
-    // Step 3: Generate interview questions
+    // Update in-memory storage with agent thoughts
+    interviewPreps.set(prepId, {
+      ...interviewPreps.get(prepId),
+      agentThoughts: allThoughts
+    });
+    
+    // Step 3: Research company career page to get additional information
+    const careerPageResult = await researchCompanyCareerPage(
+      jobAnalysis.companyName || "Company", 
+      jobAnalysis.jobTitle || "Job Title"
+    );
+    allThoughts = [...allThoughts, ...careerPageResult.thoughts];
+    
+    // Use the job analysis to extract specific skills for targeted search
+    const requiredSkills = jobAnalysis.requiredSkills || [];
+    const skillsResult = await findSpecificSkills(resumeText, requiredSkills);
+    allThoughts = [...allThoughts, ...skillsResult.thoughts];
+    
+    // Step 4: Generate candidate highlights
+    interviewPreps.set(prepId, {
+      ...interviewPreps.get(prepId),
+      progress: AgentStep.HIGHLIGHT_GENERATION
+    });
+    
+    const highlightsResult = await highlightResumePoints(resumeText, jobAnalysis, profileAnalysis);
+    const candidateHighlights = highlightsResult.analysis;
+    allThoughts = [...allThoughts, ...highlightsResult.thoughts];
+    
+    // Update in-memory storage with agent thoughts
+    interviewPreps.set(prepId, {
+      ...interviewPreps.get(prepId),
+      agentThoughts: allThoughts
+    });
+    
+    // Step 5: Research company and role
+    interviewPreps.set(prepId, {
+      ...interviewPreps.get(prepId),
+      progress: AgentStep.COMPANY_RESEARCH
+    });
+    
+    const companyResearchResult = await researchCompanyAndRole(
+      jobAnalysis.companyName || "Company", 
+      jobAnalysis.jobTitle || "Job Title"
+    );
+    const companyInfo = companyResearchResult.analysis;
+    allThoughts = [...allThoughts, ...companyResearchResult.thoughts];
+    
+    // Update in-memory storage with agent thoughts
+    interviewPreps.set(prepId, {
+      ...interviewPreps.get(prepId),
+      agentThoughts: allThoughts
+    });
+    
+    // Step 6: Research interview patterns
+    interviewPreps.set(prepId, {
+      ...interviewPreps.get(prepId),
+      progress: AgentStep.INTERVIEW_PATTERN_RESEARCH
+    });
+    
+    const interviewPatternsResult = await researchInterviewPatterns(
+      jobAnalysis.companyName || "Company", 
+      jobAnalysis.jobTitle || "Job Title"
+    );
+    const interviewPatterns = interviewPatternsResult.analysis;
+    allThoughts = [...allThoughts, ...interviewPatternsResult.thoughts];
+    
+    // Update in-memory storage with agent thoughts
+    interviewPreps.set(prepId, {
+      ...interviewPreps.get(prepId),
+      agentThoughts: allThoughts
+    });
+    
+    // Step 7: Generate interview questions based on all previous research
     interviewPreps.set(prepId, {
       ...interviewPreps.get(prepId),
       progress: AgentStep.QUESTION_GENERATION
     });
     
-    const interviewQuestions = await generateInterviewQuestions(jobAnalysis, resumeAnalysis);
+    const interviewQuestionsResult = await generateInterviewQuestions(
+      jobAnalysis, 
+      profileAnalysis, 
+      companyInfo, 
+      interviewPatterns
+    );
+    const interviewQuestions = interviewQuestionsResult.result;
+    allThoughts = [...allThoughts, ...interviewQuestionsResult.thoughts];
     
-    // Step 4: Quality check the results
+    // Update in-memory storage with agent thoughts
+    interviewPreps.set(prepId, {
+      ...interviewPreps.get(prepId),
+      agentThoughts: allThoughts
+    });
+    
+    // Step 8: Quality check all results
     interviewPreps.set(prepId, {
       ...interviewPreps.get(prepId),
       progress: AgentStep.QUALITY_CHECK
     });
     
-    const validatedPrep = await validateInterviewPrep(interviewQuestions, jobUrl);
+    // Extract basic job details for the quality check
+    const jobDetails = {
+      company: jobAnalysis.companyName || "",
+      title: jobAnalysis.jobTitle || "",
+      location: jobAnalysis.location || "",
+      skills: jobAnalysis.requiredSkills || []
+    };
     
-    // Store the completed interview prep
+    const qualityCheckResult = await validateInterviewPrep(
+      jobUrl,
+      jobDetails,
+      companyInfo.companyInfo,
+      candidateHighlights,
+      interviewQuestions.interviewRounds,
+      allThoughts
+    );
+    
+    const validatedPrep = qualityCheckResult.analysis;
+    allThoughts = [...allThoughts, ...qualityCheckResult.thoughts];
+    
+    // Store the completed interview prep with all agent thoughts
     interviewPreps.set(prepId, {
       ...interviewPreps.get(prepId),
       status: "completed",
       progress: AgentStep.COMPLETED,
-      result: validatedPrep
+      result: validatedPrep,
+      agentThoughts: allThoughts
     });
     
     // Persist the interview prep in the database with all metadata
@@ -175,7 +300,7 @@ async function processInterviewPrep(prepId: string, resumeFile: Express.Multer.F
       validatedPrep, 
       jobUrl, 
       resumeText, 
-      linkedinUrl
+      linkedinUrl || "" 
     );
     
     return validatedPrep;

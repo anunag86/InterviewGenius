@@ -1,5 +1,5 @@
 import { analyzeDocument, fetchWebContent, callOpenAIWithJSON } from "../utils/openai";
-import { AgentThought } from "../../shared/schema";
+import { AgentThought } from "../../client/src/types";
 
 // Profiling agent that analyzes resumes and LinkedIn profiles
 export async function analyzeResume(resumeText: string, linkedinUrl: string | null) {
