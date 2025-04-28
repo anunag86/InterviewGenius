@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LinkedIn OAuth Debugger - PrepTalk</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+      margin: 0;
+      padding: 20px;
+      background-color: #f5f7fb;
+      color: #333;
+    }
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    h1 {
+      color: #0077B5;
+      margin-bottom: 20px;
+    }
+    h2 {
+      color: #555;
+      border-bottom: 1px solid #ddd;
+      padding-bottom: 10px;
+      margin-top: 30px;
+    }
+    .card {
+      background-color: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      padding: 20px;
+      margin-bottom: 20px;
+      overflow: hidden;
+    }
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+    .card-title {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 600;
+    }
+    .button {
+      background-color: #0077B5;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      padding: 8px 15px;
+      font-size: 14px;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    .button:hover {
+      background-color: #005e8d;
+    }
+    .button:disabled {
+      background-color: #ccc;
+      cursor: not-allowed;
+    }
+    .result-container {
+      background-color: #f8f9fa;
+      border-radius: 4px;
+      padding: 15px;
+      margin-top: 10px;
+      overflow: auto;
+      max-height: 300px;
+      font-family: monospace;
+      font-size: 13px;
+      line-height: 1.5;
+      white-space: pre-wrap;
+    }
+    .badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-right: 8px;
+    }
+    .badge-success {
+      background-color: #e6f4ea;
+      color: #137333;
+    }
+    .badge-error {
+      background-color: #fce8e6;
+      color: #c5221f;
+    }
+    .badge-warning {
+      background-color: #fef7e0;
+      color: #b06000;
+    }
+    .badge-info {
+      background-color: #e8f0fe;
+      color: #1967d2;
+    }
+    .uri-list {
+      list-style-type: none;
+      padding: 0;
+      margin: 0;
+    }
+    .uri-list li {
+      padding: 8px;
+      border-bottom: 1px solid #eee;
+      word-break: break-all;
+    }
+    .uri-list li:last-child {
+      border-bottom: none;
+    }
+    .copy-button {
+      background-color: #f1f3f4;
+      color: #444;
+      border: none;
+      border-radius: 4px;
+      padding: 2px 8px;
+      font-size: 12px;
+      margin-left: 8px;
+      cursor: pointer;
+    }
+    .copy-button:hover {
+      background-color: #e2e6ea;
+    }
+    .summary {
+      margin-top: 30px;
+      padding: 15px;
+      background-color: #f0f7ff;
+      border-radius: 8px;
+      border-left: 4px solid #1967d2;
+    }
+    .loading {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid rgba(0, 119, 181, 0.3);
+      border-radius: 50%;
+      border-top-color: #0077B5;
+      animation: spin 1s ease-in-out infinite;
+      margin-right: 10px;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>LinkedIn OAuth Debugger</h1>
+    
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">1. Environment Check</h3>
+        <button id="env-check-btn" class="button">Run Check</button>
+      </div>
+      <p>Checks your environment configuration including session support, Replit info, and LinkedIn credentials.</p>
+      <div id="env-check-result" class="result-container" style="display: none;"></div>
+    </div>
+    
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">2. LinkedIn Connection Test</h3>
+        <button id="connection-test-btn" class="button">Test Connection</button>
+      </div>
+      <p>Tests if your application can reach LinkedIn's authorization endpoints.</p>
+      <div id="connection-test-result" class="result-container" style="display: none;"></div>
+    </div>
+    
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">3. Credentials Verification</h3>
+        <button id="credentials-test-btn" class="button">Verify Credentials</button>
+      </div>
+      <p>Checks if your LinkedIn Client ID and Secret are valid and properly configured.</p>
+      <div id="credentials-test-result" class="result-container" style="display: none;"></div>
+    </div>
+    
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">4. Redirect URI Generator</h3>
+        <button id="uri-generator-btn" class="button">Generate URIs</button>
+      </div>
+      <p>Generates all possible redirect URIs that you can try registering in your LinkedIn Developer Console.</p>
+      <div id="uri-list-container" style="display: none; margin-top: 15px;">
+        <h4>Try registering these URIs in LinkedIn Developer Console:</h4>
+        <ul id="uri-list" class="uri-list"></ul>
+      </div>
+    </div>
+    
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">5. Redirect URI Test</h3>
+        <div>
+          <input type="text" id="redirect-uri-input" placeholder="Enter a redirect URI to test" style="padding: 8px; border-radius: 4px; border: 1px solid #ddd; width: 350px;">
+          <button id="redirect-test-btn" class="button">Test URI</button>
+        </div>
+      </div>
+      <p>Analyzes a specific redirect URI and provides suggestions for variations to try.</p>
+      <div id="redirect-test-result" class="result-container" style="display: none;"></div>
+    </div>
+    
+    <div id="summary-container" class="summary" style="display: none;">
+      <h3>Diagnostic Summary</h3>
+      <div id="summary-content"></div>
+    </div>
+  </div>
+
+  <script>
+    // Utility functions
+    function formatJson(json) {
+      return JSON.stringify(json, null, 2);
+    }
+    
+    function displayResult(containerId, data, loading = false) {
+      const container = document.getElementById(containerId);
+      
+      if (loading) {
+        container.innerHTML = '<div class="loading"></div> Loading...';
+        container.style.display = 'block';
+        return;
+      }
+      
+      if (typeof data === 'object') {
+        container.textContent = formatJson(data);
+      } else {
+        container.textContent = data;
+      }
+      
+      container.style.display = 'block';
+    }
+    
+    function copyToClipboard(text) {
+      navigator.clipboard.writeText(text).then(() => {
+        // Show a temporary message
+        const btn = event.target;
+        const originalText = btn.textContent;
+        btn.textContent = 'Copied!';
+        setTimeout(() => {
+          btn.textContent = originalText;
+        }, 1500);
+      }).catch(err => {
+        console.error('Failed to copy text: ', err);
+      });
+    }
+    
+    // Environment Check
+    document.getElementById('env-check-btn').addEventListener('click', async () => {
+      displayResult('env-check-result', null, true);
+      
+      try {
+        const response = await fetch('/api/debug/linkedin/environment');
+        const data = await response.json();
+        
+        displayResult('env-check-result', data);
+        
+        // Update summary
+        updateSummary('environment', data);
+      } catch (error) {
+        displayResult('env-check-result', `Error: ${error.message}`);
+      }
+    });
+    
+    // Connection Test
+    document.getElementById('connection-test-btn').addEventListener('click', async () => {
+      displayResult('connection-test-result', null, true);
+      
+      try {
+        const response = await fetch('/api/debug/linkedin/connection');
+        const data = await response.json();
+        
+        displayResult('connection-test-result', data);
+        
+        // Update summary
+        updateSummary('connection', data);
+      } catch (error) {
+        displayResult('connection-test-result', `Error: ${error.message}`);
+      }
+    });
+    
+    // Credentials Test
+    document.getElementById('credentials-test-btn').addEventListener('click', async () => {
+      displayResult('credentials-test-result', null, true);
+      
+      try {
+        const response = await fetch('/api/debug/linkedin/credentials');
+        const data = await response.json();
+        
+        displayResult('credentials-test-result', data);
+        
+        // Update summary
+        updateSummary('credentials', data);
+      } catch (error) {
+        displayResult('credentials-test-result', `Error: ${error.message}`);
+      }
+    });
+    
+    // Redirect URI Generator
+    document.getElementById('uri-generator-btn').addEventListener('click', async () => {
+      const listContainer = document.getElementById('uri-list-container');
+      const list = document.getElementById('uri-list');
+      list.innerHTML = '<li><div class="loading"></div> Generating URIs...</li>';
+      listContainer.style.display = 'block';
+      
+      try {
+        const response = await fetch('/api/debug/linkedin/redirect-uris');
+        const data = await response.json();
+        
+        // Display URIs with copy buttons
+        list.innerHTML = '';
+        data.allPossibleRedirectUris.forEach(uri => {
+          const li = document.createElement('li');
+          li.textContent = uri;
+          
+          const copyBtn = document.createElement('button');
+          copyBtn.className = 'copy-button';
+          copyBtn.textContent = 'Copy';
+          copyBtn.onclick = () => copyToClipboard(uri);
+          
+          li.appendChild(copyBtn);
+          list.appendChild(li);
+        });
+        
+        // Update summary
+        updateSummary('redirectUris', data);
+      } catch (error) {
+        list.innerHTML = `<li>Error: ${error.message}</li>`;
+      }
+    });
+    
+    // Redirect URI Test
+    document.getElementById('redirect-test-btn').addEventListener('click', async () => {
+      const uri = document.getElementById('redirect-uri-input').value.trim();
+      
+      if (!uri) {
+        alert('Please enter a redirect URI to test');
+        return;
+      }
+      
+      displayResult('redirect-test-result', null, true);
+      
+      try {
+        const response = await fetch(`/api/debug/linkedin/redirect-test?uri=${encodeURIComponent(uri)}`);
+        const data = await response.json();
+        
+        displayResult('redirect-test-result', data);
+        
+        // Update summary
+        updateSummary('redirectTest', data);
+      } catch (error) {
+        displayResult('redirect-test-result', `Error: ${error.message}`);
+      }
+    });
+    
+    // Summary updater
+    const diagnosticSummary = {};
+    
+    function updateSummary(step, data) {
+      // Store the result
+      diagnosticSummary[step] = data;
+      
+      // Build summary content
+      let summaryContent = '';
+      
+      if (diagnosticSummary.environment) {
+        const env = diagnosticSummary.environment.environment;
+        summaryContent += `<p><span class="badge ${env.linkedinConfig.clientIdPresent && env.linkedinConfig.clientSecretPresent ? 'badge-success' : 'badge-error'}">LinkedIn Credentials</span> `;
+        summaryContent += env.linkedinConfig.clientIdPresent && env.linkedinConfig.clientSecretPresent 
+          ? 'Both Client ID and Secret are present.' 
+          : 'Missing credentials. Check LinkedIn Developer Console.';
+        summaryContent += '</p>';
+        
+        summaryContent += `<p><span class="badge ${env.sessionConfig.isEnabled ? 'badge-success' : 'badge-error'}">Session Support</span> `;
+        summaryContent += env.sessionConfig.isEnabled 
+          ? 'Sessions are working properly.' 
+          : 'Session support is not configured correctly.';
+        summaryContent += '</p>';
+      }
+      
+      if (diagnosticSummary.connection) {
+        const conn = diagnosticSummary.connection;
+        summaryContent += `<p><span class="badge ${conn.canReachLinkedIn ? 'badge-success' : 'badge-error'}">LinkedIn Connection</span> `;
+        summaryContent += conn.canReachLinkedIn 
+          ? 'Can successfully reach LinkedIn OAuth endpoints.' 
+          : 'Cannot reach LinkedIn. Check your network or firewall settings.';
+        summaryContent += '</p>';
+      }
+      
+      if (diagnosticSummary.credentials) {
+        const creds = diagnosticSummary.credentials;
+        summaryContent += `<p><span class="badge ${creds.credentialsValid ? 'badge-success' : 'badge-error'}">Credentials Validity</span> `;
+        summaryContent += creds.credentialsValid 
+          ? 'LinkedIn credentials are valid.' 
+          : 'LinkedIn credentials appear to be invalid. Check your Client ID and Secret.';
+        summaryContent += '</p>';
+      }
+      
+      // Only show if we have at least one result
+      if (summaryContent) {
+        document.getElementById('summary-content').innerHTML = summaryContent;
+        document.getElementById('summary-container').style.display = 'block';
+      }
+    }
+  </script>
+</body>
+</html>
