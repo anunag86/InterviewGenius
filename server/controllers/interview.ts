@@ -7,7 +7,9 @@ import { highlightResumePoints } from "../agents/highlighter";
 import { researchCompanyAndRole } from "../agents/companyResearcher";
 import { researchInterviewPatterns } from "../agents/interviewPatternResearcher";
 import { generateInterviewQuestions } from "../agents/interviewerAgent";
-import { generateCandidateAnswers } from "../agents/candidateAgent";
+// Import new agents instead of the original candidate agent
+import { generateCandidatePoints } from "../agents/candidatePointsAgent";
+import { generateCandidateNarrative } from "../agents/candidateNarrativeAgent";
 import { storeUserMemory, storeUserResponse, getUserResponses } from "../agents/memoryAgent";
 import { validateInterviewPrep } from "../agents/qualityAgent";
 import { storage } from "../storage";
@@ -308,21 +310,39 @@ async function processInterviewPrep(prepId: string, resumeFile: Express.Multer.F
       agentThoughts: allThoughts
     });
     
-    // Step 8: Generate candidate answers with candidate agent
+    // Step 8.1: Generate candidate talking points with Candidate_points agent
     interviewPreps.set(prepId, {
       ...interviewPreps.get(prepId),
       progress: AgentStep.CANDIDATE_AGENT
     });
     
-    const candidateResult = await generateCandidateAnswers(
+    // First, generate relevant talking points based on the candidate's resume and profile
+    const candidatePointsResult = await generateCandidatePoints(
       interviewRounds,
       profileAnalysis,
       candidateHighlights,
       resumeText
     );
     
-    const enhancedRounds = candidateResult.rounds;
-    allThoughts = [...allThoughts, ...candidateResult.thoughts];
+    const roundsWithPoints = candidatePointsResult.rounds;
+    allThoughts = [...allThoughts, ...candidatePointsResult.thoughts];
+    
+    // Update in-memory storage with agent thoughts
+    interviewPreps.set(prepId, {
+      ...interviewPreps.get(prepId),
+      agentThoughts: allThoughts
+    });
+    
+    // Step 8.2: Generate candidate narrative with Candidate_narrative agent
+    // This agent builds upon the talking points to create narrative guidance
+    const candidateNarrativeResult = await generateCandidateNarrative(
+      roundsWithPoints,
+      profileAnalysis,
+      candidateHighlights
+    );
+    
+    const enhancedRounds = candidateNarrativeResult.rounds;
+    allThoughts = [...allThoughts, ...candidateNarrativeResult.thoughts];
     
     // Update in-memory storage with agent thoughts
     interviewPreps.set(prepId, {
