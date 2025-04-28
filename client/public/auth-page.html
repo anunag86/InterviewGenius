@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>PrepTalk - Login</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    :root {
+      --color-primary: #5865F2;
+      --color-primary-hover: #4752c4;
+      --color-secondary: #a855f7;
+      --color-text: #18181b;
+      --color-text-light: #71717a;
+      --color-background: #ffffff;
+      --color-error: #ff3333;
+      --color-border: #e5e7eb;
+      --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    }
+    
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    
+    body {
+      font-family: var(--font-sans);
+      color: var(--color-text);
+      background-color: var(--color-background);
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      line-height: 1.5;
+    }
+    
+    .auth-container {
+      display: flex;
+      width: 100%;
+      max-width: 1024px;
+      height: 600px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    
+    .auth-form {
+      flex: 1;
+      padding: 3rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+    
+    .auth-hero {
+      flex: 1;
+      background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+      color: white;
+      padding: 3rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+    
+    h1 {
+      font-size: 2.5rem;
+      margin-bottom: 1rem;
+      background: linear-gradient(45deg, var(--color-primary), var(--color-secondary));
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    
+    .auth-hero h1 {
+      font-size: 2.5rem;
+      margin-bottom: 1rem;
+      -webkit-text-fill-color: white;
+    }
+    
+    h2 {
+      font-size: 1.8rem;
+      margin-bottom: 0.5rem;
+    }
+    
+    p {
+      color: var(--color-text-light);
+      margin-bottom: 2rem;
+    }
+    
+    .auth-hero p {
+      color: rgba(255, 255, 255, 0.8);
+      font-size: 1.1rem;
+    }
+    
+    .tab-buttons {
+      display: flex;
+      margin-bottom: 2rem;
+      border-bottom: 1px solid var(--color-border);
+    }
+    
+    .tab-button {
+      padding: 0.75rem 1.5rem;
+      border: none;
+      background: none;
+      font-size: 1rem;
+      cursor: pointer;
+      font-weight: 500;
+      color: var(--color-text-light);
+    }
+    
+    .tab-button.active {
+      color: var(--color-primary);
+      border-bottom: 2px solid var(--color-primary);
+    }
+    
+    .form-group {
+      margin-bottom: 1.5rem;
+    }
+    
+    label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: 500;
+    }
+    
+    input {
+      width: 100%;
+      padding: 0.75rem;
+      border: 1px solid var(--color-border);
+      border-radius: 4px;
+      font-size: 1rem;
+    }
+    
+    input:focus {
+      outline: none;
+      border-color: var(--color-primary);
+      box-shadow: 0 0 0 3px rgba(88, 101, 242, 0.1);
+    }
+    
+    .btn {
+      width: 100%;
+      padding: 0.75rem;
+      border: none;
+      border-radius: 4px;
+      font-size: 1rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    
+    .btn-primary {
+      background-color: var(--color-primary);
+      color: white;
+    }
+    
+    .btn-primary:hover {
+      background-color: var(--color-primary-hover);
+    }
+    
+    .btn-linkedin {
+      background-color: #0077b5;
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 1.5rem;
+    }
+    
+    .btn-linkedin:hover {
+      background-color: #005e93;
+    }
+    
+    .btn-linkedin svg {
+      margin-right: 0.5rem;
+    }
+    
+    .error-message {
+      color: var(--color-error);
+      margin-bottom: 1.5rem;
+      padding: 0.75rem;
+      border-radius: 4px;
+      background-color: rgba(255, 51, 51, 0.1);
+      display: none;
+    }
+    
+    .feature-list {
+      margin-top: 2rem;
+    }
+    
+    .feature-item {
+      display: flex;
+      align-items: flex-start;
+      margin-bottom: 1rem;
+    }
+    
+    .feature-item svg {
+      flex-shrink: 0;
+      margin-right: 0.75rem;
+      margin-top: 0.25rem;
+    }
+    
+    /* Form states */
+    .login-form, .register-form {
+      display: none;
+    }
+    
+    .login-form.active, .register-form.active {
+      display: block;
+    }
+    
+    @media (max-width: 768px) {
+      .auth-container {
+        flex-direction: column;
+        height: auto;
+        max-width: 90%;
+      }
+      
+      .auth-hero {
+        padding: 2rem;
+      }
+      
+      .auth-form {
+        padding: 2rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="auth-container">
+    <div class="auth-form">
+      <h1>PrepTalk</h1>
+      <p>Sign in to access personalized interview preparation</p>
+      
+      <div id="error-message" class="error-message"></div>
+      
+      <div class="tab-buttons">
+        <button id="login-tab" class="tab-button active">Login</button>
+        <button id="register-tab" class="tab-button">Register</button>
+      </div>
+      
+      <div id="login-form" class="login-form active">
+        <button id="linkedin-login" class="btn btn-linkedin">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/>
+          </svg>
+          Login with LinkedIn
+        </button>
+        
+        <form id="login-email-form">
+          <div class="form-group">
+            <label for="login-username">Username</label>
+            <input type="text" id="login-username" name="username" required>
+          </div>
+          <div class="form-group">
+            <label for="login-password">Password</label>
+            <input type="password" id="login-password" name="password" required>
+          </div>
+          <button type="submit" class="btn btn-primary">Login</button>
+        </form>
+      </div>
+      
+      <div id="register-form" class="register-form">
+        <button id="linkedin-register" class="btn btn-linkedin">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/>
+          </svg>
+          Register with LinkedIn
+        </button>
+        
+        <form id="register-email-form">
+          <div class="form-group">
+            <label for="register-username">Username</label>
+            <input type="text" id="register-username" name="username" required>
+          </div>
+          <div class="form-group">
+            <label for="register-email">Email</label>
+            <input type="email" id="register-email" name="email" required>
+          </div>
+          <div class="form-group">
+            <label for="register-password">Password</label>
+            <input type="password" id="register-password" name="password" required>
+          </div>
+          <div class="form-group">
+            <label for="register-confirm-password">Confirm Password</label>
+            <input type="password" id="register-confirm-password" name="confirmPassword" required>
+          </div>
+          <button type="submit" class="btn btn-primary">Register</button>
+        </form>
+      </div>
+    </div>
+    
+    <div class="auth-hero">
+      <h1>Ace Your Interviews</h1>
+      <p>PrepTalk analyzes job postings and your profile to create personalized interview preparations that help you stand out.</p>
+      
+      <div class="feature-list">
+        <div class="feature-item">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+          </svg>
+          <div>
+            <strong>AI-Powered Analysis</strong>
+            <div>Job requirements and your experience analyzed by advanced AI</div>
+          </div>
+        </div>
+        
+        <div class="feature-item">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+          </svg>
+          <div>
+            <strong>Personalized Talking Points</strong>
+            <div>Highlighting your specific achievements and experiences</div>
+          </div>
+        </div>
+        
+        <div class="feature-item">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+          </svg>
+          <div>
+            <strong>Response Grading</strong>
+            <div>Get feedback on your interview answers and improve</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    // Tab switching functionality
+    const loginTab = document.getElementById('login-tab');
+    const registerTab = document.getElementById('register-tab');
+    const loginForm = document.getElementById('login-form');
+    const registerForm = document.getElementById('register-form');
+    
+    loginTab.addEventListener('click', () => {
+      loginTab.classList.add('active');
+      registerTab.classList.remove('active');
+      loginForm.classList.add('active');
+      registerForm.classList.remove('active');
+    });
+    
+    registerTab.addEventListener('click', () => {
+      registerTab.classList.add('active');
+      loginTab.classList.remove('active');
+      registerForm.classList.add('active');
+      loginForm.classList.remove('active');
+    });
+    
+    // LinkedIn login
+    document.getElementById('linkedin-login').addEventListener('click', async () => {
+      try {
+        const response = await fetch('/api/auth/linkedin/robust-url');
+        const data = await response.json();
+        if (data.url) {
+          window.location.href = data.url;
+        } else {
+          showError('Failed to generate LinkedIn authorization URL');
+        }
+      } catch (error) {
+        showError('Error connecting to LinkedIn');
+        console.error(error);
+      }
+    });
+    
+    // LinkedIn register (same functionality as login)
+    document.getElementById('linkedin-register').addEventListener('click', async () => {
+      try {
+        const response = await fetch('/api/auth/linkedin/robust-url');
+        const data = await response.json();
+        if (data.url) {
+          window.location.href = data.url;
+        } else {
+          showError('Failed to generate LinkedIn authorization URL');
+        }
+      } catch (error) {
+        showError('Error connecting to LinkedIn');
+        console.error(error);
+      }
+    });
+    
+    // Show error message
+    function showError(message) {
+      const errorElement = document.getElementById('error-message');
+      errorElement.textContent = message;
+      errorElement.style.display = 'block';
+    }
+    
+    // Handle email login form
+    document.getElementById('login-email-form').addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const username = document.getElementById('login-username').value;
+      const password = document.getElementById('login-password').value;
+      
+      try {
+        const response = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password })
+        });
+        
+        if (response.ok) {
+          window.location.href = '/';
+        } else {
+          const error = await response.json();
+          showError(error.error || 'Invalid username or password');
+        }
+      } catch (error) {
+        showError('Error during login');
+        console.error(error);
+      }
+    });
+    
+    // Handle email registration form
+    document.getElementById('register-email-form').addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const username = document.getElementById('register-username').value;
+      const email = document.getElementById('register-email').value;
+      const password = document.getElementById('register-password').value;
+      const confirmPassword = document.getElementById('register-confirm-password').value;
+      
+      if (password !== confirmPassword) {
+        return showError('Passwords do not match');
+      }
+      
+      try {
+        const response = await fetch('/api/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, email, password })
+        });
+        
+        if (response.ok) {
+          window.location.href = '/';
+        } else {
+          const error = await response.json();
+          showError(error.error || 'Registration failed');
+        }
+      } catch (error) {
+        showError('Error during registration');
+        console.error(error);
+      }
+    });
+    
+    // Check for error parameter in URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const errorParam = urlParams.get('error');
+    
+    if (errorParam === 'linkedin') {
+      showError('LinkedIn authentication failed. Please try again or use email login.');
+    } else if (errorParam === 'profile') {
+      showError('Could not retrieve your LinkedIn profile. Please try again or use email login.');
+    }
+  </script>
+</body>
+</html>

@@ -69,12 +69,12 @@ export class LinkedInProvider {
     if (!config.clientId) throw new Error("LinkedIn client ID is required");
     if (!config.clientSecret) throw new Error("LinkedIn client secret is required");
     
-    // Set defaults
+    // Set defaults with the spread first to avoid overriding
     this.config = {
+      ...config,
       callbackPath: config.callbackPath || '/api/auth/linkedin/callback',
       scope: config.scope || 'r_liteprofile r_emailaddress',
-      handleError: config.handleError || defaultErrorHandler,
-      ...config
+      handleError: config.handleError || defaultErrorHandler
     };
   }
   

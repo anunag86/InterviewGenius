@@ -1,5 +1,5 @@
 import { db } from "@db";
-import { interviewPreps } from "@shared/schema";
+import { interviewPreps, users } from "@shared/schema";
 import { eq, lt, desc, and, isNull } from "drizzle-orm";
 import { addDays } from "date-fns";
 
@@ -7,6 +7,113 @@ import { addDays } from "date-fns";
  * Storage interface for persisting and retrieving data
  */
 export const storage = {
+  // User Authentication Methods
+  
+  // Get user by ID
+  getUser: async (id: number) => {
+    try {
+      const result = await db.select()
+        .from(users)
+        .where(eq(users.id, id))
+        .limit(1);
+      
+      return result.length > 0 ? result[0] : null;
+    } catch (error) {
+      console.error("Error getting user:", error);
+      return null;
+    }
+  },
+  
+  // Get user by LinkedIn ID
+  getUserByLinkedInId: async (linkedinId: string) => {
+    try {
+      const result = await db.select()
+        .from(users)
+        .where(eq(users.linkedinId, linkedinId))
+        .limit(1);
+      
+      return result.length > 0 ? result[0] : null;
+    } catch (error) {
+      console.error("Error getting user by LinkedIn ID:", error);
+      return null;
+    }
+  },
+  
+  // Get user by username
+  getUserByUsername: async (username: string) => {
+    try {
+      const result = await db.select()
+        .from(users)
+        .where(eq(users.username, username))
+        .limit(1);
+      
+      return result.length > 0 ? result[0] : null;
+    } catch (error) {
+      console.error("Error getting user by username:", error);
+      return null;
+    }
+  },
+  
+  // Create a new user from LinkedIn profile
+  createUserFromLinkedIn: async (userData: {
+    linkedinId: string;
+    username: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+    profilePictureUrl?: string;
+    linkedinProfileUrl?: string;
+  }) => {
+    try {
+      // Ensure username is unique by adding a random suffix if needed
+      let uniqueUsername = userData.username;
+      let usernameExists = await storage.getUserByUsername(uniqueUsername);
+      
+      // If username exists, add random suffix until unique
+      if (usernameExists) {
+        let attempts = 0;
+        while (usernameExists && attempts < 10) {
+          const randomSuffix = Math.floor(Math.random() * 1000);
+          uniqueUsername = `${userData.username}${randomSuffix}`;
+          usernameExists = await storage.getUserByUsername(uniqueUsername);
+          attempts++;
+        }
+      }
+      
+      // Create the user with sanitized data
+      const result = await db.insert(users).values({
+        username: uniqueUsername,
+        linkedinId: userData.linkedinId,
+        email: userData.email,
+        firstName: userData.firstName,
+        lastName: userData.lastName,
+        displayName: `${userData.firstName} ${userData.lastName}`,
+        profilePictureUrl: userData.profilePictureUrl || '',
+        linkedinProfileUrl: userData.linkedinProfileUrl || '',
+        lastLoginAt: new Date()
+      }).returning();
+      
+      return result[0];
+    } catch (error) {
+      console.error("Error creating user from LinkedIn:", error);
+      throw error;
+    }
+  },
+  
+  // Update user's last login time
+  updateLastLogin: async (userId: number) => {
+    try {
+      await db.update(users)
+        .set({ lastLoginAt: new Date() })
+        .where(eq(users.id, userId));
+      return true;
+    } catch (error) {
+      console.error("Error updating last login:", error);
+      return false;
+    }
+  },
+  
+  // Interview Preparation Methods
   // Save an interview preparation to the database
   saveInterviewPrep: async (id: string, data: any, jobUrl: string, resumeText: string, linkedinUrl?: string) => {
     try {

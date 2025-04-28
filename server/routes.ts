@@ -24,6 +24,7 @@ import { generateQuickTestUrl, handleQuickTestCallback } from "./controllers/qui
 import { debugRequestHeaders } from "./controllers/debugRequestHeaders";
 import { handleMinimalCallback } from "./controllers/minimalCallbackHandler";
 import { generateAutoDetectAuthUrl, handleAutoDetectCallback } from "./controllers/autoDetectAuth";
+import { getLinkedInRobustAuthUrl, handleLinkedInRobustCallback, renderAuthPage } from "./controllers/robustAuth";
 import { 
   testSystematicConnection,
   testSystematicCredentials,
@@ -74,10 +75,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/feedback", submitFeedback);
   
   // Auth endpoints
-  app.get("/api/auth/linkedin/url", getLinkedInAuthUrl);
-  app.get("/api/auth/linkedin/callback", handleLinkedInCallback);
+  app.get("/api/auth/linkedin/url", getLinkedInAuthUrl); // Legacy endpoint
+  app.get("/api/auth/linkedin/callback", handleLinkedInCallback); // Legacy endpoint
   app.get("/api/auth/me", getCurrentUser);
   app.post("/api/auth/logout", logout);
+  
+  // New robust auth endpoints
+  app.get("/auth", renderAuthPage);
+  app.get("/api/auth/linkedin/robust-url", getLinkedInRobustAuthUrl);
+  app.get("/api/auth/linkedin/robust-callback", handleLinkedInRobustCallback);
   
   // Special direct LinkedIn connect endpoints
   app.get("/linkedin", (req, res) => {
