@@ -174,13 +174,13 @@ async function processInterviewPrep(prepId: string, resumeFile: Express.Multer.F
     // Keep track of all agent thoughts
     let allThoughts: AgentThought[] = [];
     
-    // Step 1: Analyze the job posting
+    // Step 1: Job Researcher Agent - Analyze the job posting, LinkedIn, and company career page
     interviewPreps.set(prepId, {
       ...interviewPreps.get(prepId),
       progress: AgentStep.JOB_RESEARCH
     });
     
-    // Get job analysis with agents' thoughts
+    // Get comprehensive job analysis with agents' thoughts
     const jobResearchResult = await analyzeJobPosting(jobUrl, linkedinUrl || undefined);
     const jobAnalysis = jobResearchResult.analysis as JobAnalysis;
     allThoughts = [...allThoughts, ...jobResearchResult.thoughts];
@@ -191,7 +191,22 @@ async function processInterviewPrep(prepId: string, resumeFile: Express.Multer.F
       agentThoughts: allThoughts
     });
     
-    // Step 2: Analyze the resume
+    // Research company career page to get additional information
+    const careerPageResult = await researchCompanyCareerPage(
+      jobAnalysis.companyName || "Company", 
+      jobAnalysis.jobTitle || "Job Title"
+    );
+    allThoughts = [...allThoughts, ...careerPageResult.thoughts];
+    
+    // Extract basic job details for other agents
+    const jobDetails = {
+      company: jobAnalysis.companyName || "",
+      title: jobAnalysis.jobTitle || "",
+      location: jobAnalysis.location || "",
+      skills: jobAnalysis.requiredSkills || []
+    };
+    
+    // Step 2: Profiler Agent - Analyze the resume and LinkedIn profile
     interviewPreps.set(prepId, {
       ...interviewPreps.get(prepId),
       progress: AgentStep.PROFILE_ANALYSIS
@@ -201,10 +216,15 @@ async function processInterviewPrep(prepId: string, resumeFile: Express.Multer.F
     const extractedText = await mammoth.extractRawText({ buffer: resumeFile.buffer });
     const resumeText = extractedText.value;
     
-    // Get profile analysis with agents' thoughts
+    // Get comprehensive profile analysis
     const profileResult = await analyzeResume(resumeText, linkedinUrl);
     const profileAnalysis = profileResult.analysis;
     allThoughts = [...allThoughts, ...profileResult.thoughts];
+    
+    // Use the job analysis to extract specific skills for targeted search
+    const requiredSkills = jobAnalysis.requiredSkills || [];
+    const skillsResult = await findSpecificSkills(resumeText, requiredSkills);
+    allThoughts = [...allThoughts, ...skillsResult.thoughts];
     
     // Update in-memory storage with agent thoughts
     interviewPreps.set(prepId, {
@@ -212,19 +232,7 @@ async function processInterviewPrep(prepId: string, resumeFile: Express.Multer.F
       agentThoughts: allThoughts
     });
     
-    // Step 3: Research company career page to get additional information
-    const careerPageResult = await researchCompanyCareerPage(
-      jobAnalysis.companyName || "Company", 
-      jobAnalysis.jobTitle || "Job Title"
-    );
-    allThoughts = [...allThoughts, ...careerPageResult.thoughts];
-    
-    // Use the job analysis to extract specific skills for targeted search
-    const requiredSkills = jobAnalysis.requiredSkills || [];
-    const skillsResult = await findSpecificSkills(resumeText, requiredSkills);
-    allThoughts = [...allThoughts, ...skillsResult.thoughts];
-    
-    // Step 4: Generate candidate highlights
+    // Step 3: Highlighter Agent - Generate relevant points and gap areas
     interviewPreps.set(prepId, {
       ...interviewPreps.get(prepId),
       progress: AgentStep.HIGHLIGHT_GENERATION
@@ -240,7 +248,7 @@ async function processInterviewPrep(prepId: string, resumeFile: Express.Multer.F
       agentThoughts: allThoughts
     });
     
-    // Step 5: Research company and role
+    // Step 4: Interview Role Researcher Agent - Research company culture and business
     interviewPreps.set(prepId, {
       ...interviewPreps.get(prepId),
       progress: AgentStep.COMPANY_RESEARCH
@@ -259,7 +267,7 @@ async function processInterviewPrep(prepId: string, resumeFile: Express.Multer.F
       agentThoughts: allThoughts
     });
     
-    // Step 6: Research interview patterns
+    // Step 5: Interview Pattern Researcher Agent - Research interview structure and patterns
     interviewPreps.set(prepId, {
       ...interviewPreps.get(prepId),
       progress: AgentStep.INTERVIEW_PATTERN_RESEARCH
@@ -278,19 +286,11 @@ async function processInterviewPrep(prepId: string, resumeFile: Express.Multer.F
       agentThoughts: allThoughts
     });
     
-    // Step 7: Generate interview questions with interviewer agent
+    // Step 6: Interviewer Preparer Agent - Generate interview questions for each round
     interviewPreps.set(prepId, {
       ...interviewPreps.get(prepId),
       progress: AgentStep.INTERVIEWER_AGENT
     });
-    
-    // Extract basic job details for the interviewer agent
-    const jobDetails = {
-      company: jobAnalysis.companyName || "",
-      title: jobAnalysis.jobTitle || "",
-      location: jobAnalysis.location || "",
-      skills: jobAnalysis.requiredSkills || []
-    };
     
     // Generate questions through the interviewer agent
     const interviewerResult = await generateInterviewQuestions(
@@ -310,13 +310,12 @@ async function processInterviewPrep(prepId: string, resumeFile: Express.Multer.F
       agentThoughts: allThoughts
     });
     
-    // Step 8.1: Generate high-level narrative guidance with Candidate_narrative agent
+    // Step 7: Candidate Narrative Agent - Generate high-level narrative guidance
     interviewPreps.set(prepId, {
       ...interviewPreps.get(prepId),
       progress: AgentStep.CANDIDATE_NARRATIVE_AGENT
     });
     
-    // First, generate high-level narrative guidance based on the interview questions
     const candidateNarrativeResult = await generateCandidateNarrative(
       interviewRounds,
       profileAnalysis,
@@ -332,8 +331,7 @@ async function processInterviewPrep(prepId: string, resumeFile: Express.Multer.F
       agentThoughts: allThoughts
     });
     
-    // Step 8.2: Generate specific talking points with Candidate_points agent
-    // This agent extracts concrete examples from resume to support the narrative
+    // Step 8: Candidate Points Agent - Generate specific talking points from resume
     interviewPreps.set(prepId, {
       ...interviewPreps.get(prepId),
       progress: AgentStep.CANDIDATE_POINTS_AGENT
@@ -378,13 +376,13 @@ async function processInterviewPrep(prepId: string, resumeFile: Express.Multer.F
       agentThoughts: allThoughts
     });
     
-    // Step 10: Quality check all results
+    // Step 10: Quality Agent - Ensure all agent outputs meet quality standards
     interviewPreps.set(prepId, {
       ...interviewPreps.get(prepId),
       progress: AgentStep.QUALITY_CHECK
     });
     
-    // Ensure the interviewPrep object has the proper data structure with enhancedRounds
+    // Prepare the complete interview prep data
     let interviewPrepData: InterviewPrep = {
       id: prepId,
       jobDetails,
@@ -394,12 +392,13 @@ async function processInterviewPrep(prepId: string, resumeFile: Express.Multer.F
       agentThoughts: allThoughts
     };
     
-    // Store the updated interview prep with enhanced rounds that include narratives
+    // Store the updated interview prep with all data
     interviewPreps.set(prepId, {
       ...interviewPreps.get(prepId),
       result: interviewPrepData
     });
     
+    // Validate the interview prep data with the quality agent
     const qualityCheckResult = await validateInterviewPrep(
       jobUrl,
       jobDetails,
