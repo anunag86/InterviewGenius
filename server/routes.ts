@@ -20,6 +20,7 @@ import {
   checkOAuthEnvironment,
   generateAllPossibleRedirectUris
 } from "./controllers/linkedinDebug";
+import { generateQuickTestUrl, handleQuickTestCallback } from "./controllers/quickTest";
 
 // Configure multer for memory storage (files are processed in memory)
 const upload = multer({
@@ -171,6 +172,112 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/callback", handleUniversalCallback);
   app.get("/api/auth/callback", handleUniversalCallback);
   // Original callback path is already registered
+  
+  // Quick test routes - simplified minimal OAuth flow
+  app.get("/api/quicktest/url", generateQuickTestUrl);
+  app.get("/api/quicktest/callback", handleQuickTestCallback);
+  
+  // Quick test HTML page
+  app.get("/linkedin/quicktest", (req, res) => {
+    res.send(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>LinkedIn Quick Test</title>
+        <style>
+          body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            margin: 0;
+            padding: 20px;
+            line-height: 1.5;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+          }
+          h1 {
+            color: #0077B5;
+          }
+          .info-box {
+            background-color: #f0f7ff;
+            border-left: 4px solid #0077B5;
+            padding: 15px;
+            margin: 20px 0;
+          }
+          button {
+            background-color: #0077B5;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+          }
+          button:hover {
+            background-color: #005e93;
+          }
+          #result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 4px;
+            background-color: #f5f5f5;
+            display: none;
+          }
+        </style>
+      </head>
+      <body>
+        <h1>LinkedIn Quick Test</h1>
+        
+        <div class="info-box">
+          <p>This is a simplified test of the LinkedIn OAuth flow. It tests only the authorization request and redirect handling, without completing the token exchange.</p>
+          <p>Use this to verify that your LinkedIn application's redirect URI settings are correct.</p>
+        </div>
+        
+        <button id="start-test">Run Quick Test</button>
+        
+        <div id="result"></div>
+        
+        <script>
+          document.getElementById('start-test').addEventListener('click', async () => {
+            try {
+              document.getElementById('result').style.display = 'block';
+              document.getElementById('result').innerHTML = 'Loading...';
+              
+              const response = await fetch('/api/quicktest/url');
+              const data = await response.json();
+              
+              if (data.error) {
+                document.getElementById('result').innerHTML = \`
+                  <h3 style="color: #d00;">Error</h3>
+                  <p>\${data.error}</p>
+                  <pre>\${JSON.stringify(data, null, 2)}</pre>
+                \`;
+              } else {
+                document.getElementById('result').innerHTML = \`
+                  <h3 style="color: #0077B5;">Test Ready</h3>
+                  <p>LinkedIn authorization URL generated successfully.</p>
+                  <p><strong>Redirect URI:</strong> \${data.redirectUri}</p>
+                  <p><strong>Client ID:</strong> \${data.clientIdPrefix}</p>
+                  <p>Click the button below to start the authentication flow:</p>
+                  <button onclick="window.location.href='\${data.url}'">Start Authentication</button>
+                  <hr>
+                  <details>
+                    <summary>Technical Details</summary>
+                    <pre>\${JSON.stringify(data, null, 2)}</pre>
+                  </details>
+                \`;
+              }
+            } catch (error) {
+              document.getElementById('result').innerHTML = \`
+                <h3 style="color: #d00;">Error</h3>
+                <p>\${error.message}</p>
+              \`;
+            }
+          });
+        </script>
+      </body>
+      </html>
+    `);
+  });
   
   // Direct auth route - no JavaScript intermediary
   app.get("/linkedin/auth", (req, res) => {

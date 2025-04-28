@@ -164,15 +164,54 @@
     document.addEventListener('DOMContentLoaded', async () => {
       const baseUrl = window.location.origin;
       
+      // Check if this is a Replit environment
+      const isReplit = window.location.hostname.includes('replit.dev') || 
+                       window.location.hostname.includes('repl.co');
+      
+      // Get the appropriate domain for redirect URIs
+      let domainForRedirect;
+      
+      if (isReplit) {
+        // Get Replit domain
+        const hostname = window.location.hostname;
+        
+        if (hostname.includes('replit.dev')) {
+          // Development environment - use hostname directly
+          domainForRedirect = `https://${hostname}`;
+        } else if (hostname.includes('repl.co')) {
+          // Production environment - use hostname directly since it's already correct
+          domainForRedirect = `https://${hostname}`;
+        } else {
+          // Fallback to baseUrl
+          domainForRedirect = baseUrl;
+        }
+      } else {
+        // Not Replit - use baseUrl
+        domainForRedirect = baseUrl;
+      }
+      
+      // Add info about detected environment
+      const infoBox = document.querySelector('.info-box');
+      if (isReplit) {
+        infoBox.innerHTML += `
+          <div style="margin-top: 15px; padding: 10px; background: #e6f7ff; border-radius: 4px;">
+            <h4>Environment Information</h4>
+            <p><strong>Replit Environment Detected</strong></p>
+            <p>Using domain: <code>${domainForRedirect}</code></p>
+            <p>Make sure this exact domain is authorized in your LinkedIn Developer Console.</p>
+          </div>
+        `;
+      }
+      
       // Set callback URIs for the instructions
-      document.getElementById('callback-uri-1').textContent = `${baseUrl}/callback`;
-      document.getElementById('callback-uri-2').textContent = `${baseUrl}/api/callback`;
-      document.getElementById('callback-uri-3').textContent = `${baseUrl}/api/auth/linkedin/callback`;
+      document.getElementById('callback-uri-1').textContent = `${domainForRedirect}/callback`;
+      document.getElementById('callback-uri-2').textContent = `${domainForRedirect}/api/callback`;
+      document.getElementById('callback-uri-3').textContent = `${domainForRedirect}/api/auth/linkedin/callback`;
       
       // Set up the test links
-      const simpleUri = `${baseUrl}/callback`;
-      const apiUri = `${baseUrl}/api/callback`;
-      const defaultUri = `${baseUrl}/api/auth/linkedin/callback`;
+      const simpleUri = `${domainForRedirect}/callback`;
+      const apiUri = `${domainForRedirect}/api/callback`;
+      const defaultUri = `${domainForRedirect}/api/auth/linkedin/callback`;
       
       document.getElementById('simple-uri').textContent = simpleUri;
       document.getElementById('api-uri').textContent = apiUri;

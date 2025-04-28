@@ -476,13 +476,58 @@
         addLog(`Error fetching environment: ${error.message}`, 'error');
       }
       
-      // Generate redirect URIs
-      const redirectUris = [
-        `${baseUrl}/callback`,
-        `${baseUrl}/api/callback`,
-        `${baseUrl}/api/auth/callback`,
-        `${baseUrl}/api/auth/linkedin/callback`
-      ];
+      // Generate redirect URIs - with special handling for Replit environment
+      let redirectUris = [];
+      
+      // Check if this is a Replit environment
+      const isReplit = window.location.hostname.includes('replit.dev') || 
+                       window.location.hostname.includes('repl.co');
+      
+      if (isReplit) {
+        // For Replit, ensure we're using the correct domain format
+        let replitDomain;
+        const hostname = window.location.hostname;
+        
+        if (hostname.includes('replit.dev')) {
+          // Development environment
+          replitDomain = `https://${hostname}`;
+        } else if (hostname.includes('repl.co')) {
+          // Production environment
+          replitDomain = `https://${hostname}`;
+        } else {
+          // Fallback to baseUrl
+          replitDomain = baseUrl;
+        }
+        
+        redirectUris = [
+          `${replitDomain}/callback`,
+          `${replitDomain}/api/callback`,
+          `${replitDomain}/api/auth/callback`,
+          `${replitDomain}/api/auth/linkedin/callback`
+        ];
+        
+        // Add info about Replit environment
+        const redirectUriStatus = document.getElementById('redirect-uri-status');
+        redirectUriStatus.innerHTML += `
+          <div style="margin-top: 15px; padding: 10px; background: #e6f7ff; border-radius: 4px;">
+            <h4>Replit Environment Detected</h4>
+            <p>Using Replit domain: <code>${replitDomain}</code></p>
+            <p>Make sure this exact domain is authorized in your LinkedIn Developer Console.</p>
+          </div>
+        `;
+        
+        addLog(`Replit environment detected. Using domain: ${replitDomain}`);
+      } else {
+        // Standard local environment
+        redirectUris = [
+          `${baseUrl}/callback`,
+          `${baseUrl}/api/callback`,
+          `${baseUrl}/api/auth/callback`,
+          `${baseUrl}/api/auth/linkedin/callback`
+        ];
+        
+        addLog(`Standard environment detected. Using baseUrl: ${baseUrl}`);
+      }
       
       const redirectUrisList = document.getElementById('redirect-uris-list');
       const redirectUriSelect = document.getElementById('redirect-uri-select');
