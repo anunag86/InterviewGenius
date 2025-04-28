@@ -145,6 +145,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.sendFile('linkedin-test.html', { root: './client/public' });
   });
   
+  app.get("/linkedin/direct-test", (req, res) => {
+    res.sendFile('linkedin-direct-test.html', { root: './client/public' });
+  });
+  
   // Credentials check endpoint
   app.get("/api/linkedin/check-credentials", checkLinkedInCredentials);
   

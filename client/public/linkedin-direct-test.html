@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LinkedIn Direct Connection Test</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+      margin: 0;
+      padding: 20px;
+      line-height: 1.5;
+      color: #333;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    h1, h2 {
+      color: #0077B5;
+    }
+    .container {
+      margin-top: 30px;
+    }
+    .test-section {
+      background: #f7f9fa;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    .status-box {
+      padding: 15px;
+      border-radius: 5px;
+      margin: 15px 0;
+    }
+    .error {
+      background-color: #fff0f0;
+      border-left: 4px solid #d00;
+    }
+    .success {
+      background-color: #f0fff0;
+      border-left: 4px solid #0a0;
+    }
+    .info {
+      background-color: #f0f7ff;
+      border-left: 4px solid #0077B5;
+    }
+    pre {
+      background-color: #f5f5f5;
+      padding: 10px;
+      border-radius: 4px;
+      overflow-x: auto;
+      white-space: pre-wrap;
+    }
+    .button {
+      display: inline-block;
+      background-color: #0077B5;
+      color: white;
+      text-decoration: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      margin: 10px 0;
+      font-weight: bold;
+      border: none;
+      cursor: pointer;
+    }
+    .button:hover {
+      background-color: #005e93;
+    }
+    input[type="text"] {
+      width: 100%;
+      padding: 10px;
+      margin: 5px 0 15px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      box-sizing: border-box;
+    }
+    label {
+      font-weight: bold;
+    }
+    .fix-list {
+      padding-left: 20px;
+    }
+    .fix-list li {
+      margin-bottom: 10px;
+    }
+    .copy-button {
+      background-color: #eee;
+      color: #333;
+      border: 1px solid #ddd;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 12px;
+      margin-left: 6px;
+      cursor: pointer;
+    }
+    .copy-button:hover {
+      background-color: #ddd;
+    }
+  </style>
+</head>
+<body>
+  <h1>LinkedIn Direct Connection Test</h1>
+  
+  <div class="status-box info">
+    <h3>Connection Status</h3>
+    <p>You're seeing a "LinkedIn refused to connect" error. This is usually caused by one of these issues:</p>
+    <ol class="fix-list">
+      <li><strong>Wrong Redirect URI</strong> - The redirect URI in LinkedIn's Developer Console doesn't match what we're using</li>
+      <li><strong>Invalid Client ID or Secret</strong> - The credentials might be incorrect or expired</li>
+      <li><strong>Application Permissions</strong> - Your LinkedIn app needs permission for the required scopes</li>
+      <li><strong>Network Blocking</strong> - LinkedIn might be blocking requests from this environment</li>
+    </ol>
+  </div>
+  
+  <div class="test-section">
+    <h2>1. Check Credentials</h2>
+    <div id="credentials-status"></div>
+    <button id="check-credentials" class="button">Check Current Credentials</button>
+  </div>
+  
+  <div class="test-section">
+    <h2>2. Test Direct Connection</h2>
+    <p>This bypasses our API and connects directly to LinkedIn with your chosen credentials:</p>
+    
+    <div>
+      <label for="client-id">Client ID:</label>
+      <input type="text" id="client-id" placeholder="e.g., 86t5psw5yh4oj0">
+      
+      <label for="redirect-uri">Redirect URI:</label>
+      <input type="text" id="redirect-uri">
+      
+      <div id="uri-options"></div>
+      
+      <button id="test-connection" class="button">Test Direct Connection</button>
+    </div>
+  </div>
+  
+  <div class="test-section">
+    <h2>3. LinkedIn Developer Console Settings</h2>
+    <p>Make sure your LinkedIn Developer Console settings match these exactly:</p>
+    
+    <div>
+      <h4>Required Redirect URIs:</h4>
+      <div id="required-uris"></div>
+      
+      <h4>OAuth 2.0 Scopes:</h4>
+      <ul>
+        <li><code>r_liteprofile</code> - Basic profile information</li>
+        <li><code>r_emailaddress</code> - Email address</li>
+      </ul>
+      
+      <h4>Application Permissions:</h4>
+      <p>Ensure your application has the "Sign In with LinkedIn" product added and that it's been approved for use.</p>
+    </div>
+  </div>
+  
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      const baseUrl = window.location.origin;
+      
+      // Set redirect URI field
+      document.getElementById('redirect-uri').value = `${baseUrl}/callback`;
+      
+      // Generate URI options
+      const uriOptions = [
+        `${baseUrl}/callback`,
+        `${baseUrl}/api/callback`,
+        `${baseUrl}/api/auth/callback`,
+        `${baseUrl}/api/auth/linkedin/callback`
+      ];
+      
+      const uriOptionsHtml = uriOptions.map(uri => `
+        <div style="margin-bottom: 5px;">
+          <input type="radio" name="uri-option" id="uri-${encodeURIComponent(uri)}" value="${uri}" ${uri === uriOptions[0] ? 'checked' : ''}>
+          <label for="uri-${encodeURIComponent(uri)}">${uri}</label>
+          <button class="copy-button" data-uri="${uri}">Copy</button>
+        </div>
+      `).join('');
+      
+      document.getElementById('uri-options').innerHTML = uriOptionsHtml;
+      
+      // Add copy button functionality
+      document.querySelectorAll('.copy-button').forEach(button => {
+        button.addEventListener('click', () => {
+          const uri = button.getAttribute('data-uri');
+          navigator.clipboard.writeText(uri);
+          button.textContent = 'Copied!';
+          setTimeout(() => {
+            button.textContent = 'Copy';
+          }, 2000);
+        });
+      });
+      
+      // Set required URIs
+      const requiredUrisHtml = uriOptions.map(uri => `
+        <div style="margin-bottom: 10px;">
+          <code>${uri}</code>
+          <button class="copy-button" data-uri="${uri}">Copy</button>
+        </div>
+      `).join('');
+      
+      document.getElementById('required-uris').innerHTML = requiredUrisHtml;
+      
+      // Check credentials button
+      document.getElementById('check-credentials').addEventListener('click', async () => {
+        try {
+          const credentialsStatus = document.getElementById('credentials-status');
+          credentialsStatus.innerHTML = '<p>Checking credentials...</p>';
+          
+          const response = await fetch('/api/linkedin/check-credentials');
+          const data = await response.json();
+          
+          if (data.clientIdExists && data.clientSecretExists) {
+            credentialsStatus.innerHTML = `
+              <div class="status-box success">
+                <h3>✓ Credentials Found</h3>
+                <p>Client ID: <code>${data.clientIdPrefix}...</code> (should start with <code>86t5...</code>)</p>
+                <p>Client Secret: <code>${data.clientSecretPrefix}...</code> (should start with <code>WPL_...</code>)</p>
+                <p>Checked at: ${new Date(data.timestamp).toLocaleTimeString()}</p>
+              </div>
+            `;
+            
+            // Pre-fill client ID field
+            document.getElementById('client-id').value = data.clientIdPrefix === '86t5' ? 
+              '86t5psw5yh4oj0' : 
+              (data.clientIdExists ? 'Current ID may be incorrect' : '');
+            
+          } else {
+            credentialsStatus.innerHTML = `
+              <div class="status-box error">
+                <h3>⚠ Credential Issues</h3>
+                <p>Client ID: ${data.clientIdExists ? `<span style="color:green">✓ Found (${data.clientIdPrefix}...)</span>` : '<span style="color:red">✗ Missing</span>'}</p>
+                <p>Client Secret: ${data.clientSecretExists ? `<span style="color:green">✓ Found (${data.clientSecretPrefix}...)</span>` : '<span style="color:red">✗ Missing</span>'}</p>
+                <p>Note: Your credentials should be <code>86t5psw5yh4oj0</code> and <code>WPL_AP1.JgMbqw5nJ6BTOojJ.5ErhgA==</code></p>
+              </div>
+            `;
+          }
+        } catch (error) {
+          document.getElementById('credentials-status').innerHTML = `
+            <div class="status-box error">
+              <h3>Error Checking Credentials</h3>
+              <p>${error.message}</p>
+            </div>
+          `;
+        }
+      });
+      
+      // URI radio buttons
+      document.querySelectorAll('input[name="uri-option"]').forEach(radio => {
+        radio.addEventListener('change', () => {
+          document.getElementById('redirect-uri').value = radio.value;
+        });
+      });
+      
+      // Test connection button
+      document.getElementById('test-connection').addEventListener('click', () => {
+        const clientId = document.getElementById('client-id').value.trim();
+        const redirectUri = document.getElementById('redirect-uri').value.trim();
+        
+        if (!clientId) {
+          alert('Please enter a Client ID');
+          return;
+        }
+        
+        if (!redirectUri) {
+          alert('Please enter a Redirect URI');
+          return;
+        }
+        
+        // Generate a random state parameter
+        const state = Math.random().toString(36).substring(2, 12);
+        
+        // Build the LinkedIn auth URL
+        const params = new URLSearchParams({
+          response_type: 'code',
+          client_id: clientId,
+          redirect_uri: redirectUri,
+          state: state,
+          scope: 'r_liteprofile r_emailaddress'
+        });
+        
+        const authUrl = `https://www.linkedin.com/oauth/v2/authorization?${params.toString()}`;
+        
+        // Navigate to LinkedIn
+        window.location.href = authUrl;
+      });
+      
+      // Trigger credentials check on load
+      document.getElementById('check-credentials').click();
+    });
+  </script>
+</body>
+</html>
