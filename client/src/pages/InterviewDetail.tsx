@@ -17,14 +17,17 @@ const InterviewDetail = () => {
   const [, setLocation] = useLocation();
   const [isLoading, setIsLoading] = useState(true);
   const [interviewPrep, setInterviewPrep] = useState<InterviewPrep | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<{title: string; message: string} | null>(null);
   
   const interviewId = params.id;
   
   useEffect(() => {
     const fetchInterviewDetails = async () => {
       if (!interviewId) {
-        setError("Invalid interview ID");
+        setError({
+          title: "Invalid Request",
+          message: "No interview ID was provided"
+        });
         setIsLoading(false);
         return;
       }
@@ -36,11 +39,17 @@ const InterviewDetail = () => {
         if (result.status === "completed" && result.result) {
           setInterviewPrep(result.result);
         } else {
-          setError("Interview preparation data is not available or is still processing");
+          setError({
+            title: "Interview Not Available",
+            message: "This interview preparation is not available or is still being processed"
+          });
         }
       } catch (error) {
         console.error("Error fetching interview details:", error);
-        setError("Failed to load interview preparation details");
+        setError({
+          title: "Failed to Load",
+          message: "We couldn't load this interview preparation. It may have expired or been deleted."
+        });
         toast({
           title: "Error",
           description: "Failed to load interview details.",
@@ -80,26 +89,22 @@ const InterviewDetail = () => {
             <Skeleton className="h-64 w-full" />
           </div>
         ) : error ? (
-          <div className="py-12 text-center">
-            <h2 className="text-xl font-semibold mb-4 text-destructive">{error}</h2>
-            <p className="mb-6 text-muted-foreground">
-              This interview preparation may have expired or been deleted.
-            </p>
-            <Button onClick={handleBackToHistory}>
-              Return to History
-            </Button>
+          <div className="max-w-3xl mx-auto mb-12">
+            <ErrorState
+              title={error.title}
+              message={error.message}
+              onRetry={handleBackToHistory}
+            />
           </div>
         ) : interviewPrep ? (
           <ResultsSection data={interviewPrep} />
         ) : (
-          <div className="py-12 text-center">
-            <h2 className="text-xl font-semibold mb-4">No Data Available</h2>
-            <p className="mb-6 text-muted-foreground">
-              This interview preparation could not be found.
-            </p>
-            <Button onClick={handleBackToHistory}>
-              Return to History
-            </Button>
+          <div className="max-w-3xl mx-auto mb-12">
+            <ErrorState
+              title="No Data Available"
+              message="This interview preparation could not be found. It may have expired or been deleted."
+              onRetry={handleBackToHistory}
+            />
           </div>
         )}
       </main>
