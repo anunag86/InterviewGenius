@@ -64,18 +64,6 @@ const LoadingState = ({ currentStep, agentThoughts = [] }: LoadingStateProps) =>
       text: "Interviewer Preparer Agent",
       description: "Generating tailored questions for each interview round with talking points"
     },
-    { 
-      id: AgentStep.CANDIDATE_NARRATIVE_AGENT, 
-      icon: "book-text", 
-      text: "Narrative Structure Agent",
-      description: "Creating strategic guidance on how to structure your answers" 
-    },
-    { 
-      id: AgentStep.CANDIDATE_POINTS_AGENT, 
-      icon: "list-bullet", 
-      text: "Concrete Examples Agent",
-      description: "Extracting specific examples from your resume to support narratives"
-    },
     {
       id: AgentStep.MEMORY_AGENT,
       icon: "database",

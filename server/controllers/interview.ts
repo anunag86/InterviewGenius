@@ -310,50 +310,9 @@ async function processInterviewPrep(prepId: string, resumeFile: Express.Multer.F
       agentThoughts: allThoughts
     });
     
-    // Step 7: Candidate Narrative Agent - Generate high-level narrative guidance
-    interviewPreps.set(prepId, {
-      ...interviewPreps.get(prepId),
-      progress: AgentStep.CANDIDATE_NARRATIVE_AGENT
-    });
+    // The interviewer agent now includes talking points directly
     
-    const candidateNarrativeResult = await generateCandidateNarrative(
-      interviewRounds,
-      profileAnalysis,
-      candidateHighlights
-    );
-    
-    const roundsWithNarrative = candidateNarrativeResult.rounds;
-    allThoughts = [...allThoughts, ...candidateNarrativeResult.thoughts];
-    
-    // Update in-memory storage with agent thoughts
-    interviewPreps.set(prepId, {
-      ...interviewPreps.get(prepId),
-      agentThoughts: allThoughts
-    });
-    
-    // Step 8: Candidate Points Agent - Generate specific talking points from resume
-    interviewPreps.set(prepId, {
-      ...interviewPreps.get(prepId),
-      progress: AgentStep.CANDIDATE_POINTS_AGENT
-    });
-    
-    const candidatePointsResult = await generateCandidatePoints(
-      roundsWithNarrative,
-      profileAnalysis,
-      candidateHighlights,
-      resumeText
-    );
-    
-    const enhancedRounds = candidatePointsResult.rounds;
-    allThoughts = [...allThoughts, ...candidatePointsResult.thoughts];
-    
-    // Update in-memory storage with agent thoughts
-    interviewPreps.set(prepId, {
-      ...interviewPreps.get(prepId),
-      agentThoughts: allThoughts
-    });
-    
-    // Step 9: Store profile data with memory agent
+    // Step 7: Store profile data with memory agent
     interviewPreps.set(prepId, {
       ...interviewPreps.get(prepId),
       progress: AgentStep.MEMORY_AGENT

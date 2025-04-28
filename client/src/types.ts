@@ -83,7 +83,7 @@ export enum QuestionType {
   ROLE_SPECIFIC = 'role-specific'
 }
 
-// Updated to match the enhanced agent architecture
+// Updated to match the new agentic architecture
 export enum AgentStep {
   JOB_RESEARCH = 0,
   PROFILE_ANALYSIS = 1,
@@ -91,9 +91,7 @@ export enum AgentStep {
   COMPANY_RESEARCH = 3,
   INTERVIEW_PATTERN_RESEARCH = 4,
   INTERVIEWER_AGENT = 5,
-  CANDIDATE_POINTS_AGENT = 6,
-  CANDIDATE_NARRATIVE_AGENT = 7,
-  MEMORY_AGENT = 8,
-  QUALITY_CHECK = 9,
-  COMPLETED = 10
+  MEMORY_AGENT = 6,
+  QUALITY_CHECK = 7,
+  COMPLETED = 8
 }

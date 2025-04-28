@@ -1,0 +1,59 @@
+Let us improve the agentic architecture to improve the quality and add more features to the 
+app. The updated set of agents should be as below:
+1.	Job Researcher agent that takes the job listing URL from the user to research and analyse 
+about the skills and requirements for the role, the hiring company’s hiring patterns, their 
+job requirements. This researcher should also be good at taking the Linkedin URL of the 
+job posting and scrape through the page to researc and analyze the requirements. It 
+should also be able to pick the company and job listing and proceed to the company 
+careers page and search for the role to gather requirements.
+2.	A profiling agent that reads and does semantic search over the user’s resume to 
+understand the user’s skills, job roles and achievement, the impact delivered by the user. 
+The profiler should take the user’s resume and the linkedin profile link as the input and 
+should think like a recruiter, hiring manager as well as a career coach.
+3.	A highlighter agent that takes help from the profiling agent  and job researcher agent 
+and also reads and semantically searches the resume to produce a short insightful 
+summary of the relevant points from the user’s resume for that job role and that 
+company’s usual hiring requirement. It should also give a neutral summary of the points 
+from the user’s resume that are not relevant or clearly against the job listing’s 
+requirement or the company’s hiring requirements. The output should be a short set of 2 
+to 3 lines about the user’s relevance to the job role as well as the company’s usual hiring 
+requirements and then optionally 2 to 3 lines about the user’s lack of fit for the job role 
+and the company’s usual hiring requirements.
+4.	An interview role researcher agent that uses google search extensively to understand the 
+company in which the job is listed, the culture and business as well as the current 
+business projects to highlight relevant to the job role. What are the company's principles 
+that it considers to hire? What are its key culture tenets? The objective of this agent is to 
+produce a short bulleted summary of these points to display to the user and also supply 
+this critical information to the interview preparer agent. It is very helpful to direct the 
+user to more public URLs about the company as well.
+5.	An interview pattern researcher agent that uses google search extensively to understand 
+the interviewing structure of the hiring company, their key interviewing patterns and 
+what they look for in candidates in terms of role fit, cultural fit and qualifications. The 
+objective of this role is to identify expected number of interviews and focus of each of 
+these interviews so that the interview preparer can prepare questions for each round. If 
+the agent is not able to find any relevant information after extensive google search, in 
+the worst case scenario, and as a last resort, it can revert to using industry level patterns 
+about the expected interviews in that industry for such a role.
+6.	An interviewer preparer agent that uses google search to understand the interviewing 
+structure of the hiring company, and generates a mix of atleast 5 questions for each of 
+the interview rounds identified by the interview pattern researcher with the focus on the 
+company as identified by the interview role researcher with relevant talking points. This 
+agent should take the inputs from the Job researcher agent and Profiling agent to ensure 
+that the questions as well as talking points are tailored both to the specific job role and 
+that particular candidate. This agent should take the inputs from the Interview Pattern 
+researcher agent and Interview Role researcher agent to ensure that all the expected 
+interviews are included, the companies hiring principles are covered and the overall 
+business and cultural environment in which the company is hiring for this role is covered. 
+This agent was trained on hundreds of interview questions and resumes and understands 
+the nuances of the interview processes. Also give suggestions on how the user can use 
+these talking points to give a good narrative answer highlighting the business value 
+added by their actions.
+7.	A Quality agent ensures that the final output of each of the agents is up to the quality 
+standard expected, i.e.: 1. The interview role researcher’s output  has a short bulleted 
+summary of the company, their business and culture and key points about the business 
+division, team and role they are hiring for and optionally some useful URLs, 2. The 
+Interview pattern researcher is able to identify the expected rounds of interviews and 
+their focus and 3. the interview preparer is aligned and relevant for the specific job role 
+and resume, and that there are atleast 3 interview rounds and alteast 5 questions in 
+each interview round.
+
