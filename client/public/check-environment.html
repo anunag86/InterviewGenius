@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Environment Checker</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+      margin: 0;
+      padding: 20px;
+      line-height: 1.5;
+      color: #333;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    h1, h2 {
+      color: #0077B5;
+    }
+    pre {
+      background-color: #f5f5f5;
+      padding: 10px;
+      border-radius: 4px;
+      overflow-x: auto;
+    }
+    .panel {
+      background-color: #f9f9f9;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      padding: 15px;
+      margin-bottom: 20px;
+    }
+    button {
+      background-color: #0077B5;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: bold;
+      margin-right: 10px;
+    }
+    button:hover {
+      background-color: #005e93;
+    }
+    .info {
+      background-color: #e1f5fe;
+      border-left: 5px solid #03a9f4;
+      padding: 15px;
+      margin: 20px 0;
+    }
+  </style>
+</head>
+<body>
+  <h1>Environment Checker</h1>
+  
+  <div class="info">
+    <p>This tool checks browser environment vs server environment to identify domain detection issues.</p>
+  </div>
+  
+  <div class="panel">
+    <h2>Browser Environment</h2>
+    <p><strong>Location:</strong> <span id="browser-location"></span></p>
+    <p><strong>Hostname:</strong> <span id="browser-hostname"></span></p>
+    <p><strong>Origin:</strong> <span id="browser-origin"></span></p>
+    <p><strong>Protocol:</strong> <span id="browser-protocol"></span></p>
+    <p><strong>Is Replit Domain:</strong> <span id="is-replit"></span></p>
+    <p><strong>Hostname Type:</strong> <span id="hostname-type"></span></p>
+  </div>
+  
+  <div class="panel">
+    <h2>Server Environment</h2>
+    <p>Press the button to check the server environment:</p>
+    <button id="check-server">Check Server Environment</button>
+    <pre id="server-info">Press the button to fetch server environment...</pre>
+  </div>
+  
+  <div class="panel">
+    <h2>API Calls Test</h2>
+    <p>Test how the server sees requests from different environments:</p>
+    <button id="test-quicktest">Test Quick Auth Generation</button>
+    <button id="test-headers">Test Request Headers</button>
+    <pre id="api-result">Press a button to test an API...</pre>
+  </div>
+  
+  <div class="panel">
+    <h2>LinkedIn Domain Check</h2>
+    <p>Press the button to attempt a network connection to LinkedIn:</p>
+    <button id="ping-linkedin">Test LinkedIn Connection</button>
+    <div id="linkedin-result"></div>
+  </div>
+  
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // Browser environment detection
+      const location = window.location.href;
+      const hostname = window.location.hostname;
+      const origin = window.location.origin;
+      const protocol = window.location.protocol;
+      
+      document.getElementById('browser-location').textContent = location;
+      document.getElementById('browser-hostname').textContent = hostname;
+      document.getElementById('browser-origin').textContent = origin;
+      document.getElementById('browser-protocol').textContent = protocol;
+      
+      // Detect if we're on a Replit domain
+      const isReplit = hostname.includes('repl.co') || hostname.includes('replit.dev');
+      document.getElementById('is-replit').textContent = isReplit ? 'Yes' : 'No';
+      
+      // Determine hostname type
+      let hostnameType = 'Unknown';
+      if (hostname.includes('picard.replit.dev')) {
+        hostnameType = 'Replit Editor Preview (picard.replit.dev)';
+      } else if (hostname.includes('repl.co')) {
+        hostnameType = 'Replit Deployed App (.repl.co)';
+      } else if (hostname === 'localhost' || hostname.match(/\d+\.\d+\.\d+\.\d+/)) {
+        hostnameType = 'Local Development';
+      }
+      document.getElementById('hostname-type').textContent = hostnameType;
+      
+      // Server environment check
+      document.getElementById('check-server').addEventListener('click', async () => {
+        try {
+          const response = await fetch('/api/linkedin/diagnostics');
+          const data = await response.json();
+          document.getElementById('server-info').textContent = JSON.stringify(data, null, 2);
+        } catch (error) {
+          document.getElementById('server-info').textContent = `Error: ${error.message}`;
+        }
+      });
+      
+      // API Calls Test
+      document.getElementById('test-quicktest').addEventListener('click', async () => {
+        try {
+          const response = await fetch('/api/quicktest/url');
+          const data = await response.json();
+          document.getElementById('api-result').textContent = JSON.stringify(data, null, 2);
+        } catch (error) {
+          document.getElementById('api-result').textContent = `Error: ${error.message}`;
+        }
+      });
+      
+      document.getElementById('test-headers').addEventListener('click', async () => {
+        try {
+          const response = await fetch('/api/debug/request-headers');
+          const data = await response.json();
+          document.getElementById('api-result').textContent = JSON.stringify(data, null, 2);
+        } catch (error) {
+          document.getElementById('api-result').textContent = `Error: ${error.message}`;
+        }
+      });
+      
+      // LinkedIn Domain Check
+      document.getElementById('ping-linkedin').addEventListener('click', async () => {
+        const linkedinResult = document.getElementById('linkedin-result');
+        linkedinResult.innerHTML = 'Testing connection to LinkedIn...';
+        
+        try {
+          const startTime = Date.now();
+          const image = new Image();
+          
+          // Create a promise that resolves when the image loads or rejects on error
+          const pingPromise = new Promise((resolve, reject) => {
+            image.onload = () => resolve(Date.now() - startTime);
+            image.onerror = () => reject(new Error('Failed to load LinkedIn image'));
+            
+            // Add a timestamp to bust cache
+            image.src = `https://www.linkedin.com/favicon.ico?t=${Date.now()}`;
+          });
+          
+          // Add a timeout
+          const timeoutPromise = new Promise((_, reject) => {
+            setTimeout(() => reject(new Error('Connection timed out after 5 seconds')), 5000);
+          });
+          
+          // Race the image load against the timeout
+          const pingTime = await Promise.race([pingPromise, timeoutPromise]);
+          
+          linkedinResult.innerHTML = `
+            <p style="color: green;">✓ Successfully connected to LinkedIn</p>
+            <p>Response time: ${pingTime}ms</p>
+            <p>This indicates that network connectivity to LinkedIn domains is working.</p>
+          `;
+        } catch (error) {
+          linkedinResult.innerHTML = `
+            <p style="color: red;">✗ Failed to connect to LinkedIn</p>
+            <p>Error: ${error.message}</p>
+            <p>This could indicate network issues or restrictions accessing LinkedIn domains.</p>
+          `;
+        }
+      });
+    });
+  </script>
+</body>
+</html>

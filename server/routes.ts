@@ -21,6 +21,7 @@ import {
   generateAllPossibleRedirectUris
 } from "./controllers/linkedinDebug";
 import { generateQuickTestUrl, handleQuickTestCallback } from "./controllers/quickTest";
+import { debugRequestHeaders } from "./controllers/debugRequestHeaders";
 
 // Configure multer for memory storage (files are processed in memory)
 const upload = multer({
@@ -97,6 +98,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/debug/linkedin/credentials", testLinkedInCredentials);
   app.get("/api/debug/linkedin/redirect-test", testRedirectUri);
   app.get("/api/debug/linkedin/redirect-uris", generateAllPossibleRedirectUris);
+  app.get("/api/debug/request-headers", debugRequestHeaders);
   
   // Simple LinkedIn auth endpoints with different redirect URI pattern
   app.get("/api/auth/linkedin/simple-url", getSimpleLinkedInAuthUrl);
@@ -156,6 +158,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.get("/linkedin/direct-connection", (req, res) => {
     res.sendFile('linkedin-direct-connection.html', { root: './client/public' });
+  });
+  
+  // Environment checker tool
+  app.get("/linkedin/environment", (req, res) => {
+    res.sendFile('check-environment.html', { root: './client/public' });
   });
   
   // API endpoint for LinkedIn diagnostics
