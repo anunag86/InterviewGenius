@@ -89,7 +89,7 @@ export async function generateCandidatePoints(
               "At [Company] ([Years]): [Specific project with team size and measurable impact]",
               "At [Company] ([Years]): [Specific contribution with quantifiable results]"
             ],
-            "relevance": "Brief explanation of how these specific examples support the narrative guidance"
+            "relevance": "Brief explanation of how these specific examples help answer the interview question"
           }
           
           IMPORTANT: If the resume lacks sufficient specific details, avoid making up information. Instead, provide as much specific detail as possible from what's available, and indicate what additional information would strengthen the examples.

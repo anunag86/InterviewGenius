@@ -18,520 +18,424 @@ const ResultsSection = ({ data }: ResultsSectionProps) => {
   const hasRoundFormat = data.interviewRounds && data.interviewRounds.length > 0;
   
   // This tracks all the rounds available for navigation tabs
-  const rounds = hasRoundFormat ? data.interviewRounds : [];
+  const allTabs = ["overview"];
   
-  // Get user responses from the hook
-  const { 
-    userResponses,
-    getResponseForQuestion, 
-    saveResponse,
-    isLoading: isLoadingResponses,
-    isSaving
-  } = useUserResponses({ interviewPrepId: data.id || "" });
+  // Add round-based tabs if available
+  if (hasRoundFormat) {
+    data.interviewRounds.forEach(round => {
+      allTabs.push(round.id);
+    });
+  } else {
+    // Legacy format tabs
+    if (data.behavioralQuestions && data.behavioralQuestions.length > 0) {
+      allTabs.push("behavioral");
+    }
+    if (data.technicalQuestions && data.technicalQuestions.length > 0) {
+      allTabs.push("technical");
+    }
+    if (data.roleSpecificQuestions && data.roleSpecificQuestions.length > 0) {
+      allTabs.push("role-specific");
+    }
+  }
+
+  // User response tracking
+  const { saveResponse, isSaving, responses } = useUserResponses({
+    interviewPrepId: data.id || ""
+  });
+  
+  // A helper function to get the response for a specific question
+  const getResponseForQuestion = (questionId: string, roundId: string): UserResponse | undefined => {
+    if (!responses) return undefined;
+    return responses.find(r => r.questionId === questionId && r.roundId === roundId);
+  };
 
   return (
-    <section>
-      <div className="bg-card rounded-xl shadow-sm overflow-hidden mb-12 border border-border">
-        {/* Job Information Summary */}
-        <div className="bg-muted/50 p-6 border-b border-border">
-          <div className="mb-4">
-            <h2 className="text-2xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent mb-2">Your Interview Preparation</h2>
-            <p className="text-muted-foreground">
-              Here's your comprehensive interview preparation with company insights, candidate highlights, and tailored questions.
-            </p>
-          </div>
-          
-          <div className="grid md:grid-cols-2 gap-6">
-            <div className="bg-card rounded-lg p-4 shadow-sm border border-border/50">
-              <h3 className="text-lg font-medium bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent mb-2">Job Details</h3>
-              <div className="space-y-3">
-                <div className="flex items-start">
-                  <span className="h-5 w-5 flex-shrink-0 text-primary mr-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                    </svg>
-                  </span>
-                  <span className="text-foreground">{data.jobDetails.company}</span>
-                </div>
-                <div className="flex items-start">
-                  <span className="h-5 w-5 flex-shrink-0 text-primary mr-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                    </svg>
-                  </span>
-                  <span className="text-foreground">{data.jobDetails.title}</span>
-                </div>
-                <div className="flex items-start">
-                  <span className="h-5 w-5 flex-shrink-0 text-primary mr-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                    </svg>
-                  </span>
-                  <span className="text-foreground">{data.jobDetails.location}</span>
-                </div>
-              </div>
-            </div>
-            
-            <div className="bg-card rounded-lg p-4 shadow-sm border border-border/50">
-              <h3 className="text-lg font-medium bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent mb-2">Key Skills Required</h3>
-              <div className="flex flex-wrap gap-2">
-                {data.jobDetails.skills.map((skill, index) => (
-                  <span 
-                    key={index}
-                    className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-primary/10 text-primary transition-colors duration-200 hover:bg-primary/20"
-                  >
-                    {skill}
-                  </span>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
+    <section className="w-full max-w-5xl mx-auto py-8 px-4">
+      <div className="mb-12">
+        <Card>
+          <CardContent className="p-6">
+            <TabsNav defaultValue="overview">
+              <TabsList className="mb-6 overflow-x-auto flex-wrap justify-start">
+                {allTabs.map(tabId => {
+                  let tabLabel = tabId;
 
-        {/* Content Tabs and Panels */}
-        <div className="p-6">
-          {/* Tabs Navigation */}
-          <TabsNav className="mb-6">
-            <TabsList id="result-tabs" className="bg-muted p-1 rounded-lg flex flex-wrap justify-start gap-1">
-              <TabButton
-                id="tab-overview"
-                active={activeTab === "overview"}
-                onClick={() => setActiveTab("overview")}
-                className={`px-4 py-2 rounded-md transition-colors duration-200 ${
-                  activeTab === "overview" 
-                  ? "bg-primary/10 text-primary font-medium" 
-                  : "hover:bg-muted-foreground/10"
-                }`}
+                  // Special case for overview tab
+                  if (tabId === "overview") {
+                    tabLabel = "Overview";
+                  } 
+                  // For round-based tabs
+                  else if (hasRoundFormat) {
+                    const round = data.interviewRounds.find(r => r.id === tabId);
+                    if (round) {
+                      tabLabel = round.name;
+                    }
+                  } 
+                  // Legacy format tabs
+                  else {
+                    if (tabId === "behavioral") tabLabel = "Behavioral";
+                    if (tabId === "technical") tabLabel = "Technical";
+                    if (tabId === "role-specific") tabLabel = "Role-Specific";
+                  }
+
+                  return (
+                    <TabButton
+                      key={tabId}
+                      id={`tab-${tabId}`}
+                      value={tabId}
+                      className={`py-2 px-4 whitespace-nowrap ${activeTab === tabId ? "bg-primary text-primary-foreground" : ""}`}
+                      onClick={() => setActiveTab(tabId)}
+                    >
+                      {tabLabel}
+                    </TabButton>
+                  );
+                })}
+              </TabsList>
+
+              {/* Overview Tab Panel */}
+              <TabPanel
+                id="panel-overview"
+                hidden={activeTab !== "overview"}
               >
-                Overview
-              </TabButton>
-              
-              {/* Generate tabs for each interview round */}
-              {hasRoundFormat && rounds.map((round) => (
-                <TabButton
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <h3 className="text-lg font-medium mb-4">Job Details</h3>
+                    <div className="space-y-4">
+                      <div>
+                        <h4 className="text-sm font-medium text-muted-foreground">Company</h4>
+                        <p className="text-foreground">{data.jobDetails?.company}</p>
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-medium text-muted-foreground">Position</h4>
+                        <p className="text-foreground">{data.jobDetails?.title}</p>
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-medium text-muted-foreground">Location</h4>
+                        <p className="text-foreground">{data.jobDetails?.location}</p>
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-medium text-muted-foreground">Key Skills</h4>
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {data.jobDetails?.skills.map((skill, index) => (
+                            <Badge key={index} variant="outline" className="bg-primary/10">
+                              {skill}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h3 className="text-lg font-medium mb-4">Preparation Notes</h3>
+                    
+                    {/* Candidate Highlights */}
+                    <Accordion type="single" collapsible className="w-full">
+                      <AccordionItem value="candidate-highlights">
+                        <AccordionTrigger className="text-base font-medium">
+                          Your Highlight Points
+                        </AccordionTrigger>
+                        <AccordionContent>
+                          <div className="space-y-3 text-sm">
+                            <h4 className="font-medium text-primary">Strengths to Emphasize</h4>
+                            <ul className="space-y-1 list-disc pl-5">
+                              {data.candidateHighlights?.relevantPoints.map((point, index) => (
+                                <li key={index}>{point}</li>
+                              ))}
+                            </ul>
+
+                            <h4 className="font-medium text-primary">Areas to Address</h4>
+                            <ul className="space-y-1 list-disc pl-5">
+                              {data.candidateHighlights?.gapAreas.map((gap, index) => (
+                                <li key={index}>{gap}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        </AccordionContent>
+                      </AccordionItem>
+
+                      {/* Company Information */}
+                      <AccordionItem value="company-info">
+                        <AccordionTrigger className="text-base font-medium">
+                          About {data.jobDetails?.company}
+                        </AccordionTrigger>
+                        <AccordionContent>
+                          <div className="space-y-3 text-sm">
+                            <p>{data.companyInfo?.description}</p>
+
+                            <h4 className="font-medium text-primary">Company Culture</h4>
+                            <ul className="space-y-1 list-disc pl-5">
+                              {data.companyInfo?.culture.map((item, index) => (
+                                <li key={index}>{item}</li>
+                              ))}
+                            </ul>
+
+                            <h4 className="font-medium text-primary">Business Focus</h4>
+                            <ul className="space-y-1 list-disc pl-5">
+                              {data.companyInfo?.businessFocus.map((item, index) => (
+                                <li key={index}>{item}</li>
+                              ))}
+                            </ul>
+
+                            <h4 className="font-medium text-primary">Team Information</h4>
+                            <ul className="space-y-1 list-disc pl-5">
+                              {data.companyInfo?.teamInfo.map((item, index) => (
+                                <li key={index}>{item}</li>
+                              ))}
+                            </ul>
+
+                            <h4 className="font-medium text-primary">Role Details</h4>
+                            <ul className="space-y-1 list-disc pl-5">
+                              {data.companyInfo?.roleDetails.map((item, index) => (
+                                <li key={index}>{item}</li>
+                              ))}
+                            </ul>
+
+                            {data.companyInfo?.usefulUrls && data.companyInfo.usefulUrls.length > 0 && (
+                              <>
+                                <h4 className="font-medium text-primary">Useful Links</h4>
+                                <ul className="space-y-1 list-disc pl-5">
+                                  {data.companyInfo.usefulUrls.map((url, index) => (
+                                    <li key={index}>
+                                      <a 
+                                        href={url} 
+                                        target="_blank" 
+                                        rel="noopener noreferrer"
+                                        className="text-blue-600 hover:underline"
+                                      >
+                                        {url}
+                                      </a>
+                                    </li>
+                                  ))}
+                                </ul>
+                              </>
+                            )}
+                          </div>
+                        </AccordionContent>
+                      </AccordionItem>
+                    </Accordion>
+                  </div>
+                </div>
+              </TabPanel>
+
+              {/* New Format - Interview Rounds Tab Panels */}
+              {hasRoundFormat && data.interviewRounds.map(round => (
+                <TabPanel
                   key={round.id}
-                  id={`tab-${round.id}`}
-                  active={activeTab === round.id}
-                  onClick={() => setActiveTab(round.id)}
-                  className={`px-4 py-2 rounded-md transition-colors duration-200 ${
-                    activeTab === round.id 
-                    ? "bg-primary/10 text-primary font-medium" 
-                    : "hover:bg-muted-foreground/10"
-                  }`}
+                  id={`panel-${round.id}`}
+                  hidden={activeTab !== round.id}
                 >
-                  {round.name}
-                </TabButton>
+                  <div className="space-y-8">
+                    <div className="mb-4">
+                      <h3 className="text-xl font-semibold text-foreground">{round.name}</h3>
+                      <p className="text-muted-foreground">{round.focus}</p>
+                    </div>
+
+                    {round.questions.map(question => (
+                      <div key={question.id}>
+                        <div className="bg-card rounded-lg border border-border overflow-hidden shadow-sm hover:shadow transition-shadow duration-200 mb-4">
+                          <div className="p-4 bg-muted/50 border-b border-border">
+                            <h3 className="text-lg font-medium text-foreground">{question.question}</h3>
+                          </div>
+                          <div className="p-4">
+                            <h4 className="text-sm font-medium text-primary/80 uppercase tracking-wider mb-3">Talking Points</h4>
+                            <ul className="space-y-2 text-foreground">
+                              {question.talkingPoints.map((point) => (
+                                <li key={point.id} className="talking-point-bullet">
+                                  {point.text}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        </div>
+                        
+                        {/* Response Form */}
+                        {data.id && (
+                          <div className="mb-8">
+                            <h4 className="text-sm font-medium text-primary/80 uppercase tracking-wider mb-3 flex items-center">
+                              <span>Your Response</span>
+                              {getResponseForQuestion(question.id, round.id) && (
+                                <Badge className="ml-2 bg-green-100 text-green-800 hover:bg-green-200">
+                                  Saved
+                                </Badge>
+                              )}
+                            </h4>
+                            <QuestionResponseForm
+                              interviewPrepId={data.id}
+                              questionId={question.id}
+                              roundId={round.id}
+                              question={question.question}
+                              existingResponse={getResponseForQuestion(question.id, round.id)}
+                              onSave={saveResponse}
+                              isSaving={isSaving}
+                            />
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </TabPanel>
               ))}
-              
-              {/* Legacy tabs for old data format */}
+
+              {/* Legacy Tab Panels - Old Format */}
               {!hasRoundFormat && (
                 <>
-                  <TabButton
-                    id="tab-behavioral"
-                    active={activeTab === "behavioral"}
-                    onClick={() => setActiveTab("behavioral")}
-                    className={`px-4 py-2 rounded-md transition-colors duration-200 ${
-                      activeTab === "behavioral" 
-                      ? "bg-primary/10 text-primary font-medium" 
-                      : "hover:bg-muted-foreground/10"
-                    }`}
+                  {/* Behavioral Questions Tab Panel */}
+                  <TabPanel
+                    id="panel-behavioral"
+                    hidden={activeTab !== "behavioral"}
                   >
-                    Behavioral
-                  </TabButton>
-                  <TabButton
-                    id="tab-technical"
-                    active={activeTab === "technical"}
-                    onClick={() => setActiveTab("technical")}
-                    className={`px-4 py-2 rounded-md transition-colors duration-200 ${
-                      activeTab === "technical" 
-                      ? "bg-primary/10 text-primary font-medium" 
-                      : "hover:bg-muted-foreground/10"
-                    }`}
+                    <div className="space-y-8">
+                      {data.behavioralQuestions?.map((question) => (
+                        <div key={question.id}>
+                          <div className="bg-card rounded-lg border border-border overflow-hidden shadow-sm hover:shadow transition-shadow duration-200 mb-4">
+                            <div className="p-4 bg-muted/50 border-b border-border">
+                              <h3 className="text-lg font-medium text-foreground">{question.question}</h3>
+                            </div>
+                            <div className="p-4">
+                              <h4 className="text-sm font-medium text-primary/80 uppercase tracking-wider mb-3">Talking Points</h4>
+                              <ul className="space-y-2 text-foreground">
+                                {question.talkingPoints.map((point) => (
+                                  <li key={point.id} className="talking-point-bullet">
+                                    {point.text}
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          </div>
+
+                          {/* Response Form for behavioral questions */}
+                          {data.id && (
+                            <div className="mb-8">
+                              <h4 className="text-sm font-medium text-primary/80 uppercase tracking-wider mb-3 flex items-center">
+                                <span>Your Response</span>
+                                {getResponseForQuestion(question.id, "behavioral") && (
+                                  <Badge className="ml-2 bg-green-100 text-green-800 hover:bg-green-200">
+                                    Saved
+                                  </Badge>
+                                )}
+                              </h4>
+                              <QuestionResponseForm
+                                interviewPrepId={data.id}
+                                questionId={question.id}
+                                roundId="behavioral"
+                                question={question.question}
+                                existingResponse={getResponseForQuestion(question.id, "behavioral")}
+                                onSave={saveResponse}
+                                isSaving={isSaving}
+                              />
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </TabPanel>
+
+                  {/* Technical Questions Tab Panel */}
+                  <TabPanel
+                    id="panel-technical"
+                    hidden={activeTab !== "technical"}
                   >
-                    Technical
-                  </TabButton>
-                  <TabButton
-                    id="tab-role-specific"
-                    active={activeTab === "role-specific"}
-                    onClick={() => setActiveTab("role-specific")}
-                    className={`px-4 py-2 rounded-md transition-colors duration-200 ${
-                      activeTab === "role-specific" 
-                      ? "bg-primary/10 text-primary font-medium" 
-                      : "hover:bg-muted-foreground/10"
-                    }`}
+                    <div className="space-y-8">
+                      {data.technicalQuestions?.map((question) => (
+                        <div key={question.id}>
+                          <div className="bg-card rounded-lg border border-border overflow-hidden shadow-sm hover:shadow transition-shadow duration-200 mb-4">
+                            <div className="p-4 bg-muted/50 border-b border-border">
+                              <h3 className="text-lg font-medium text-foreground">{question.question}</h3>
+                            </div>
+                            <div className="p-4">
+                              <h4 className="text-sm font-medium text-primary/80 uppercase tracking-wider mb-3">Talking Points</h4>
+                              <ul className="space-y-2 text-foreground">
+                                {question.talkingPoints.map((point) => (
+                                  <li key={point.id} className="talking-point-bullet">
+                                    {point.text}
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          </div>
+                          
+                          {/* Response Form for technical questions */}
+                          {data.id && (
+                            <div className="mb-8">
+                              <h4 className="text-sm font-medium text-primary/80 uppercase tracking-wider mb-3 flex items-center">
+                                <span>Your Response</span>
+                                {getResponseForQuestion(question.id, "technical") && (
+                                  <Badge className="ml-2 bg-green-100 text-green-800 hover:bg-green-200">
+                                    Saved
+                                  </Badge>
+                                )}
+                              </h4>
+                              <QuestionResponseForm
+                                interviewPrepId={data.id}
+                                questionId={question.id}
+                                roundId="technical"
+                                question={question.question}
+                                existingResponse={getResponseForQuestion(question.id, "technical")}
+                                onSave={saveResponse}
+                                isSaving={isSaving}
+                              />
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </TabPanel>
+
+                  {/* Role-Specific Questions Tab Panel */}
+                  <TabPanel
+                    id="panel-role-specific"
+                    hidden={activeTab !== "role-specific"}
                   >
-                    Role-Specific
-                  </TabButton>
+                    <div className="space-y-8">
+                      {data.roleSpecificQuestions?.map((question) => (
+                        <div key={question.id}>
+                          <div className="bg-card rounded-lg border border-border overflow-hidden shadow-sm hover:shadow transition-shadow duration-200 mb-4">
+                            <div className="p-4 bg-muted/50 border-b border-border">
+                              <h3 className="text-lg font-medium text-foreground">{question.question}</h3>
+                            </div>
+                            <div className="p-4">
+                              <h4 className="text-sm font-medium text-primary/80 uppercase tracking-wider mb-3">Talking Points</h4>
+                              <ul className="space-y-2 text-foreground">
+                                {question.talkingPoints.map((point) => (
+                                  <li key={point.id} className="talking-point-bullet">
+                                    {point.text}
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          </div>
+                          
+                          {/* Response Form for role-specific questions */}
+                          {data.id && (
+                            <div className="mb-8">
+                              <h4 className="text-sm font-medium text-primary/80 uppercase tracking-wider mb-3 flex items-center">
+                                <span>Your Response</span>
+                                {getResponseForQuestion(question.id, "role-specific") && (
+                                  <Badge className="ml-2 bg-green-100 text-green-800 hover:bg-green-200">
+                                    Saved
+                                  </Badge>
+                                )}
+                              </h4>
+                              <QuestionResponseForm
+                                interviewPrepId={data.id}
+                                questionId={question.id}
+                                roundId="role-specific"
+                                question={question.question}
+                                existingResponse={getResponseForQuestion(question.id, "role-specific")}
+                                onSave={saveResponse}
+                                isSaving={isSaving}
+                              />
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </TabPanel>
                 </>
               )}
-            </TabsList>
-          </TabsNav>
-
-          {/* Overview Tab Panel */}
-          <TabPanel
-            id="panel-overview"
-            hidden={activeTab !== "overview"}
-          >
-            <div className="grid md:grid-cols-2 gap-6 mb-8">
-              {/* Company Information */}
-              <div className="bg-card rounded-lg border border-border overflow-hidden shadow-sm">
-                <div className="p-4 bg-muted/50 border-b border-border">
-                  <h3 className="text-lg font-medium text-foreground">Company Insights</h3>
-                </div>
-                <div className="p-4">
-                  {data.companyInfo && (
-                    <Accordion type="single" collapsible className="w-full">
-                      <AccordionItem value="description">
-                        <AccordionTrigger className="text-md font-medium">About the Company</AccordionTrigger>
-                        <AccordionContent>
-                          <p className="text-muted-foreground">{data.companyInfo.description}</p>
-                        </AccordionContent>
-                      </AccordionItem>
-                      
-                      <AccordionItem value="culture">
-                        <AccordionTrigger className="text-md font-medium">Company Culture</AccordionTrigger>
-                        <AccordionContent>
-                          <ul className="space-y-2 list-disc pl-5">
-                            {data.companyInfo.culture.map((item, i) => (
-                              <li key={i} className="text-foreground">{item}</li>
-                            ))}
-                          </ul>
-                        </AccordionContent>
-                      </AccordionItem>
-                      
-                      <AccordionItem value="business">
-                        <AccordionTrigger className="text-md font-medium">Business Focus</AccordionTrigger>
-                        <AccordionContent>
-                          <ul className="space-y-2 list-disc pl-5">
-                            {data.companyInfo.businessFocus.map((item, i) => (
-                              <li key={i} className="text-foreground">{item}</li>
-                            ))}
-                          </ul>
-                        </AccordionContent>
-                      </AccordionItem>
-                    </Accordion>
-                  )}
-                </div>
-              </div>
-              
-              {/* Candidate Highlights */}
-              <div className="bg-card rounded-lg border border-border overflow-hidden shadow-sm">
-                <div className="p-4 bg-muted/50 border-b border-border">
-                  <h3 className="text-lg font-medium text-foreground">Your Profile Highlights</h3>
-                </div>
-                <div className="p-4">
-                  {data.candidateHighlights && (
-                    <Accordion type="single" collapsible className="w-full">
-                      <AccordionItem value="strengths">
-                        <AccordionTrigger className="text-md font-medium text-green-600">Relevant Strengths</AccordionTrigger>
-                        <AccordionContent>
-                          <ul className="space-y-2 list-disc pl-5">
-                            {data.candidateHighlights.relevantPoints.map((point, i) => (
-                              <li key={i} className="text-foreground">{point}</li>
-                            ))}
-                          </ul>
-                        </AccordionContent>
-                      </AccordionItem>
-                      
-                      <AccordionItem value="gaps">
-                        <AccordionTrigger className="text-md font-medium text-amber-600">Areas to Address</AccordionTrigger>
-                        <AccordionContent>
-                          <ul className="space-y-2 list-disc pl-5">
-                            {data.candidateHighlights.gapAreas.map((gap, i) => (
-                              <li key={i} className="text-foreground">{gap}</li>
-                            ))}
-                          </ul>
-                        </AccordionContent>
-                      </AccordionItem>
-                    </Accordion>
-                  )}
-                </div>
-              </div>
-            </div>
-            
-            {/* Role Details */}
-            <div className="bg-card rounded-lg border border-border overflow-hidden shadow-sm mb-6">
-              <div className="p-4 bg-muted/50 border-b border-border">
-                <h3 className="text-lg font-medium text-foreground">Role Details</h3>
-              </div>
-              <div className="p-4">
-                {data.companyInfo && data.companyInfo.roleDetails && (
-                  <ul className="space-y-2 list-disc pl-5">
-                    {data.companyInfo.roleDetails.map((detail, i) => (
-                      <li key={i} className="text-foreground">{detail}</li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            </div>
-            
-            {/* Team Information */}
-            <div className="bg-card rounded-lg border border-border overflow-hidden shadow-sm">
-              <div className="p-4 bg-muted/50 border-b border-border">
-                <h3 className="text-lg font-medium text-foreground">Team Information</h3>
-              </div>
-              <div className="p-4">
-                {data.companyInfo && data.companyInfo.teamInfo && (
-                  <ul className="space-y-2 list-disc pl-5">
-                    {data.companyInfo.teamInfo.map((info, i) => (
-                      <li key={i} className="text-foreground">{info}</li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            </div>
-          </TabPanel>
-
-          {/* Interview Rounds Tab Panels - New Format */}
-          {hasRoundFormat && rounds.map((round) => (
-            <TabPanel
-              key={round.id}
-              id={`panel-${round.id}`}
-              hidden={activeTab !== round.id}
-            >
-              <div className="bg-muted/30 rounded-lg p-4 mb-6 border border-border/30">
-                <h3 className="text-lg font-medium text-foreground mb-2">{round.name}</h3>
-                <p className="text-muted-foreground mb-1">Focus: {round.focus}</p>
-              </div>
-              
-              <div className="space-y-8">
-                {round.questions.map((question) => (
-                  <div key={question.id}>
-                    <div className="bg-card rounded-lg border border-border overflow-hidden shadow-sm hover:shadow transition-shadow duration-200 mb-4">
-                      <div className="p-4 bg-muted/50 border-b border-border">
-                        <h3 className="text-lg font-medium text-foreground">{question.question}</h3>
-                      </div>
-                      <div className="p-4">
-                        <h4 className="text-sm font-medium text-primary/80 uppercase tracking-wider mb-3">Talking Points</h4>
-                        <ul className="space-y-2 text-foreground">
-                          {question.talkingPoints.map((point) => (
-                            <li key={point.id} className="talking-point-bullet">
-                              {point.text}
-                            </li>
-                          ))}
-                        </ul>
-                        
-
-                      </div>
-                    </div>
-                    
-                    {/* Response Form */}
-                    {data.id && (
-                      <div className="mb-8">
-                        <h4 className="text-sm font-medium text-primary/80 uppercase tracking-wider mb-3 flex items-center">
-                          <span>Your Response</span>
-                          {getResponseForQuestion(question.id, round.id) && (
-                            <Badge className="ml-2 bg-green-100 text-green-800 hover:bg-green-200">
-                              Saved
-                            </Badge>
-                          )}
-                        </h4>
-                        <QuestionResponseForm
-                          interviewPrepId={data.id}
-                          questionId={question.id}
-                          roundId={round.id}
-                          question={question.question}
-                          existingResponse={getResponseForQuestion(question.id, round.id)}
-                          onSave={saveResponse}
-                          isSaving={isSaving}
-                        />
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </TabPanel>
-          ))}
-
-          {/* Legacy Tab Panels - Old Format */}
-          {!hasRoundFormat && (
-            <>
-              {/* Behavioral Questions Tab Panel */}
-              <TabPanel
-                id="panel-behavioral"
-                hidden={activeTab !== "behavioral"}
-              >
-                <div className="space-y-8">
-                  {data.behavioralQuestions?.map((question) => (
-                    <div key={question.id}>
-                      <div className="bg-card rounded-lg border border-border overflow-hidden shadow-sm hover:shadow transition-shadow duration-200 mb-4">
-                        <div className="p-4 bg-muted/50 border-b border-border">
-                          <h3 className="text-lg font-medium text-foreground">{question.question}</h3>
-                        </div>
-                        <div className="p-4">
-                          <h4 className="text-sm font-medium text-primary/80 uppercase tracking-wider mb-3">Talking Points</h4>
-                          <ul className="space-y-2 text-foreground">
-                            {question.talkingPoints.map((point) => (
-                              <li key={point.id} className="talking-point-bullet">
-                                {point.text}
-                              </li>
-                            ))}
-                          </ul>
-                          
-                          {/* Narrative Guidance - will be available in new format */}
-                          {question.narrative && (
-                            <>
-                              <h4 className="text-sm font-medium text-primary/80 uppercase tracking-wider mb-2 mt-4">Narrative Guidance</h4>
-                              <div className="narrative-text">
-                                {question.narrative}
-                              </div>
-                            </>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Response Form for behavioral questions */}
-                      {data.id && (
-                        <div className="mb-8">
-                          <h4 className="text-sm font-medium text-primary/80 uppercase tracking-wider mb-3 flex items-center">
-                            <span>Your Response</span>
-                            {getResponseForQuestion(question.id, "behavioral") && (
-                              <Badge className="ml-2 bg-green-100 text-green-800 hover:bg-green-200">
-                                Saved
-                              </Badge>
-                            )}
-                          </h4>
-                          <QuestionResponseForm
-                            interviewPrepId={data.id}
-                            questionId={question.id}
-                            roundId="behavioral"
-                            question={question.question}
-                            existingResponse={getResponseForQuestion(question.id, "behavioral")}
-                            onSave={saveResponse}
-                            isSaving={isSaving}
-                          />
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </TabPanel>
-
-              {/* Technical Questions Tab Panel */}
-              <TabPanel
-                id="panel-technical"
-                hidden={activeTab !== "technical"}
-              >
-                <div className="space-y-8">
-                  {data.technicalQuestions?.map((question) => (
-                    <div key={question.id}>
-                      <div className="bg-card rounded-lg border border-border overflow-hidden shadow-sm hover:shadow transition-shadow duration-200 mb-4">
-                        <div className="p-4 bg-muted/50 border-b border-border">
-                          <h3 className="text-lg font-medium text-foreground">{question.question}</h3>
-                        </div>
-                        <div className="p-4">
-                          <h4 className="text-sm font-medium text-primary/80 uppercase tracking-wider mb-3">Talking Points</h4>
-                          <ul className="space-y-2 text-foreground">
-                            {question.talkingPoints.map((point) => (
-                              <li key={point.id} className="talking-point-bullet">
-                                {point.text}
-                              </li>
-                            ))}
-                          </ul>
-                          
-                          {/* Narrative Guidance - will be available in new format */}
-                          {question.narrative && (
-                            <>
-                              <h4 className="text-sm font-medium text-primary/80 uppercase tracking-wider mb-2 mt-4">Narrative Guidance</h4>
-                              <div className="narrative-text">
-                                {question.narrative}
-                              </div>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                      
-                      {/* Response Form for technical questions */}
-                      {data.id && (
-                        <div className="mb-8">
-                          <h4 className="text-sm font-medium text-primary/80 uppercase tracking-wider mb-3 flex items-center">
-                            <span>Your Response</span>
-                            {getResponseForQuestion(question.id, "technical") && (
-                              <Badge className="ml-2 bg-green-100 text-green-800 hover:bg-green-200">
-                                Saved
-                              </Badge>
-                            )}
-                          </h4>
-                          <QuestionResponseForm
-                            interviewPrepId={data.id}
-                            questionId={question.id}
-                            roundId="technical"
-                            question={question.question}
-                            existingResponse={getResponseForQuestion(question.id, "technical")}
-                            onSave={saveResponse}
-                            isSaving={isSaving}
-                          />
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </TabPanel>
-
-              {/* Role-Specific Questions Tab Panel */}
-              <TabPanel
-                id="panel-role-specific"
-                hidden={activeTab !== "role-specific"}
-              >
-                <div className="space-y-8">
-                  {data.roleSpecificQuestions?.map((question) => (
-                    <div key={question.id}>
-                      <div className="bg-card rounded-lg border border-border overflow-hidden shadow-sm hover:shadow transition-shadow duration-200 mb-4">
-                        <div className="p-4 bg-muted/50 border-b border-border">
-                          <h3 className="text-lg font-medium text-foreground">{question.question}</h3>
-                        </div>
-                        <div className="p-4">
-                          <h4 className="text-sm font-medium text-primary/80 uppercase tracking-wider mb-3">Talking Points</h4>
-                          <ul className="space-y-2 text-foreground">
-                            {question.talkingPoints.map((point) => (
-                              <li key={point.id} className="talking-point-bullet">
-                                {point.text}
-                              </li>
-                            ))}
-                          </ul>
-                          
-                          {/* Narrative Guidance - will be available in new format */}
-                          {question.narrative && (
-                            <>
-                              <h4 className="text-sm font-medium text-primary/80 uppercase tracking-wider mb-2 mt-4">Narrative Guidance</h4>
-                              <div className="narrative-text">
-                                {question.narrative}
-                              </div>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                      
-                      {/* Response Form for role-specific questions */}
-                      {data.id && (
-                        <div className="mb-8">
-                          <h4 className="text-sm font-medium text-primary/80 uppercase tracking-wider mb-3 flex items-center">
-                            <span>Your Response</span>
-                            {getResponseForQuestion(question.id, "role-specific") && (
-                              <Badge className="ml-2 bg-green-100 text-green-800 hover:bg-green-200">
-                                Saved
-                              </Badge>
-                            )}
-                          </h4>
-                          <QuestionResponseForm
-                            interviewPrepId={data.id}
-                            questionId={question.id}
-                            roundId="role-specific"
-                            question={question.question}
-                            existingResponse={getResponseForQuestion(question.id, "role-specific")}
-                            onSave={saveResponse}
-                            isSaving={isSaving}
-                          />
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </TabPanel>
-            </>
-          )}
-        </div>
+            </TabsNav>
+          </CardContent>
+        </Card>
       </div>
     </section>
   );
