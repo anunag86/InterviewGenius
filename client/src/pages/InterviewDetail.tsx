@@ -63,8 +63,8 @@ const InterviewDetail = () => {
     fetchInterviewDetails();
   }, [interviewId, toast]);
   
-  const handleBackToHistory = () => {
-    setLocation("/history");
+  const handleBackToHome = () => {
+    setLocation("/");
   };
   
   return (
@@ -75,10 +75,10 @@ const InterviewDetail = () => {
           <Button 
             variant="ghost" 
             className="flex items-center text-muted-foreground hover:text-foreground"
-            onClick={handleBackToHistory}
+            onClick={handleBackToHome}
           >
             <ChevronLeftIcon className="mr-1" size={16} />
-            Back to History
+            Back to Home
           </Button>
         </div>
         
@@ -93,7 +93,7 @@ const InterviewDetail = () => {
             <ErrorState
               title={error.title}
               message={error.message}
-              onRetry={handleBackToHistory}
+              onRetry={handleBackToHome}
             />
           </div>
         ) : interviewPrep ? (
@@ -103,7 +103,7 @@ const InterviewDetail = () => {
             <ErrorState
               title="No Data Available"
               message="This interview preparation could not be found. It may have expired or been deleted."
-              onRetry={handleBackToHistory}
+              onRetry={handleBackToHome}
             />
           </div>
         )}
