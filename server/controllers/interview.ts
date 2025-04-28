@@ -317,30 +317,10 @@ async function processInterviewPrep(prepId: string, resumeFile: Express.Multer.F
     // spread across multiple agents (question generation, talking points, narrative guidance)
     // making the architecture more efficient and the results more coherent
     
-    // Step 7: Store profile data with memory agent
-    interviewPreps.set(prepId, {
-      ...interviewPreps.get(prepId),
-      progress: AgentStep.MEMORY_AGENT
-    });
+    // Profile data is managed directly by the application
+    // No separate memory agent step is needed in the simplified architecture
     
-    const memoryResult = await storeUserMemory(
-      "anonymous", // No user authentication yet
-      prepId,
-      resumeText,
-      linkedinUrl,
-      profileAnalysis,
-      candidateHighlights
-    );
-    
-    allThoughts = [...allThoughts, ...memoryResult.thoughts];
-    
-    // Update in-memory storage with agent thoughts
-    interviewPreps.set(prepId, {
-      ...interviewPreps.get(prepId),
-      agentThoughts: allThoughts
-    });
-    
-    // Step 8: Quality Agent - Ensure all agent outputs meet quality standards
+    // Step 7: Quality Agent - Ensure all agent outputs meet quality standards
     interviewPreps.set(prepId, {
       ...interviewPreps.get(prepId),
       progress: AgentStep.QUALITY_CHECK

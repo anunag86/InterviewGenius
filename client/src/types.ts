@@ -19,7 +19,6 @@ export interface InterviewQuestion {
   id: string;
   question: string;
   talkingPoints: TalkingPoint[];
-  narrative?: string; // Narrative guidance from the Candidate_narrative agent
 }
 
 export interface InterviewRound {
@@ -83,7 +82,7 @@ export enum QuestionType {
   ROLE_SPECIFIC = 'role-specific'
 }
 
-// Updated to match the new agentic architecture
+// Updated to match the new simplified agentic architecture
 export enum AgentStep {
   JOB_RESEARCH = 0,
   PROFILE_ANALYSIS = 1,
@@ -91,7 +90,6 @@ export enum AgentStep {
   COMPANY_RESEARCH = 3,
   INTERVIEW_PATTERN_RESEARCH = 4,
   INTERVIEWER_AGENT = 5,
-  MEMORY_AGENT = 6,
-  QUALITY_CHECK = 7,
-  COMPLETED = 8
+  QUALITY_CHECK = 6,
+  COMPLETED = 7
 }

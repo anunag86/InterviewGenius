@@ -64,12 +64,7 @@ const LoadingState = ({ currentStep, agentThoughts = [] }: LoadingStateProps) =>
       text: "Interviewer Preparer Agent",
       description: "Generating tailored questions with specific, personalized talking points based on your profile"
     },
-    {
-      id: AgentStep.MEMORY_AGENT,
-      icon: "database",
-      text: "Memory Agent",
-      description: "Storing your profile data for personalized interview preparation"
-    },
+
     { 
       id: AgentStep.QUALITY_CHECK, 
       icon: "shield-check", 
@@ -139,10 +134,7 @@ const LoadingState = ({ currentStep, agentThoughts = [] }: LoadingStateProps) =>
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
                       </svg>
-                    ) : item.id === AgentStep.MEMORY_AGENT ? (
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
-                      </svg>
+
                     ) : (
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
