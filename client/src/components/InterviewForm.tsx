@@ -10,6 +10,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 
+// Define the form schema for validation
 const formSchema = z.object({
   jobUrl: z.string().url("Please enter a valid URL").min(1, "Job posting URL is required"),
 });

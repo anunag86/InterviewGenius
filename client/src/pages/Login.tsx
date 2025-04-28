@@ -24,15 +24,13 @@ const Login = () => {
     <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-background to-muted">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <Link href="/">
-            <a className="inline-block">
-              <div className="flex flex-col items-center">
-                <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-purple-500 bg-clip-text text-transparent">
-                  PrepTalk
-                </h1>
-                <p className="text-sm text-muted-foreground mt-1">Your Interview Coach</p>
-              </div>
-            </a>
+          <Link href="/" className="inline-block">
+            <div className="flex flex-col items-center">
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-purple-500 bg-clip-text text-transparent">
+                PrepTalk
+              </h1>
+              <p className="text-sm text-muted-foreground mt-1">Your Interview Coach</p>
+            </div>
           </Link>
         </div>
 

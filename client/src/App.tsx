@@ -10,12 +10,14 @@ import History from "@/pages/History";
 import InterviewDetail from "@/pages/InterviewDetail";
 import PrivacyPolicy from "@/pages/PrivacyPolicy";
 import Login from "@/pages/Login";
+import LinkedInCallback from "@/pages/LinkedInCallback";
 
 function Router() {
   return (
     <Switch>
       <Route path="/login" component={Login} />
       <Route path="/privacy" component={PrivacyPolicy} />
+      <Route path="/api/auth/linkedin/callback" component={LinkedInCallback} />
       
       {/* Protected Routes - require authentication */}
       <Route path="/">
