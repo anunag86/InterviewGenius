@@ -69,6 +69,13 @@ export async function generateCandidatePoints(
           Candidate Profile Information:
           ${JSON.stringify(candidateProfile)}
           
+          CRITICAL INSTRUCTIONS:
+          1. ONLY extract real experiences directly from the resume and profile
+          2. NEVER invent or fabricate information - only use what's explicitly stated
+          3. ONLY include talking points that DIRECTLY answer this specific question
+          4. Include actual metrics, team sizes, company names and outcomes from the resume
+          5. Focus on the most impressive and relevant achievements
+          
           Generate 3-5 HIGHLY SPECIFIC talking points extracted directly from the resume and candidate profile that:
           1. MUST be directly relevant to answering this interview question
           2. MUST highlight SPECIFIC accomplishments, metrics, skills, or REAL experiences from the resume

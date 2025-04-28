@@ -384,6 +384,22 @@ async function processInterviewPrep(prepId: string, resumeFile: Express.Multer.F
       progress: AgentStep.QUALITY_CHECK
     });
     
+    // Ensure the interviewPrep object has the proper data structure with enhancedRounds
+    let interviewPrepData: InterviewPrep = {
+      id: prepId,
+      jobDetails,
+      companyInfo: companyInfo.companyInfo,
+      candidateHighlights,
+      interviewRounds: enhancedRounds,
+      agentThoughts: allThoughts
+    };
+    
+    // Store the updated interview prep with enhanced rounds that include narratives
+    interviewPreps.set(prepId, {
+      ...interviewPreps.get(prepId),
+      result: interviewPrepData
+    });
+    
     const qualityCheckResult = await validateInterviewPrep(
       jobUrl,
       jobDetails,
