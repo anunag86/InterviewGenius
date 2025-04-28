@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { v4 as uuidv4 } from "uuid";
 import * as mammoth from "mammoth";
-import { analyzeJobPosting, researchCompanyCareerPage } from "../agents/jobResearcher";
+import { analyzeJobPosting, researchCompanyCareerPage, JobAnalysis } from "../agents/jobResearcher";
 import { analyzeResume, findSpecificSkills } from "../agents/profiler";
 import { highlightResumePoints } from "../agents/highlighter";
 import { researchCompanyAndRole } from "../agents/companyResearcher";
@@ -180,7 +180,7 @@ async function processInterviewPrep(prepId: string, resumeFile: Express.Multer.F
     
     // Get job analysis with agents' thoughts
     const jobResearchResult = await analyzeJobPosting(jobUrl, linkedinUrl || undefined);
-    const jobAnalysis = jobResearchResult.analysis as Record<string, any>;
+    const jobAnalysis = jobResearchResult.analysis as JobAnalysis;
     allThoughts = [...allThoughts, ...jobResearchResult.thoughts];
     
     // Update in-memory storage with agent thoughts

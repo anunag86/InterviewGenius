@@ -1,6 +1,21 @@
 import { fetchWebContent, callOpenAIWithJSON } from "../utils/openai";
 import { AgentThought } from "../../client/src/types";
 
+// Define JobAnalysis interface for type safety
+export interface JobAnalysis {
+  companyName?: string;
+  jobTitle?: string;
+  location?: string;
+  requiredSkills?: string[];
+  requiredExperience?: string[];
+  jobResponsibilities?: string[];
+  preferredQualifications?: string[];
+  companyCulture?: string[];
+  hiringProcess?: string[];
+  additionalLinkedInData?: any;
+  [key: string]: any; // Allow for additional fields
+}
+
 // Job Researcher agent that analyzes job postings
 export async function analyzeJobPosting(jobUrl: string, linkedinUrl?: string) {
   const thoughts: AgentThought[] = [];
@@ -54,7 +69,7 @@ export async function analyzeJobPosting(jobUrl: string, linkedinUrl?: string) {
       sourcesConsulted: [jobUrl]
     });
     
-    const jobAnalysis = await fetchWebContent(jobUrl, systemPrompt);
+    const jobAnalysis = await fetchWebContent<JobAnalysis>(jobUrl, systemPrompt);
     
     // If LinkedIn URL is provided, analyze that as well
     if (linkedinUrl) {
