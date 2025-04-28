@@ -91,7 +91,7 @@
   }
 
   body {
-    @apply font-sans antialiased bg-background text-foreground;
+    @apply font-sans antialiased bg-background text-foreground text-sm;
   }
 
   /* Add sophisticated gradient headings */
@@ -120,5 +120,33 @@
   /* Form focus styles */
   .form-focus-ring {
     @apply focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:ring-offset-1;
+  }
+  
+  /* Reduced text sizes */
+  h1, .h1 { @apply text-3xl; }
+  h2, .h2 { @apply text-2xl; }
+  h3, .h3 { @apply text-xl; }
+  h4, .h4 { @apply text-lg; }
+  
+  /* Compact UI */
+  .card { @apply shadow-sm rounded-lg; }
+  .compact-p { @apply py-2 px-3; }
+  .compact-btn { @apply py-2 px-3 text-sm; }
+  
+  /* Improve readability */
+  .line-height-normal { @apply leading-normal; }
+  .line-height-relaxed { @apply leading-relaxed; }
+  
+  /* Clean layout */
+  .max-w-compact { @apply max-w-5xl mx-auto; }
+  .section-spacing { @apply my-4; }
+  
+  /* Talking points formatting */
+  .talking-point-bullet {
+    @apply pl-4 relative before:content-['•'] before:absolute before:left-0 before:text-primary text-sm;
+  }
+  
+  .narrative-text {
+    @apply italic text-muted-foreground text-sm pl-4 border-l-2 border-primary/20 my-2;
   }
 }

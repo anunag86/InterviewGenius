@@ -304,18 +304,23 @@ const ResultsSection = ({ data }: ResultsSectionProps) => {
                       </div>
                       <div className="p-4">
                         <h4 className="text-sm font-medium text-primary/80 uppercase tracking-wider mb-3">Talking Points</h4>
-                        <ul className="space-y-3 text-foreground">
+                        <ul className="space-y-2 text-foreground">
                           {question.talkingPoints.map((point) => (
-                            <li key={point.id} className="flex items-start">
-                              <span className="h-5 w-5 text-primary mr-2 flex-shrink-0">
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                              </span>
-                              <span>{point.text}</span>
+                            <li key={point.id} className="talking-point-bullet">
+                              {point.text}
                             </li>
                           ))}
                         </ul>
+                        
+                        {/* Narrative Guidance */}
+                        {question.narrative && (
+                          <>
+                            <h4 className="text-sm font-medium text-primary/80 uppercase tracking-wider mb-2 mt-4">Narrative Guidance</h4>
+                            <div className="narrative-text">
+                              {question.narrative}
+                            </div>
+                          </>
+                        )}
                       </div>
                     </div>
                     
