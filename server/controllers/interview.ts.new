@@ -1,0 +1,269 @@
+import { Request, Response } from "express";
+import { v4 as uuidv4 } from "uuid";
+import * as mammoth from "mammoth";
+import { storage } from "../storage";
+import { AgentStep, AgentThought, InterviewRound, UserResponse, InterviewPrep } from "../../client/src/types";
+import { db } from "../../db";
+import { userResponses } from "../../shared/schema";
+import { eq } from "drizzle-orm";
+
+// Extend Request type to include file property from multer
+declare global {
+  namespace Express {
+    interface Request {
+      file?: Multer.File;
+    }
+    
+    namespace Multer {
+      interface File {
+        buffer: Buffer;
+        fieldname: string;
+        originalname: string;
+        encoding: string;
+        mimetype: string;
+        size: number;
+      }
+    }
+  }
+}
+
+// In-memory storage for interview preparation requests (will be replaced with DB in production)
+const interviewPreps = new Map();
+
+export const generateInterview = async (req: Request, res: Response) => {
+  try {
+    // Extract the form data from the request
+    if (!req.file) {
+      return res.status(400).json({ error: "Resume file is required" });
+    }
+
+    const { jobUrl, linkedinUrl } = req.body;
+    
+    if (!jobUrl) {
+      return res.status(400).json({ error: "Job posting URL is required" });
+    }
+    
+    // Create a unique ID for this interview preparation
+    const prepId = uuidv4();
+    
+    // Initialize the interview prep with "In Progress" status
+    interviewPreps.set(prepId, {
+      id: prepId,
+      progress: AgentStep.JOB_RESEARCH
+    });
+    
+    // Start processing the interview prep in the background
+    processInterviewPrep(prepId, req.file, jobUrl, linkedinUrl || null).catch(error => {
+      console.error("Error processing interview preparation:", error);
+      interviewPreps.set(prepId, {
+        ...interviewPreps.get(prepId),
+        error: error.message
+      });
+    });
+    
+    // Return the preparation ID to the client for status polling
+    return res.status(200).json({
+      prepId,
+      status: "in_progress",
+      message: "Interview preparation started"
+    });
+  } catch (error: any) {
+    console.error("Error starting interview preparation:", error);
+    return res.status(500).json({ error: error.message });
+  }
+};
+
+export const getInterviewStatus = async (req: Request, res: Response) => {
+  try {
+    const { prepId } = req.params;
+    
+    if (!prepId) {
+      return res.status(400).json({ error: "Preparation ID is required" });
+    }
+    
+    const prep = interviewPreps.get(prepId);
+    
+    if (!prep) {
+      return res.status(404).json({ error: "Interview preparation not found" });
+    }
+    
+    // Check if there was an error in processing
+    if (prep.error) {
+      return res.status(200).json({
+        status: "error",
+        message: prep.error,
+        progress: prep.progress
+      });
+    }
+    
+    // Check if processing is complete
+    if (prep.progress === AgentStep.COMPLETED) {
+      // Save the completed interview to storage
+      await storage.saveInterviewPrep(prepId, prep);
+      
+      return res.status(200).json({
+        status: "completed",
+        data: prep,
+        progress: prep.progress
+      });
+    }
+    
+    // Processing is still in progress
+    return res.status(200).json({
+      status: "in_progress",
+      progress: prep.progress,
+      agentThoughts: prep.agentThoughts || []
+    });
+  } catch (error: any) {
+    console.error("Error getting interview status:", error);
+    return res.status(500).json({ error: error.message });
+  }
+};
+
+export const getInterviewHistory = async (req: Request, res: Response) => {
+  try {
+    // Get interview history from storage
+    const history = await storage.getInterviewHistory();
+    
+    return res.status(200).json({ history });
+  } catch (error: any) {
+    console.error("Error getting interview history:", error);
+    return res.status(500).json({ error: error.message });
+  }
+};
+
+/**
+ * Background processing function for interview preparation
+ * This function orchestrates the calls to various agent functions
+ */
+async function processInterviewPrep(prepId: string, resumeFile: Express.Multer.File, jobUrl: string, linkedinUrl: string | null) {
+  // We'll implement our new agents here later
+  
+  // For now, we'll create a placeholder object to indicate that the agent architecture is being rebuilt
+  let interviewPrepData: InterviewPrep = {
+    id: prepId,
+    jobDetails: {
+      company: "Example Company",
+      title: "Software Engineer",
+      location: "Remote",
+      skills: ["JavaScript", "TypeScript", "React"]
+    },
+    companyInfo: {
+      description: "The agent architecture is being rebuilt. Please check back soon.",
+      culture: ["Innovation", "Collaboration", "Excellence"],
+      businessFocus: ["Customer Satisfaction", "Product Quality"],
+      teamInfo: ["Cross-functional teams", "Agile methodology"],
+      roleDetails: ["Full-stack development", "API design", "System architecture"]
+    },
+    candidateHighlights: {
+      relevantPoints: ["The agent architecture is being rebuilt with improved talking point generation."],
+      gapAreas: ["Please check back after the update is complete."]
+    },
+    interviewRounds: [{
+      id: "round-1",
+      name: "Initial Screen",
+      focus: "The agent architecture is being rebuilt.",
+      questions: [{
+        id: "q-1",
+        question: "The system is being updated to improve talking point generation. Please check back soon.",
+        talkingPoints: [{
+          id: "tp-1",
+          text: "The agent architecture is being rebuilt to provide more detailed talking points with specific metrics and examples from your resume."
+        }]
+      }]
+    }],
+    agentThoughts: [{
+      timestamp: Date.now(),
+      agent: "System",
+      thought: "The agent architecture is being completely rebuilt to improve talking point generation."
+    }]
+  };
+  
+  // Set progress to completed
+  interviewPreps.set(prepId, {
+    ...interviewPrepData,
+    progress: AgentStep.COMPLETED
+  });
+}
+
+/**
+ * Save a user's response to an interview question
+ */
+export const saveUserResponse = async (req: Request, res: Response) => {
+  try {
+    const { interviewPrepId, questionId, roundId, situation, action, result } = req.body;
+    
+    if (!interviewPrepId || !questionId || !roundId || !situation || !action || !result) {
+      return res.status(400).json({ error: "Missing required fields" });
+    }
+    
+    // Create the user response object
+    const userResponse: UserResponse = {
+      questionId,
+      roundId,
+      situation,
+      action,
+      result,
+      updatedAt: new Date().toISOString()
+    };
+    
+    // Save the response to the database
+    await db.insert(userResponses).values({
+      interviewPrepId,
+      questionId,
+      roundId,
+      situation,
+      action,
+      result,
+      updatedAt: new Date()
+    }).onConflictDoUpdate({
+      target: [userResponses.interviewPrepId, userResponses.questionId, userResponses.roundId],
+      set: {
+        situation,
+        action,
+        result,
+        updatedAt: new Date()
+      }
+    });
+    
+    return res.status(200).json({
+      message: "Response saved successfully",
+      data: userResponse
+    });
+  } catch (error: any) {
+    console.error("Error saving user response:", error);
+    return res.status(500).json({ error: error.message });
+  }
+};
+
+/**
+ * Get all user responses for an interview prep
+ */
+export const getUserResponsesForInterview = async (req: Request, res: Response) => {
+  try {
+    const { interviewPrepId } = req.params;
+    
+    if (!interviewPrepId) {
+      return res.status(400).json({ error: "Interview preparation ID is required" });
+    }
+    
+    // Get all responses for this interview prep
+    const responses = await db.query.userResponses.findMany({
+      where: eq(userResponses.interviewPrepId, interviewPrepId)
+    });
+    
+    return res.status(200).json({
+      responses: responses.map(response => ({
+        questionId: response.questionId,
+        roundId: response.roundId,
+        situation: response.situation,
+        action: response.action,
+        result: response.result,
+        updatedAt: response.updatedAt.toISOString()
+      }))
+    });
+  } catch (error: any) {
+    console.error("Error getting user responses:", error);
+    return res.status(500).json({ error: error.message });
+  }
+};
