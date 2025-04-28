@@ -45,43 +45,36 @@ export async function generateCandidateNarrative(
       const enhancedQuestions: InterviewQuestion[] = [];
       
       for (const question of round.questions) {
-        // Extract existing talking points to build upon
-        const existingPoints = question.talkingPoints.map(tp => tp.text).join("\n");
-        
         thoughts.push({
           timestamp: Date.now(),
           agent: "Candidate Narrative Agent",
-          thought: `Developing SAR narrative structure for question: "${question.question}" based on existing talking points.`,
-          sourcesConsulted: ["Candidate Points", "Candidate Profile", "Candidate Highlights"]
+          thought: `Developing high-level SAR narrative guidance for question: "${question.question}"`,
+          sourcesConsulted: ["Candidate Profile", "Candidate Highlights"]
         });
         
         // Generate a SAR (Situation-Action-Result) narrative structure
         const narrativePrompt = `
-          You're helping a job candidate structure their answer using the talking points previously identified.
+          You're creating HIGH-LEVEL STRATEGIC NARRATIVE GUIDANCE for a job interview question.
           
           Question: "${question.question}"
-          
-          Existing Talking Points:
-          ${existingPoints}
           
           Candidate Strengths:
           ${JSON.stringify(candidateHighlights.relevantPoints || [])}
           
-          Create a narrative structure in Situation-Action-Result format that:
-          1. Uses ONLY the information from the talking points provided
-          2. Organizes the points into a clear narrative flow
-          3. Does NOT add new facts or experiences not mentioned in the talking points
+          Candidate Gap Areas:
+          ${JSON.stringify(candidateHighlights.gapAreas || [])}
+          
+          Your task is to provide GENERAL STRATEGIC GUIDANCE on how to approach this question using the SAR (Situation-Action-Result) framework. DO NOT provide specific examples - these will be added later by another agent.
           
           Format your response as a JSON object with this structure:
           {
-            "situation": "How to frame the situation or challenge faced, using specific details from talking points",
-            "action": "How to describe the actions taken, using specific details from talking points",
-            "result": "How to articulate the outcome and impact, using specific details from talking points",
-            "guidance": "Brief overall guidance on how to tell this story effectively"
+            "situation": "Strategic advice on how to frame the context and challenge (e.g., 'Start by describing a situation where you faced a similar challenge to show your experience with...')",
+            "action": "Strategic advice on what types of actions to highlight (e.g., 'Emphasize your analytical approach and how you collaborated with stakeholders to...')",
+            "result": "Strategic advice on what outcomes to highlight (e.g., 'Focus on both quantitative results like metrics improved and qualitative outcomes like improved team dynamics')",
+            "guidance": "Overall interview strategy for this question type, including potential follow-up questions to prepare for"
           }
           
-          IMPORTANT: This should be narrative guidance, not a complete answer. Use phrases like "You might describe..." or "Consider framing..." to show this is guidance. 
-          Only use information from the existing talking points - do not invent new experiences.
+          IMPORTANT: This should be high-level strategic guidance only, NOT specific examples or experiences. The talking points with concrete examples will be generated separately. Use phrases like "Consider highlighting..." or "Structure your answer to demonstrate..."
         `;
         
         // Get narrative guidance from OpenAI
