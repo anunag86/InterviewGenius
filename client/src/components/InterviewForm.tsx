@@ -1,19 +1,10 @@
 import { useState } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { useFileUpload } from "@/hooks/useFileUpload";
-import { useAuth } from "@/hooks/useAuth";
-import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Card, CardContent } from "@/components/ui/card";
-import { useToast } from "@/hooks/use-toast";
-
-// Define the form schema for validation
-const formSchema = z.object({
-  jobUrl: z.string().url("Please enter a valid URL").min(1, "Job posting URL is required"),
-});
+import { Button } from "@/components/ui/button";
+import { Loader2, Upload } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 
 interface InterviewFormProps {
   onSubmit: (formData: FormData) => void;
@@ -21,168 +12,137 @@ interface InterviewFormProps {
 }
 
 const InterviewForm = ({ onSubmit, isSubmitting }: InterviewFormProps) => {
-  const { toast } = useToast();
+  const [jobUrl, setJobUrl] = useState("");
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [fileError, setFileError] = useState<string | null>(null);
   const { user } = useAuth();
-  const { 
-    selectedFile, 
-    fileInputRef, 
-    fileName, 
-    handleFileChange, 
-    handleDragOver, 
-    handleDrop 
-  } = useFileUpload([".doc", ".docx"]);
-
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      jobUrl: "",
-    },
-  });
-
-  const handleFormSubmit = (values: z.infer<typeof formSchema>) => {
+  
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    
+    if (!files || files.length === 0) {
+      setSelectedFile(null);
+      return;
+    }
+    
+    const file = files[0];
+    
+    // Check file type
+    if (
+      file.type !== "application/msword" && // .doc
+      file.type !== "application/vnd.openxmlformats-officedocument.wordprocessingml.document" // .docx
+    ) {
+      setFileError("Please upload a Word document (.doc or .docx)");
+      setSelectedFile(null);
+      return;
+    }
+    
+    if (file.size > 10 * 1024 * 1024) { // 10MB
+      setFileError("File size should be less than 10MB");
+      setSelectedFile(null);
+      return;
+    }
+    
+    setFileError(null);
+    setSelectedFile(file);
+  };
+  
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
     if (!selectedFile) {
-      toast({
-        title: "Resume Required",
-        description: "Please upload your resume document",
-        variant: "destructive",
-      });
+      setFileError("Please upload your resume");
       return;
     }
-
-    if (!user?.linkedinProfileUrl) {
-      toast({
-        title: "LinkedIn Profile Required",
-        description: "Your LinkedIn profile is required. Please make sure you're signed in.",
-        variant: "destructive",
-      });
+    
+    if (!jobUrl) {
       return;
     }
-
+    
     const formData = new FormData();
-    formData.append("jobUrl", values.jobUrl);
-    formData.append("linkedinUrl", user.linkedinProfileUrl);
+    formData.append("jobUrl", jobUrl);
     formData.append("resume", selectedFile);
-
+    
     onSubmit(formData);
   };
-
+  
   return (
-    <section className="mb-12 bg-card rounded-xl shadow-sm p-6 md:p-8 border border-border" id="input-form">
-      <h2 className="text-2xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent mb-6">Tell us about the opportunity</h2>
-      
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-6">
-          {/* Job Posting URL Input */}
-          <FormField
-            control={form.control}
-            name="jobUrl"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel className="text-sm font-medium text-foreground">
-                  Job Posting URL
-                </FormLabel>
-                <FormControl>
-                  <div className="mt-1 relative rounded-md shadow-sm">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-                      </svg>
-                    </div>
-                    <Input
-                      {...field}
-                      placeholder="https://example.com/job-posting"
-                      className="pl-10 py-3 border-border focus:border-primary focus:ring-primary"
-                    />
-                  </div>
-                </FormControl>
-                <p className="mt-1 text-xs text-muted-foreground">Enter the full URL of the job posting you're applying for</p>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          {/* Resume Upload */}
-          <div>
-            <FormLabel className="block text-sm font-medium text-foreground mb-1">
-              Resume Upload
-            </FormLabel>
-            <div 
-              className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-border border-dashed rounded-md bg-muted/50 hover:bg-muted transition-colors duration-200"
-              onDragOver={handleDragOver}
-              onDrop={handleDrop}
-            >
-              <div className="space-y-1 text-center">
-                <div className="flex text-sm text-foreground">
-                  <label htmlFor="resume-upload" className="relative cursor-pointer bg-white rounded-md font-medium text-primary hover:text-secondary transition-colors duration-200 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-primary">
-                    <span>Upload a file</span>
-                    <input 
-                      id="resume-upload" 
-                      name="resume" 
-                      type="file" 
-                      className="sr-only" 
-                      accept=".doc,.docx" 
-                      onChange={handleFileChange}
-                      ref={fileInputRef}
-                    />
-                  </label>
-                  <p className="pl-1">or drag and drop</p>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Word Document (.doc or .docx)
-                </p>
-                {fileName && (
-                  <div className="text-sm text-foreground mt-2 bg-secondary/20 py-1 px-2 rounded">
-                    <span className="font-medium">Selected file:</span> <span>{fileName}</span>
-                  </div>
-                )}
-              </div>
-            </div>
+    <Card className="border-2 border-blue-100">
+      <CardHeader>
+        <CardTitle>Create Interview Preparation</CardTitle>
+        <CardDescription>
+          Upload your resume and provide a job posting URL to get started
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="space-y-2">
+            <Label htmlFor="jobUrl">Job Posting URL</Label>
+            <Input
+              id="jobUrl"
+              placeholder="https://www.example.com/job-posting"
+              value={jobUrl}
+              onChange={(e) => setJobUrl(e.target.value)}
+              required
+            />
+            <p className="text-xs text-gray-500">
+              Link to the job posting on LinkedIn, Indeed, or company website
+            </p>
           </div>
-
-          {/* LinkedIn profile notice */}
-          <div className="rounded-md bg-muted/50 p-4 border border-border/50">
-            <div className="flex">
-              <div className="flex-shrink-0">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 8a6 6 0 016 6v7h-4v-7a2 2 0 00-2-2 2 2 0 00-2 2v7h-4v-7a6 6 0 016-6z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v6h4v-6M4 10a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1v-2z" />
-                </svg>
-              </div>
-              <div className="ml-3 flex-1">
-                <h3 className="text-sm font-medium text-foreground">LinkedIn Profile</h3>
-                {user && user.linkedinProfileUrl ? (
-                  <div className="mt-1 text-sm text-muted-foreground">
-                    <p>Using your LinkedIn profile: <a href={user.linkedinProfileUrl} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{user.linkedinProfileUrl}</a></p>
-                  </div>
-                ) : (
-                  <div className="mt-1 text-sm text-destructive">
-                    <p>Please sign in with LinkedIn to continue</p>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-
-          <div className="flex justify-center pt-4">
-            <Button 
-              type="submit" 
-              className="px-8 py-3 rounded-md shadow-md hover:shadow-lg text-foreground bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90 transition-all duration-300"
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? (
-                <span className="flex items-center">
-                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Processing...
+          
+          <div className="space-y-2">
+            <Label htmlFor="resume">Resume (Word document)</Label>
+            <div className="border-2 border-dashed border-gray-200 rounded-lg p-6 text-center">
+              <input
+                id="resume"
+                type="file"
+                onChange={handleFileChange}
+                className="hidden"
+                accept=".doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+              />
+              <label
+                htmlFor="resume"
+                className="cursor-pointer flex flex-col items-center justify-center"
+              >
+                <Upload className="h-10 w-10 text-gray-400 mb-2" />
+                <span className="text-sm font-medium mb-1">
+                  {selectedFile ? selectedFile.name : "Upload your resume"}
                 </span>
-              ) : "Generate Interview Prep"}
-            </Button>
+                <span className="text-xs text-gray-500">
+                  .doc or .docx format, max 10MB
+                </span>
+              </label>
+            </div>
+            {fileError && (
+              <p className="text-sm text-red-600">{fileError}</p>
+            )}
           </div>
+          
+          {user?.linkedinProfileUrl && (
+            <div className="bg-blue-50 p-4 rounded-lg">
+              <p className="text-sm text-blue-800">
+                <span className="font-medium">LinkedIn Profile:</span> Your LinkedIn data will be automatically included from your connected profile.
+              </p>
+            </div>
+          )}
+          
+          <Button
+            type="submit"
+            disabled={isSubmitting || !jobUrl || !selectedFile}
+            className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+          >
+            {isSubmitting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Generating...
+              </>
+            ) : (
+              "Prepare for Interview"
+            )}
+          </Button>
         </form>
-      </Form>
-    </section>
+      </CardContent>
+    </Card>
   );
 };
 
