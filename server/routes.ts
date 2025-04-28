@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import multer from "multer";
 import { generateInterview, getInterviewStatus, getInterviewHistory, saveUserResponse, getUserResponsesForInterview, gradeUserResponse } from "./controllers/interview";
 import { submitFeedback } from "./controllers/feedback";
+import { getLinkedInAuthUrl, handleLinkedInCallback, getCurrentUser, logout } from "./controllers/auth";
 
 // Configure multer for memory storage (files are processed in memory)
 const upload = multer({
@@ -43,6 +44,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Feedback endpoint
   app.post("/api/feedback", submitFeedback);
+  
+  // Auth endpoints
+  app.get("/api/auth/linkedin/url", getLinkedInAuthUrl);
+  app.get("/api/auth/linkedin/callback", handleLinkedInCallback);
+  app.get("/api/auth/me", getCurrentUser);
+  app.post("/api/auth/logout", logout);
 
   const httpServer = createServer(app);
 

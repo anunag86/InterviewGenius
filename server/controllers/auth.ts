@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { db } from "../../db";
 import { users, insertUserSchema } from "../../shared/schema";
 import { eq } from "drizzle-orm";
+import "express-session";
 
 // LinkedIn OAuth configuration
 const LINKEDIN_CLIENT_ID = process.env.LINKEDIN_CLIENT_ID;

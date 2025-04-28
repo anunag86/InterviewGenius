@@ -6,15 +6,17 @@ import NotFound from "@/pages/not-found";
 import Home from "@/pages/Home";
 import History from "@/pages/History";
 import InterviewDetail from "@/pages/InterviewDetail";
-import PrivacyPolicy from "@/pages/PrivacyPolicy"; // Added import for PrivacyPolicy
+import PrivacyPolicy from "@/pages/PrivacyPolicy";
+import Login from "@/pages/Login";
 
 function Router() {
   return (
     <Switch>
       <Route path="/" component={Home} />
+      <Route path="/login" component={Login} />
       <Route path="/history" component={History} />
       <Route path="/interview/:id" component={InterviewDetail} />
-      <Route path="/privacy" component={PrivacyPolicy} /> {/* Added PrivacyPolicy route */}
+      <Route path="/privacy" component={PrivacyPolicy} />
       {/* Fallback to 404 */}
       <Route component={NotFound} />
     </Switch>
