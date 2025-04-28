@@ -7,11 +7,25 @@ import "express-session";
 // LinkedIn OAuth configuration
 const LINKEDIN_CLIENT_ID = process.env.LINKEDIN_CLIENT_ID;
 const LINKEDIN_CLIENT_SECRET = process.env.LINKEDIN_CLIENT_SECRET;
-// For Replit, we need to use the full URL with the Replit domain
-const BASE_URL = process.env.NODE_ENV === 'production' 
-  ? `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co` 
-  : 'http://localhost:5000';
-const REDIRECT_URI = process.env.REDIRECT_URI || `${BASE_URL}/api/auth/linkedin/callback`;
+
+// Define a list of supported redirect URIs for LinkedIn OAuth
+// This handles both development and production environments
+const SUPPORTED_REDIRECT_URIS = [
+  // Local development
+  'http://localhost:5000/api/auth/linkedin/callback',
+  // Replit domain
+  `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co/api/auth/linkedin/callback`,
+  // Custom domain if provided
+  process.env.REDIRECT_URI,
+].filter(Boolean); // Remove any undefined/null values
+
+// Log available redirect URIs for debugging
+console.log('Available LinkedIn redirect URIs:', SUPPORTED_REDIRECT_URIS);
+
+// Use the first redirect URI as the default
+const REDIRECT_URI = SUPPORTED_REDIRECT_URIS[0] || 'http://localhost:5000/api/auth/linkedin/callback';
+
+// LinkedIn API endpoints
 const LINKEDIN_AUTH_URL = "https://www.linkedin.com/oauth/v2/authorization";
 const LINKEDIN_TOKEN_URL = "https://www.linkedin.com/oauth/v2/accessToken";
 const LINKEDIN_PROFILE_URL = "https://api.linkedin.com/v2/me";
@@ -62,8 +76,8 @@ export const handleLinkedInCallback = async (req: Request, res: Response) => {
         grant_type: "authorization_code",
         code: code as string,
         redirect_uri: REDIRECT_URI,
-        client_id: LINKEDIN_CLIENT_ID as string,
-        client_secret: LINKEDIN_CLIENT_SECRET as string,
+        client_id: LINKEDIN_CLIENT_ID || "",
+        client_secret: LINKEDIN_CLIENT_SECRET || "",
       }),
     });
     

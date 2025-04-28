@@ -1,161 +1,136 @@
 import { useState, useEffect } from "react";
-import { Link, useLocation } from "wouter";
-import { useToast } from "@/hooks/use-toast";
+import { useLocation } from "wouter";
+import { useAuth } from "@/hooks/useAuth";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import { getInterviewHistory, InterviewHistoryItem } from "@/lib/openai";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { format, formatDistanceToNow } from "date-fns";
-import { Skeleton } from "@/components/ui/skeleton";
-import { BriefcaseIcon, CalendarIcon, ClockIcon, ChevronRightIcon } from "lucide-react";
+import { Loader2 } from "lucide-react";
+
+interface HistoryItem {
+  id: string;
+  jobTitle: string;
+  company: string;
+  createdAt: string;
+  expiresAt: string;
+}
 
 const History = () => {
-  const { toast } = useToast();
-  const [, setLocation] = useLocation();
-  const [historyItems, setHistoryItems] = useState<InterviewHistoryItem[]>([]);
+  const [history, setHistory] = useState<HistoryItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [, setLocation] = useLocation();
+  const { isAuthenticated } = useAuth();
 
   useEffect(() => {
     const fetchHistory = async () => {
       try {
-        setIsLoading(true);
-        const history = await getInterviewHistory();
-        setHistoryItems(history);
+        const response = await fetch("/api/interview/history");
+        
+        if (!response.ok) {
+          throw new Error("Failed to fetch interview history");
+        }
+        
+        const data = await response.json();
+        setHistory(data.interviews || []);
       } catch (error) {
         console.error("Error fetching history:", error);
-        toast({
-          title: "Error",
-          description: "Failed to load interview history.",
-          variant: "destructive",
-        });
+        setError("Failed to load your interview history. Please try again.");
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchHistory();
-  }, [toast]);
-
-  const handleNewPrep = () => {
-    setLocation("/");
-  };
+    if (isAuthenticated) {
+      fetchHistory();
+    }
+  }, [isAuthenticated]);
 
   const formatDate = (dateString: string) => {
-    try {
-      const date = new Date(dateString);
-      return format(date, "MMM d, yyyy");
-    } catch (error) {
-      return "Invalid date";
-    }
-  };
-
-  const formatTimeAgo = (dateString: string) => {
-    try {
-      const date = new Date(dateString);
-      return formatDistanceToNow(date, { addSuffix: true });
-    } catch (error) {
-      return "Unknown";
-    }
-  };
-
-  const formatExpiryDate = (dateString: string) => {
-    try {
-      const date = new Date(dateString);
-      const daysLeft = Math.ceil((date.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
-      return `${daysLeft} days left`;
-    } catch (error) {
-      return "Unknown";
-    }
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
   };
 
   return (
-    <>
+    <div className="flex flex-col min-h-screen">
       <Header />
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex justify-between items-center mb-8">
-          <div>
-            <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-              Your Interview Preparations
-            </h1>
-            <p className="text-muted-foreground">
-              Your previous interview preparations are saved for 30 days
-            </p>
+      
+      <main className="flex-grow container mx-auto px-4 py-8 max-w-4xl">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold mb-2 bg-gradient-to-r from-blue-700 to-purple-600 bg-clip-text text-transparent">
+            Interview History
+          </h1>
+          <p className="text-gray-600">
+            Access your past interview preparations for the last 30 days.
+          </p>
+        </div>
+        
+        {isLoading ? (
+          <div className="flex justify-center my-12">
+            <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
           </div>
-          <Button onClick={handleNewPrep} className="bg-primary hover:bg-primary/90">
-            New Preparation
-          </Button>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {isLoading ? (
-            // Loading skeletons
-            Array.from({ length: 6 }).map((_, i) => (
-              <Card key={i} className="shadow-md hover:shadow-lg transition-shadow">
+        ) : error ? (
+          <Card>
+            <CardContent className="pt-6">
+              <div className="text-center">
+                <p className="text-red-600 mb-4">{error}</p>
+                <Button onClick={() => window.location.reload()}>
+                  Try Again
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        ) : history.length === 0 ? (
+          <Card>
+            <CardContent className="pt-6">
+              <div className="text-center py-8">
+                <h3 className="text-xl font-semibold mb-2">No interview history found</h3>
+                <p className="text-gray-600 mb-6">
+                  You haven't created any interview preparations in the last 30 days.
+                </p>
+                <Button onClick={() => setLocation("/")}>
+                  Create New Preparation
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="grid gap-4">
+            {history.map((item) => (
+              <Card key={item.id} className="hover:shadow-md transition-shadow">
                 <CardHeader className="pb-2">
-                  <Skeleton className="h-5 w-3/4 mb-2" />
-                  <Skeleton className="h-4 w-1/2" />
+                  <CardTitle className="text-xl">{item.jobTitle}</CardTitle>
+                  <CardDescription>{item.company}</CardDescription>
                 </CardHeader>
-                <CardContent className="pb-2">
-                  <div className="space-y-3">
-                    <Skeleton className="h-4 w-full" />
-                    <Skeleton className="h-4 w-3/4" />
-                  </div>
-                </CardContent>
-                <CardFooter>
-                  <Skeleton className="h-9 w-full" />
-                </CardFooter>
-              </Card>
-            ))
-          ) : historyItems.length === 0 ? (
-            <div className="col-span-full text-center py-12">
-              <h3 className="text-xl font-medium text-muted-foreground mb-4">
-                No interview preparations yet
-              </h3>
-              <p className="mb-6 text-muted-foreground">
-                Create your first interview preparation to get started
-              </p>
-              <Button onClick={handleNewPrep} className="bg-primary hover:bg-primary/90">
-                Create New Preparation
-              </Button>
-            </div>
-          ) : (
-            historyItems.map((item) => (
-              <Card key={item.id} className="shadow-md hover:shadow-lg transition-shadow">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-lg font-medium">{item.jobTitle}</CardTitle>
-                  <CardDescription className="flex items-center gap-1">
-                    <BriefcaseIcon size={14} />
-                    {item.company}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="pb-2">
-                  <div className="text-sm text-muted-foreground space-y-1">
-                    <div className="flex items-center gap-1">
-                      <CalendarIcon size={14} />
-                      <span>Created {formatTimeAgo(item.createdAt)}</span>
+                <CardContent>
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <p className="text-sm text-gray-500">
+                        Created: {formatDate(item.createdAt)}
+                      </p>
+                      <p className="text-sm text-gray-500">
+                        Expires: {formatDate(item.expiresAt)}
+                      </p>
                     </div>
-                    <div className="flex items-center gap-1">
-                      <ClockIcon size={14} />
-                      <span>{formatExpiryDate(item.expiresAt)}</span>
-                    </div>
-                  </div>
-                </CardContent>
-                <CardFooter>
-                  <Link href={`/interview/${item.id}`}>
-                    <Button variant="outline" className="w-full flex items-center justify-between">
-                      <span>View Details</span>
-                      <ChevronRightIcon size={16} />
+                    <Button
+                      onClick={() => setLocation(`/interview/${item.id}`)}
+                      className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                    >
+                      View Preparation
                     </Button>
-                  </Link>
-                </CardFooter>
+                  </div>
+                </CardContent>
               </Card>
-            ))
-          )}
-        </div>
+            ))}
+          </div>
+        )}
       </main>
+      
       <Footer />
-    </>
+    </div>
   );
 };
 
