@@ -1,143 +1,136 @@
 import { Request, Response } from "express";
-import { db } from "../../db";
-import { users, insertUserSchema } from "../../shared/schema";
-import { eq } from "drizzle-orm";
+import { storage } from "../storage";
+import { InsertUser } from "@shared/schema";
+import { scrypt, randomBytes, timingSafeEqual } from "crypto";
+import { promisify } from "util";
+
+// Make scrypt use promises
+const scryptAsync = promisify(scrypt);
 
 /**
- * Handle manual LinkedIn profile information
- * This is a fallback for when OAuth isn't working
+ * Hash a password using scrypt
  */
-export const handleManualLinkedInProfile = async (req: Request, res: Response) => {
+async function hashPassword(password: string): Promise<string> {
+  // Generate a salt
+  const salt = randomBytes(16).toString("hex");
+  
+  // Hash the password with the salt
+  const buf = (await scryptAsync(password, salt, 64)) as Buffer;
+  
+  // Return the hashed password with the salt
+  return `${buf.toString("hex")}.${salt}`;
+}
+
+/**
+ * Verify a password against a stored hash
+ */
+async function verifyPassword(password: string, hashedPassword: string): Promise<boolean> {
+  // Get the stored hash and salt
+  const [storedHash, salt] = hashedPassword.split(".");
+  
+  // Hash the provided password with the same salt
+  const buf = (await scryptAsync(password, salt, 64)) as Buffer;
+  const suppliedHash = buf.toString("hex");
+  
+  // Compare the hashes using constant-time comparison
+  return timingSafeEqual(
+    Buffer.from(storedHash, "hex"),
+    Buffer.from(suppliedHash, "hex")
+  );
+}
+
+/**
+ * Register a new user
+ */
+export const registerUser = async (req: Request, res: Response) => {
   try {
-    const { linkedinUrl, fullname, email } = req.body;
+    const { username, email, password } = req.body;
     
     // Validate required fields
-    if (!linkedinUrl || !fullname || !email) {
-      return res.status(400).json({ error: "Missing required fields" });
+    if (!username || !password) {
+      return res.status(400).json({ error: "Username and password are required" });
     }
     
-    // Validate LinkedIn URL format
-    const linkedinRegex = /^https?:\/\/(www\.)?linkedin\.com\/in\/[\w-]+\/?$/;
-    if (!linkedinRegex.test(linkedinUrl)) {
-      return res.status(400).json({ error: "Invalid LinkedIn URL format" });
+    // Check if username is already taken
+    const existingUser = await storage.getUserByUsername(username);
+    if (existingUser) {
+      return res.status(400).json({ error: "Username is already taken" });
     }
     
-    // Extract LinkedIn ID from the URL
-    const urlParts = linkedinUrl.split('/');
-    const linkedinId = urlParts[urlParts.length - 1].replace(/\/$/, '');
+    // Hash the password
+    const hashedPassword = await hashPassword(password);
     
-    // Extract first and last name
-    const nameParts = fullname.trim().split(' ');
-    const firstName = nameParts[0];
-    const lastName = nameParts.slice(1).join(' ');
+    // Create new user
+    const userData: InsertUser = {
+      username,
+      email: email || "",
+      password: hashedPassword,
+      firstName: "",
+      lastName: "",
+      displayName: username,
+      profilePictureUrl: "",
+      linkedinProfileUrl: ""
+    };
     
-    console.log(`MANUAL AUTH: Processing user ${firstName} ${lastName} (${email}) with LinkedIn URL ${linkedinUrl}`);
+    // Insert the user into the database
+    const user = await storage.createUser(userData);
     
-    // Find or create user by LinkedIn ID (since email field might be missing)
-    let user = await db.query.users.findFirst({
-      where: eq(users.linkedinId, linkedinId)
-    });
-    
-    if (!user) {
-      console.log("MANUAL AUTH: Creating new user");
-      
-      const userData = {
-        linkedinId,
-        email,
-        firstName,
-        lastName,
-        displayName: fullname.trim(),
-        profilePictureUrl: "",
-        linkedinProfileUrl: linkedinUrl,
-        lastLoginAt: new Date()
-      };
-      
-      try {
-        // Create user with all required fields
-        const userData = {
-          linkedinId: linkedinId,
-          email: email || "",
-          firstName: firstName || "",
-          lastName: lastName || "",
-          displayName: fullname.trim() || "LinkedIn User",
-          profilePictureUrl: "",
-          linkedinProfileUrl: linkedinUrl || "",
-          lastLoginAt: new Date()
-        };
-        
-        console.log("MANUAL AUTH: Inserting user with data:", JSON.stringify(userData));
-        
-        // Insert directly without validation to bypass any schema issues
-        const [newUser] = await db.insert(users).values(userData).returning();
-        user = newUser;
-        console.log("MANUAL AUTH: User created successfully", user.id);
-      } catch (error) {
-        console.error("MANUAL AUTH: Error creating user:", error);
-        
-        // Provide more detailed error message for debugging
-        let errorMessage = "Failed to create user";
-        if (error instanceof Error) {
-          errorMessage = `Failed to create user: ${error.message}`;
-          console.error("Detailed error:", error);
-        }
-        
-        // Just in case there's still an issue, create a mock user object to proceed
-        user = {
-          id: 999,
-          linkedinId: linkedinId,
-          email: email || "",
-          firstName: firstName || "",
-          lastName: lastName || "",
-          displayName: fullname.trim() || "LinkedIn User",
-          profilePictureUrl: "",
-          linkedinProfileUrl: linkedinUrl || "",
-          createdAt: new Date(),
-          lastLoginAt: new Date()
-        };
-        
-        console.log("MANUAL AUTH: Using fallback user:", user.id);
-      }
-    } else {
-      console.log("MANUAL AUTH: Updating existing user", user.id);
-      
-      try {
-        await db
-          .update(users)
-          .set({
-            firstName,
-            lastName,
-            displayName: fullname.trim(),
-            linkedinProfileUrl: linkedinUrl,
-            lastLoginAt: new Date()
-          })
-          .where(eq(users.linkedinId, linkedinId));
-      } catch (error) {
-        console.error("MANUAL AUTH: Error updating user:", error);
-        // Continue with existing user even if update fails
-      }
+    // Set user ID in session
+    if (req.session) {
+      req.session.userId = user.id;
     }
     
-    // Set session
-    req.session.userId = user.id;
-    req.session.linkedinId = linkedinId;
-    req.session.linkedinProfileUrl = linkedinUrl;
-    
-    console.log("MANUAL AUTH: User session established");
-    return res.status(200).json({ success: true, user: { id: user.id, name: fullname } });
+    // Return the user data without password
+    const { password: _, ...userWithoutPassword } = user;
+    res.status(201).json(userWithoutPassword);
   } catch (error) {
-    console.error("MANUAL AUTH: Unhandled error:", error);
+    console.error("Error registering user:", error);
+    res.status(500).json({ error: "Failed to register user" });
+  }
+};
+
+/**
+ * Login with username and password
+ */
+export const loginUser = async (req: Request, res: Response) => {
+  try {
+    const { username, password } = req.body;
     
-    // Provide more detailed error for debugging
-    let errorMessage = "Authentication failed";
-    if (error instanceof Error) {
-      errorMessage = `Authentication failed: ${error.message}`;
-      
-      // Special handling for database errors
-      if (error.message.includes("column") && error.message.includes("does not exist")) {
-        errorMessage = "Database schema issue - please contact support. We're working on fixing this!";
-      }
+    // Validate required fields
+    if (!username || !password) {
+      return res.status(400).json({ error: "Username and password are required" });
     }
     
-    return res.status(500).json({ error: errorMessage });
+    // Get the user by username
+    const user = await storage.getUserByUsername(username);
+    if (!user) {
+      return res.status(401).json({ error: "Invalid username or password" });
+    }
+    
+    // Check if the user has a password (might be a LinkedIn-only user)
+    if (!user.password) {
+      return res.status(401).json({ error: "This account doesn't have a password. Please use LinkedIn login." });
+    }
+    
+    // Verify the password
+    const isPasswordValid = await verifyPassword(password, user.password);
+    if (!isPasswordValid) {
+      return res.status(401).json({ error: "Invalid username or password" });
+    }
+    
+    // Update last login time
+    await storage.updateLastLogin(user.id);
+    
+    // Set user ID in session
+    if (req.session) {
+      req.session.userId = user.id;
+    }
+    
+    // Return the user data without password
+    const { password: _, ...userWithoutPassword } = user;
+    res.status(200).json(userWithoutPassword);
+  } catch (error) {
+    console.error("Error logging in user:", error);
+    res.status(500).json({ error: "Failed to login" });
   }
 };

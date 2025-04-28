@@ -1,5 +1,5 @@
 import { db } from "@db";
-import { interviewPreps, users } from "@shared/schema";
+import { interviewPreps, users, InsertUser } from "@shared/schema";
 import { eq, lt, desc, and, isNull } from "drizzle-orm";
 import { addDays } from "date-fns";
 
@@ -51,6 +51,39 @@ export const storage = {
     } catch (error) {
       console.error("Error getting user by username:", error);
       return null;
+    }
+  },
+  
+  // Create a new user with manual registration
+  createUser: async (userData: InsertUser) => {
+    try {
+      // Ensure username is unique by adding a random suffix if needed
+      let uniqueUsername = userData.username;
+      let usernameExists = await storage.getUserByUsername(uniqueUsername);
+      
+      // If username exists, add random suffix until unique
+      if (usernameExists) {
+        let attempts = 0;
+        while (usernameExists && attempts < 10) {
+          const randomSuffix = Math.floor(Math.random() * 1000);
+          uniqueUsername = `${userData.username}${randomSuffix}`;
+          usernameExists = await storage.getUserByUsername(uniqueUsername);
+          attempts++;
+        }
+      }
+      
+      // Create the user with sanitized data
+      const result = await db.insert(users).values({
+        ...userData,
+        username: uniqueUsername,
+        createdAt: new Date(),
+        lastLoginAt: new Date()
+      }).returning();
+      
+      return result[0];
+    } catch (error) {
+      console.error("Error creating user:", error);
+      throw error;
     }
   },
   

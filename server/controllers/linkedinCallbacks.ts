@@ -175,15 +175,20 @@ export const handleUniversalCallback = async (req: Request, res: Response) => {
       console.log(`UNIVERSAL CALLBACK [${req.path}]: Creating new user with LinkedIn ID:`, linkedinId);
       
       try {
+        // Generate a username from the email or name
+        const emailUsername = email ? email.split('@')[0] : '';
+        const username = emailUsername || firstName?.toLowerCase() || 'li_user' + Math.floor(Math.random() * 10000);
+        
         const [newUser] = await db.insert(users).values({
-          linkedinId,
+          username: username,
+          linkedin_id: linkedinId,
           email: email || "",
-          firstName: firstName || "",
-          lastName: lastName || "",
-          displayName: `${firstName} ${lastName}`.trim() || "LinkedIn User",
-          profilePictureUrl: "",
-          linkedinProfileUrl: `https://www.linkedin.com/in/${linkedinId}`,
-          lastLoginAt: new Date()
+          first_name: firstName || "",
+          last_name: lastName || "",
+          display_name: `${firstName} ${lastName}`.trim() || "LinkedIn User",
+          profile_picture_url: "",
+          linkedin_profile_url: `https://www.linkedin.com/in/${linkedinId}`,
+          last_login_at: new Date()
         }).returning();
         
         user = newUser;
@@ -200,10 +205,10 @@ export const handleUniversalCallback = async (req: Request, res: Response) => {
         await db.update(users)
           .set({
             email: email || user.email,
-            firstName: firstName || user.firstName,
-            lastName: lastName || user.lastName,
-            displayName: `${firstName} ${lastName}`.trim() || user.displayName,
-            lastLoginAt: new Date()
+            first_name: firstName || user.firstName,
+            last_name: lastName || user.lastName,
+            display_name: `${firstName} ${lastName}`.trim() || user.displayName,
+            last_login_at: new Date()
           })
           .where(eq(users.id, user.id));
         

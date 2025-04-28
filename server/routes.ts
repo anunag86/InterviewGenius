@@ -7,7 +7,7 @@ import { getLinkedInAuthUrl, handleLinkedInCallback, getCurrentUser, logout } fr
 import { getLinkedInDiagnostics } from "./controllers/diagnostics";
 import { getSimpleLinkedInAuthUrl, handleSimpleLinkedInCallback } from "./controllers/altauth";
 import { getFixedLinkedInAuthUrl, handleFixedLinkedInCallback } from "./controllers/fixedAuthLinkedin";
-import { handleManualLinkedInProfile } from "./controllers/manualAuth";
+import { registerUser, loginUser } from "./controllers/manualAuth";
 import { getSimpleAuthUrl, handleSimpleCallback } from "./controllers/simpleAuth";
 import { handleUniversalCallback } from "./controllers/linkedinCallbacks";
 import { generateAuthUrl } from "./controllers/linkedinAuthGenerator";
@@ -139,8 +139,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.sendFile('linkedin-bypass.html', { root: './client/public' });
   });
   
-  // Manual LinkedIn profile submission endpoint
-  app.post("/api/auth/manual-linkedin", handleManualLinkedInProfile);
+  // Manual registration and login endpoints
+  app.post("/api/auth/register", registerUser);
+  app.post("/api/auth/login", loginUser);
   
   // New simplified LinkedIn auth endpoints
   app.get("/api/auth/linkedin/simple", getSimpleAuthUrl);

@@ -1,157 +1,135 @@
 import { Request } from "express";
 
-/**
- * Domain detection types for different environments
- */
-export enum DomainEnvironment {
-  REPLIT_EDITOR = 'replit_editor',
-  REPLIT_DEPLOYMENT = 'replit_deployment',
-  LOCALHOST = 'localhost',
-  UNKNOWN = 'unknown'
-}
-
-/**
- * Detected domain information with comprehensive details
- */
-export interface DetectedDomain {
-  environment: DomainEnvironment;
-  fullDomain: string;
+interface DomainInfo {
   protocol: string;
-  baseUrl: string;
-  source: string;
+  domain: string;
+  fullDomain: string;
+  isReplit: boolean;
+  isLocalhost: boolean;
 }
 
 /**
- * Generate a set of possible redirect URIs covering all scenarios
- * This helps with both the LinkedIn developer console setup and fallback options
+ * Get domain information from request headers
+ * 
+ * This function analyzes request headers to determine the current domain
+ * and protocol, supporting both Replit and local development environments.
  */
-export function generateAllPossibleRedirectUris(callbackPath: string = '/api/auth/linkedin/callback'): string[] {
-  const uris: string[] = [];
+export function getDomainInfo(req: Request): DomainInfo {
+  // Get host from headers (prioritize X-Forwarded-Host for proxied requests)
+  const host = req.get('X-Forwarded-Host') || 
+               req.get('Host') || 
+               'localhost:5000';
   
-  // 1. From environment variables (Replit deployment)
-  if (process.env.REPL_SLUG && process.env.REPL_OWNER) {
-    uris.push(`https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co${callbackPath}`);
-  }
+  // Determine protocol (prioritize X-Forwarded-Proto for proxied requests)
+  const protocol = req.get('X-Forwarded-Proto') || 
+                   req.protocol || 
+                   'http';
   
-  // 2. Common Replit editor domains
-  uris.push(`https://*.picard.replit.dev${callbackPath}`);
-  uris.push(`https://*.replit.dev${callbackPath}`);
+  // Check if this is a Replit environment
+  const isReplit = host.includes('.repl.co') || 
+                   host.includes('.replit.dev') || 
+                   host.includes('.replit.app');
   
-  // 3. Generic development options
-  uris.push(`http://localhost:5000${callbackPath}`);
-  uris.push(`http://localhost:3000${callbackPath}`);
+  // Check if this is localhost
+  const isLocalhost = host.includes('localhost') || 
+                      host.includes('127.0.0.1');
   
-  // 4. Custom domain if set
-  if (process.env.CUSTOM_DOMAIN) {
-    uris.push(`https://${process.env.CUSTOM_DOMAIN}${callbackPath}`);
-  }
-
-  return uris;
-}
-
-/**
- * Comprehensive domain detection function that handles all possible scenarios
- * and provides detailed information for debugging
- */
-export function detectDomain(req: Request, callbackPath: string = '/api/auth/linkedin/callback'): DetectedDomain {
-  const host = req.headers.host;
-  const protocol = req.secure || (req.headers['x-forwarded-proto'] === 'https') ? 'https' : 'http';
+  // Construct full domain
+  const fullDomain = `${protocol}://${host}`;
   
-  // 1. Try to detect from request headers (most reliable)
-  if (host) {
-    // Check if we're in the Replit editor
-    if (host.includes('picard.replit.dev') || host.includes('.replit.dev')) {
-      return {
-        environment: DomainEnvironment.REPLIT_EDITOR,
-        fullDomain: `${protocol}://${host}${callbackPath}`,
-        protocol,
-        baseUrl: `${protocol}://${host}`,
-        source: 'request_headers'
-      };
-    }
-    
-    // Check if we're in a custom domain or the regular Replit deployment
-    return {
-      environment: host.includes('localhost') ? DomainEnvironment.LOCALHOST : DomainEnvironment.REPLIT_DEPLOYMENT,
-      fullDomain: `${protocol}://${host}${callbackPath}`,
-      protocol,
-      baseUrl: `${protocol}://${host}`,
-      source: 'request_headers'
-    };
-  }
-  
-  // 2. Fallback to environment variables (for server-side operations)
-  if (process.env.REPL_SLUG && process.env.REPL_OWNER) {
-    return {
-      environment: DomainEnvironment.REPLIT_DEPLOYMENT,
-      fullDomain: `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co${callbackPath}`,
-      protocol: 'https',
-      baseUrl: `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`,
-      source: 'environment_vars'
-    };
-  }
-  
-  // 3. Ultimate fallback to localhost
   return {
-    environment: DomainEnvironment.LOCALHOST,
-    fullDomain: `http://localhost:5000${callbackPath}`,
-    protocol: 'http',
-    baseUrl: 'http://localhost:5000',
-    source: 'fallback'
+    protocol,
+    domain: host,
+    fullDomain,
+    isReplit,
+    isLocalhost
   };
 }
 
 /**
- * Get multiple redirect URIs in priority order for robust fallback
+ * Generate prioritized redirect URIs for OAuth callbacks
+ * 
+ * This function generates multiple possible redirect URIs based on the current domain,
+ * with the most likely one first. This allows fallback attempts if the primary URI fails.
  */
-export function getPrioritizedRedirectUris(req: Request, callbackPath: string = '/api/auth/linkedin/callback'): string[] {
-  const primary = detectDomain(req, callbackPath);
-  const alternates: string[] = [];
+export function getPrioritizedRedirectUris(req: Request, callbackPath: string): string[] {
+  const domainInfo = getDomainInfo(req);
+  const redirectUris: string[] = [];
   
-  // Add the primary detected domain first
-  const redirectUris = [primary.fullDomain];
+  // First priority: Use the actual domain from the request
+  redirectUris.push(`${domainInfo.fullDomain}${callbackPath}`);
   
-  // Then add environment-specific alternatives
-  if (process.env.REPL_SLUG && process.env.REPL_OWNER) {
-    const replitDomain = `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co${callbackPath}`;
-    if (replitDomain !== primary.fullDomain) {
-      alternates.push(replitDomain);
+  // For Replit environments, add additional possibilities
+  if (domainInfo.isReplit) {
+    // Extract Replit workspace and username
+    const replitPattern = /^(.*?)\.(.*?)\.repl\.(co|dev|app)$/;
+    const match = domainInfo.domain.match(replitPattern);
+    
+    if (match) {
+      const workspace = match[1];
+      const username = match[2];
+      
+      // Add variants with different domains (.repl.co, .replit.dev, etc)
+      redirectUris.push(`https://${workspace}.${username}.repl.co${callbackPath}`);
+      redirectUris.push(`https://${workspace}.${username}.replit.dev${callbackPath}`);
+      redirectUris.push(`https://${workspace}.${username}.replit.app${callbackPath}`);
+      
+      // Add variant with Replit domain including www
+      redirectUris.push(`https://www.${workspace}.${username}.repl.co${callbackPath}`);
+    }
+    
+    // If environment variables are available, use them too
+    if (process.env.REPL_SLUG && process.env.REPL_OWNER) {
+      redirectUris.push(`https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co${callbackPath}`);
+      redirectUris.push(`https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.replit.dev${callbackPath}`);
     }
   }
   
-  // Add localhost options as final fallbacks
-  alternates.push(`http://localhost:5000${callbackPath}`);
-  alternates.push(`http://localhost:3000${callbackPath}`);
+  // For localhost, add all variants
+  if (domainInfo.isLocalhost) {
+    redirectUris.push(`http://localhost:3000${callbackPath}`);
+    redirectUris.push(`http://localhost:5000${callbackPath}`);
+    redirectUris.push(`http://127.0.0.1:3000${callbackPath}`);
+    redirectUris.push(`http://127.0.0.1:5000${callbackPath}`);
+  }
   
-  // Filter out duplicates and add to main list
-  alternates.forEach(uri => {
-    if (!redirectUris.includes(uri)) {
-      redirectUris.push(uri);
-    }
-  });
+  // Finally, if configured in env, add that too
+  if (process.env.REDIRECT_URI) {
+    redirectUris.push(process.env.REDIRECT_URI);
+  }
   
-  return redirectUris;
+  // Remove duplicates
+  return Array.from(new Set(redirectUris));
 }
 
 /**
- * Log domain detection information for debugging
+ * Log domain detection information
  */
-export function logDomainInfo(req: Request, callbackPath: string = '/api/auth/linkedin/callback'): void {
-  const detected = detectDomain(req, callbackPath);
-  console.log('Domain Detection:', {
-    environment: detected.environment,
-    fullDomain: detected.fullDomain,
-    protocol: detected.protocol,
-    baseUrl: detected.baseUrl,
-    source: detected.source,
-    headers: {
-      host: req.headers.host,
-      forwardedProto: req.headers['x-forwarded-proto'],
-      referer: req.headers.referer
-    },
-    env: {
-      REPL_SLUG: process.env.REPL_SLUG,
-      REPL_OWNER: process.env.REPL_OWNER
-    }
+export function logDomainInfo(req: Request, callbackPath: string): void {
+  const domainInfo = getDomainInfo(req);
+  const redirectUris = getPrioritizedRedirectUris(req, callbackPath);
+  
+  console.log("DEBUG LinkedIn OAuth - Environment variables:");
+  console.log(`  REPL_SLUG: ${process.env.REPL_SLUG || 'not set'}`);
+  console.log(`  REPL_OWNER: ${process.env.REPL_OWNER || 'not set'}`);
+  console.log(`  REDIRECT_URI env var: ${process.env.REDIRECT_URI || 'not set'}`);
+  console.log(`  NODE_ENV: ${process.env.NODE_ENV || 'not set'}`);
+  
+  console.log(`Domain detection results:`, {
+    protocol: domainInfo.protocol,
+    domain: domainInfo.domain,
+    fullDomain: domainInfo.fullDomain,
+    isReplit: domainInfo.isReplit,
+    isLocalhost: domainInfo.isLocalhost
   });
+  
+  console.log("Prioritized redirect URIs:");
+  redirectUris.forEach((uri, i) => console.log(`  ${i+1}. ${uri}`));
+  
+  // Log the URI that will be used first
+  if (redirectUris.length > 0) {
+    console.log(`Using primary redirect URI: ${redirectUris[0]}`);
+  } else {
+    console.log("No redirect URIs could be generated");
+  }
 }

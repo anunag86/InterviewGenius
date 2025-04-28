@@ -15,9 +15,10 @@ function linkedInErrorHandler(error: LinkedInOAuthError, req: Request, res: Resp
   console.error("LinkedIn OAuth error:", error);
   
   // Store error in session for display
-  if (req.session) {
+  if (req.session && req.session.linkedinOAuth) {
+    const currentState = req.session.linkedinOAuth;
     req.session.linkedinOAuth = {
-      ...req.session.linkedinOAuth,
+      ...currentState,
       error: {
         message: error.message,
         stage: error.stage,

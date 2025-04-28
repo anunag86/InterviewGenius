@@ -1,6 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import fetch from "node-fetch";
-import { detectDomain, logDomainInfo, getPrioritizedRedirectUris } from "../utils/domainDetector";
+import { getPrioritizedRedirectUris, logDomainInfo } from "../utils/domainDetector";
 
 /**
  * LinkedIn OAuth configuration
@@ -8,58 +7,63 @@ import { detectDomain, logDomainInfo, getPrioritizedRedirectUris } from "../util
 export interface LinkedInOAuthConfig {
   clientId: string;
   clientSecret: string;
-  callbackPath: string;
-  scope: string;
+  callbackPath?: string;
+  scope?: string;
   state?: string;
   handleError?: (error: LinkedInOAuthError, req: Request, res: Response) => void;
 }
 
 /**
- * LinkedIn OAuth error
- */
-export interface LinkedInOAuthError {
-  stage: "authorization" | "callback" | "token_exchange" | "profile";
-  message: string;
-  originalError?: any;
-  details?: any;
-  timestamp: string;
-}
-
-/**
- * LinkedIn OAuth state
+ * LinkedIn OAuth state stored in session
  */
 export interface LinkedInOAuthState {
   startTime: number;
+  state: string;
   redirectUri: string;
   fallbackUris: string[];
-  state: string;
   attemptCount: number;
+  error?: {
+    message: string;
+    stage: string;
+    timestamp: string;
+  };
 }
 
 /**
- * LinkedIn profile information
+ * LinkedIn profile data returned from API
  */
 export interface LinkedInProfile {
   id: string;
   firstName: string;
   lastName: string;
   email?: string;
-  profilePicture?: string;
   fullResponse?: any;
 }
 
 /**
- * Default error handler that redirects to a fallback URL with descriptive error
+ * LinkedIn OAuth error information
  */
-export function defaultErrorHandler(error: LinkedInOAuthError, req: Request, res: Response): void {
-  console.error('LinkedIn OAuth Error:', error);
-  
-  // Redirect to a fallback URL with error information
-  res.redirect(`/auth?error=${encodeURIComponent(error.message)}&stage=${error.stage}`);
+export interface LinkedInOAuthError {
+  stage: string;
+  message: string;
+  originalError?: any;
+  details?: any;
+  timestamp?: string;
 }
 
 /**
- * LinkedIn OAuth Provider with robust error handling, retry logic, and fallbacks
+ * Default error handler for LinkedIn OAuth errors
+ */
+const defaultErrorHandler = (error: LinkedInOAuthError, req: Request, res: Response) => {
+  console.error('LinkedIn OAuth Error:', error);
+  res.status(500).send(`LinkedIn authentication error: ${error.message}`);
+};
+
+/**
+ * LinkedIn OAuth provider
+ * 
+ * This class handles LinkedIn OAuth authentication flows, with support for
+ * automatic domain detection, fallback URIs, and graceful error handling.
  */
 export class LinkedInProvider {
   private config: LinkedInOAuthConfig;
@@ -82,10 +86,10 @@ export class LinkedInProvider {
    * Generate LinkedIn authorization URL
    */
   generateAuthUrl(req: Request): string {
-    logDomainInfo(req, this.config.callbackPath);
+    logDomainInfo(req, this.config.callbackPath!);
     
     // Get domain information
-    const redirectUris = getPrioritizedRedirectUris(req, this.config.callbackPath);
+    const redirectUris = getPrioritizedRedirectUris(req, this.config.callbackPath!);
     const primaryRedirectUri = redirectUris[0];
     
     // Generate state parameter
@@ -108,7 +112,7 @@ export class LinkedInProvider {
       client_id: this.config.clientId,
       redirect_uri: primaryRedirectUri,
       state,
-      scope: this.config.scope
+      scope: this.config.scope!
     });
     
     // Log for debugging
@@ -130,7 +134,7 @@ export class LinkedInProvider {
       try {
         const authUrl = this.generateAuthUrl(req);
         res.redirect(authUrl);
-      } catch (error) {
+      } catch (error: any) {
         const oauthError: LinkedInOAuthError = {
           stage: "authorization",
           message: "Failed to generate LinkedIn authorization URL",
@@ -302,7 +306,7 @@ export class LinkedInProvider {
       }
       
       return data;
-    } catch (error) {
+    } catch (error: any) {
       // Enhance error with stage information if it's not already there
       if (error.stage) {
         throw error;
@@ -367,7 +371,7 @@ export class LinkedInProvider {
           email: emailData
         }
       };
-    } catch (error) {
+    } catch (error: any) {
       // Enhance error with stage information if it's not already there
       if (error.stage) {
         throw error;
