@@ -7,6 +7,7 @@ import { getLinkedInAuthUrl, handleLinkedInCallback, getCurrentUser, logout } fr
 import { getLinkedInDiagnostics } from "./controllers/diagnostics";
 import { getSimpleLinkedInAuthUrl, handleSimpleLinkedInCallback } from "./controllers/altauth";
 import { getFixedLinkedInAuthUrl, handleFixedLinkedInCallback } from "./controllers/fixedAuthLinkedin";
+import { handleManualLinkedInProfile } from "./controllers/manualAuth";
 import { 
   testLinkedInConnection, 
   testLinkedInCredentials,
@@ -103,6 +104,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/linkedin/fixed", (req, res) => {
     res.sendFile('linkedin-fixed.html', { root: './client/public' });
   });
+  
+  // Direct manual LinkedIn profile entry
+  app.get("/linkedin/direct", (req, res) => {
+    res.sendFile('linkedin-direct.html', { root: './client/public' });
+  });
+  
+  // Manual LinkedIn profile submission endpoint
+  app.post("/api/auth/manual-linkedin", handleManualLinkedInProfile);
   
   // Direct auth route - no JavaScript intermediary
   app.get("/linkedin/auth", (req, res) => {

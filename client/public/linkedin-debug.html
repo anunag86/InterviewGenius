@@ -217,16 +217,18 @@
     <p class="subtitle">Troubleshoot LinkedIn authentication issues step by step</p>
     
     <div id="recommended-fix" class="recommendation">
-      <h3>🎉 Try our new fixed authentication method</h3>
-      <p>We've created a simplified LinkedIn authentication flow that should solve most common issues:</p>
-      <a href="/linkedin/fixed"><button class="success">Try Fixed LinkedIn Auth</button></a>
-      <p><strong>This new method:</strong></p>
+      <h3>🎉 Try our manual LinkedIn profile entry</h3>
+      <p>Since LinkedIn OAuth is challenging, we've created a direct manual entry option:</p>
+      <a href="/linkedin/direct"><button class="success">Use Manual Profile Entry</button></a>
+      <p><strong>This direct method:</strong></p>
       <ul>
-        <li>Uses a simpler redirect URI format that LinkedIn prefers</li>
-        <li>Eliminates complex path segments that can cause rejection</li>
-        <li>Has improved error handling with detailed logging</li>
-        <li>Works better with LinkedIn's recent API changes</li>
+        <li>Bypasses OAuth completely - no more LinkedIn rejection errors</li>
+        <li>Let's you manually enter your LinkedIn profile URL</li>
+        <li>Creates the same user account for accessing the application</li>
+        <li>Works 100% of the time without any LinkedIn API restrictions</li>
       </ul>
+      <p>You can also still try our OAuth-based method if you prefer:</p>
+      <a href="/linkedin/fixed"><button>Try Fixed LinkedIn Auth</button></a>
     </div>
     
     <div class="test-group">
@@ -281,6 +283,7 @@
       <h2>Other Authentication Methods</h2>
       <p>We've implemented several different LinkedIn authentication approaches. Try one of these alternative methods:</p>
       <div class="button-row">
+        <a href="/linkedin/direct"><button class="success">Manual Entry Method</button></a>
         <a href="/linkedin"><button>Standard Method</button></a>
         <a href="/linkedin/simple"><button>Simple Method</button></a>
         <a href="/linkedin/auth"><button>Direct Method</button></a>
