@@ -5,6 +5,7 @@ import { generateInterview, getInterviewStatus, getInterviewHistory, saveUserRes
 import { submitFeedback } from "./controllers/feedback";
 import { getLinkedInAuthUrl, handleLinkedInCallback, getCurrentUser, logout } from "./controllers/auth";
 import { getLinkedInDiagnostics } from "./controllers/diagnostics";
+import { getSimpleLinkedInAuthUrl, handleSimpleLinkedInCallback } from "./controllers/altauth";
 
 // Configure multer for memory storage (files are processed in memory)
 const upload = multer({
@@ -62,8 +63,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.sendFile('linkedin-settings.html', { root: './client/public' });
   });
   
+  // Simple LinkedIn connection page
+  app.get("/linkedin/simple", (req, res) => {
+    res.sendFile('linkedin-simple.html', { root: './client/public' });
+  });
+  
   // LinkedIn diagnostics endpoint
   app.get("/api/diagnostics/linkedin", getLinkedInDiagnostics);
+  
+  // Simple LinkedIn auth endpoints with different redirect URI pattern
+  app.get("/api/auth/linkedin/simple-url", getSimpleLinkedInAuthUrl);
+  app.get("/callback", handleSimpleLinkedInCallback);
   
   // Direct auth route - no JavaScript intermediary
   app.get("/linkedin/auth", (req, res) => {

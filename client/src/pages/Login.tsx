@@ -104,6 +104,10 @@ const Login = () => {
               <p className="text-center text-sm text-gray-500 mt-2">
                 Having trouble? Try our <a href="/linkedin" className="text-blue-600 hover:underline">alternative connection method</a>
               </p>
+              
+              <p className="text-center text-sm text-gray-500 mt-2">
+                Or use our <a href="/linkedin/simple" className="text-blue-600 hover:underline">simplified LinkedIn connection</a> with a different redirect pattern
+              </p>
 
               <div className="text-center text-sm text-gray-500 mt-2">
                 <p>
