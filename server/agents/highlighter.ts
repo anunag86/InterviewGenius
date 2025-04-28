@@ -5,6 +5,13 @@ import { AgentThought, CandidateHighlights } from "../../client/src/types";
 interface HighlightResult {
   relevantPoints: string[];
   gapAreas: string[];
+  verbatimSkillsAndExperiences?: string[];
+  specificMetrics?: string[];
+  suggestedTalkingPoints?: Array<{
+    skill: string;
+    resumeEvidence: string;
+    context: string;
+  }>;
 }
 
 // Highlighter Agent that extracts relevant resume points and identifies gaps
@@ -125,10 +132,13 @@ export async function highlightResumePoints(
       sourcesConsulted: ["Resume", "Job Analysis"]
     });
     
-    // Create a properly typed result
+    // Create a properly typed result with enhanced data
     const analysis: CandidateHighlights = {
       relevantPoints: highlightResult.relevantPoints,
-      gapAreas: highlightResult.gapAreas
+      gapAreas: highlightResult.gapAreas,
+      verbatimSkillsAndExperiences: highlightResult.verbatimSkillsAndExperiences || [],
+      specificMetrics: highlightResult.specificMetrics || [],
+      suggestedTalkingPoints: highlightResult.suggestedTalkingPoints || []
     };
     
     return { analysis, thoughts };

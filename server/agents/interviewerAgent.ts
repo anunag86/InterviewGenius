@@ -102,27 +102,71 @@ export async function generateInterviewQuestions(
         sourcesConsulted: ["Interview Pattern Research"]
       });
       
-      // Create a prompt that incorporates company values, job requirements, and candidate profile
+      // Gather all direct quotes and metrics from the candidate's profile
+      const specificMetrics = candidateProfile.quantifiableAchievements || [];
+      const directExperiences = candidateProfile.professionalExperience || [];
+      const rawHighlights = candidateProfile.rawHighlights || [];
+      const verbatimResponsibilities: string[] = [];
+      const verbatimAchievements: string[] = [];
+      
+      // Extract verbatim responsibilities and achievements from professional experience
+      if (Array.isArray(directExperiences)) {
+        directExperiences.forEach((exp: any) => {
+          if (exp.verbatimResponsibilities && Array.isArray(exp.verbatimResponsibilities)) {
+            verbatimResponsibilities.push(...exp.verbatimResponsibilities);
+          }
+          if (exp.verbatimAchievements && Array.isArray(exp.verbatimAchievements)) {
+            verbatimAchievements.push(...exp.verbatimAchievements);
+          }
+        });
+      }
+      
+      // Extract additional specifics from the highlighter agent
+      const verbatimSkillsAndExperiences = candidateHighlights.verbatimSkillsAndExperiences || [];
+      const specificResumeMetrics = candidateHighlights.specificMetrics || [];
+      const suggestedTalkingPoints = candidateHighlights.suggestedTalkingPoints || [];
+      
+      // Create a prompt that incorporates company values, job requirements, and candidate profile with RAW DATA
       const questionPrompt = `
         You are the Interviewer Preparer Agent for ${jobDetails.company}'s ${jobDetails.title} role.
         
         Job Details:
-        ${JSON.stringify(jobDetails)}
+        ${JSON.stringify(jobDetails, null, 2)}
         
         Company Values:
-        ${JSON.stringify(companyValues)}
+        ${JSON.stringify(companyValues, null, 2)}
         
         Team Information:
-        ${JSON.stringify(teamInfo)}
+        ${JSON.stringify(teamInfo, null, 2)}
         
-        Candidate Resume & LinkedIn Profile Details:
-        ${JSON.stringify(candidateProfile)}
+        ============ CANDIDATE'S EXACT RESUME DATA ============
+        VERBATIM PROFESSIONAL EXPERIENCE:
+        ${JSON.stringify(directExperiences, null, 2)}
+        
+        VERBATIM RESPONSIBILITIES (DIRECT QUOTES FROM RESUME):
+        ${JSON.stringify(verbatimResponsibilities, null, 2)}
+        
+        VERBATIM ACHIEVEMENTS WITH METRICS (DIRECT QUOTES FROM RESUME):
+        ${JSON.stringify(verbatimAchievements, null, 2)}
+        
+        ADDITIONAL VERBATIM METRICS FROM RESUME:
+        ${JSON.stringify(specificResumeMetrics, null, 2)}
+        
+        VERBATIM SKILLS AND EXPERIENCES (DIRECT QUOTES):
+        ${JSON.stringify(verbatimSkillsAndExperiences, null, 2)}
+        
+        RAW RESUME HIGHLIGHTS (DIRECT QUOTES):
+        ${JSON.stringify(rawHighlights, null, 2)}
+        
+        SUGGESTED TALKING POINTS WITH EVIDENCE:
+        ${JSON.stringify(suggestedTalkingPoints, null, 2)}
+        =====================================================
         
         Candidate Strengths:
-        ${JSON.stringify(strengths)}
+        ${JSON.stringify(strengths, null, 2)}
         
         Candidate Areas for Development:
-        ${JSON.stringify(gaps)}
+        ${JSON.stringify(gaps, null, 2)}
         
         You're preparing content for the "${round.roundName}" round which focuses on "${round.focus}".
         
@@ -136,19 +180,20 @@ export async function generateInterviewQuestions(
         For each question, you MUST include:
         1. The question itself (clear and specific)
         2. 3-5 specific talking points that would make for a strong answer
-        3. These talking points MUST be COMPREHENSIVE PARAGRAPHS (3-5 sentences each) that provide detailed context and full descriptions
-        4. Include EXTENSIVE details directly quoted from the candidate's resume and LinkedIn profile
-        5. Each talking point MUST include:
-           - The specific company and timeframe where the experience occurred
-           - The candidate's exact role and responsibilities in the situation
-           - Quantifiable metrics and achievements with precise numbers (percentages, dollar amounts, time saved, team sizes, etc.)
-           - The methodologies, technologies, or approaches used
-           - The business impact and value delivered to the organization
-        6. Format each talking point as a complete, detailed paragraph that provides the full story, NOT just a short phrase
-        7. IMPORTANT: Do not use short bullet points. Each talking point should be a substantial paragraph of 3-5 sentences with all relevant context
-        8. Example format (but with MUCH more detail specific to the candidate):
-           "During my tenure at Amazon (2019-2021) as a Senior Risk Manager, I was responsible for evaluating critical escalation processes across 5 international markets. I identified systemic bottlenecks that were causing delays in issue resolution and designed a comprehensive risk assessment framework involving 12 key metrics. By implementing this framework and training cross-functional teams of 20+ analysts, I reduced escalation resolution time by 89% and recovered $20M in operational costs within the first year. This initiative was recognized by senior leadership and adopted as the company standard for all risk mitigation procedures globally."
-        9. At least one talking point should address how to answer if the candidate lacks direct experience, but still be substantive and detailed
+        
+        CRITICAL INSTRUCTIONS FOR TALKING POINTS:
+        1. Each talking point MUST be a COMPREHENSIVE PARAGRAPH (3-5 sentences)
+        2. Use EXACT QUOTES from the candidate's resume (use the VERBATIM sections above)
+        3. Each talking point MUST include the following components:
+           - EXACT company name and precise timeframe from the resume (e.g., "Microsoft (June 2018-April 2021)")
+           - EXACT role and responsibilities using the candidate's own words
+           - SPECIFIC METRICS exactly as they appear in the resume (percentages, dollar figures, team sizes)
+           - EXACT technologies, methodologies, or frameworks mentioned
+           - Concrete business impact with specific results
+        4. IMPORTANT: Do not paraphrase or summarize! Use the candidate's exact wording from their resume.
+        5. Example of a good talking point (though your talking points should use the candidate's ACTUAL resume data):
+           "At Microsoft (June 2018-April 2021) as a Senior Software Engineer, I led the redesign of our authentication service that supported 250 million daily active users. I implemented a zero-trust security model using OAuth 2.0 and JWT tokens, which reduced security incidents by 73% in the first quarter after deployment. My team of 7 engineers also optimized API response times from 120ms to 35ms, resulting in a 22% improvement in overall application performance and saving $1.2M in infrastructure costs annually. This project was recognized with a Microsoft Gold Star Award and was adopted as the security standard across 12 product teams."
+        6. The last talking point for each question should address how to answer if the candidate lacks direct experience, but must still be substantive and include transferable skills from the resume.
         
         Format your response as a JSON array with this structure:
         [
@@ -158,7 +203,7 @@ export async function generateInterviewQuestions(
             "talkingPoints": [
               {
                 "id": "tp-1",
-                "text": "Talking point with specific reference to candidate experience"
+                "text": "Talking point with EXACT quotes and metrics from the resume"
               },
               ...
             ]

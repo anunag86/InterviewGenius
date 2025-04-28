@@ -243,7 +243,7 @@ export async function findSpecificSkills(resumeText: string, skillsToFind: strin
     });
     
     return { analysis: skillsAnalysis, thoughts };
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error in skills search:", error);
     
     thoughts.push({

@@ -40,6 +40,13 @@ export interface CompanyInfo {
 export interface CandidateHighlights {
   relevantPoints: string[];
   gapAreas: string[];
+  verbatimSkillsAndExperiences?: string[];
+  specificMetrics?: string[];
+  suggestedTalkingPoints?: Array<{
+    skill: string;
+    resumeEvidence: string;
+    context: string;
+  }>;
 }
 
 export interface AgentThought {
