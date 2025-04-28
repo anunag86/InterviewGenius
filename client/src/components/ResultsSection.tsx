@@ -142,6 +142,47 @@ const ResultsSection = ({ data }: ResultsSectionProps) => {
                               ))}
                             </ul>
 
+                            {data.candidateHighlights?.keyMetrics && data.candidateHighlights.keyMetrics.length > 0 && (
+                              <>
+                                <h4 className="font-medium text-primary">Key Metrics & Achievements</h4>
+                                <ul className="space-y-1 list-disc pl-5">
+                                  {data.candidateHighlights.keyMetrics.map((metric, index) => (
+                                    <li key={index}>{metric}</li>
+                                  ))}
+                                </ul>
+                              </>
+                            )}
+
+                            {data.candidateHighlights?.directExperienceQuotes && data.candidateHighlights.directExperienceQuotes.length > 0 && (
+                              <>
+                                <h4 className="font-medium text-primary">Direct Experience Quotes</h4>
+                                <ul className="space-y-2 list-disc pl-5">
+                                  {data.candidateHighlights.directExperienceQuotes.map((item, index) => (
+                                    <li key={index}>
+                                      <span className="font-medium">{item.skill}:</span> {item.quote}
+                                      <span className="block text-xs text-muted-foreground mt-1">{item.context}</span>
+                                    </li>
+                                  ))}
+                                </ul>
+                              </>
+                            )}
+
+                            {data.candidateHighlights?.suggestedTalkingPoints && data.candidateHighlights.suggestedTalkingPoints.length > 0 && (
+                              <>
+                                <h4 className="font-medium text-primary">Suggested Talking Points</h4>
+                                {data.candidateHighlights.suggestedTalkingPoints.map((category, categoryIndex) => (
+                                  <div key={categoryIndex} className="mb-2">
+                                    <h5 className="text-sm font-medium mt-2">{category.category}</h5>
+                                    <ul className="space-y-1 list-disc pl-5">
+                                      {category.points.map((point, pointIndex) => (
+                                        <li key={pointIndex}>{point}</li>
+                                      ))}
+                                    </ul>
+                                  </div>
+                                ))}
+                              </>
+                            )}
+
                             <h4 className="font-medium text-primary">Areas to Address</h4>
                             <ul className="space-y-1 list-disc pl-5">
                               {data.candidateHighlights?.gapAreas.map((gap, index) => (
