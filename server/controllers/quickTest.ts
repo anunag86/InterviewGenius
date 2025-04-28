@@ -26,21 +26,23 @@ export const generateQuickTestUrl = (req: Request, res: Response) => {
     // Get current Replit domain
     let redirectUri;
     
-    // For Replit, we need to use the environment variables to get the correct domain
-    if (process.env.REPL_SLUG && process.env.REPL_OWNER) {
+    // Determine the redirect URI based on the environment
+    // We need to prioritize the right domain for different Replit environments
+    
+    if (req.headers.host?.includes('picard.replit.dev')) {
+      // Priority 1: If we're in the Replit editor preview (picard.replit.dev)
+      redirectUri = `https://${req.headers.host}/api/quicktest/callback`;
+      console.log(`QUICK TEST: Using picard.replit.dev domain for redirect URI: ${redirectUri}`);
+    } else if (process.env.REPL_SLUG && process.env.REPL_OWNER) {
+      // Priority 2: If we're in a deployed Replit app (.repl.co)
       redirectUri = `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co/api/quicktest/callback`;
       console.log(`QUICK TEST: Using Replit domain for redirect URI: ${redirectUri}`);
     } else {
+      // Priority 3: Fallback to request headers (local development)
       const protocol = req.secure || (req.headers['x-forwarded-proto'] === 'https') ? 'https' : 'http';
       const host = req.headers.host || "localhost:5000";
       redirectUri = `${protocol}://${host}/api/quicktest/callback`;
       console.log(`QUICK TEST: Using request headers for redirect URI: ${redirectUri}`);
-    }
-    
-    // Special case for Replit development environment
-    if (req.headers.host?.includes('picard.replit.dev')) {
-      redirectUri = `https://${req.headers.host}/api/quicktest/callback`;
-      console.log(`QUICK TEST: Using picard.replit.dev domain for redirect URI: ${redirectUri}`);
     }
     
     // Build LinkedIn auth URL

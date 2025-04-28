@@ -47,21 +47,21 @@ export const handleUniversalCallback = async (req: Request, res: Response) => {
     // This MUST match exactly what was used in the authorization request
     let redirectUri;
     
-    // For Replit, we need to use the environment variables to get the correct domain
-    if (process.env.REPL_SLUG && process.env.REPL_OWNER) {
+    // We need to prioritize the right domain for different Replit environments
+    if (req.headers.host?.includes('picard.replit.dev')) {
+      // Priority 1: If we're in the Replit editor preview (picard.replit.dev)
+      redirectUri = `https://${req.headers.host}${req.originalUrl.split('?')[0]}`;
+      console.log(`UNIVERSAL CALLBACK [${req.path}]: Using picard.replit.dev domain for redirect URI: ${redirectUri}`);
+    } else if (process.env.REPL_SLUG && process.env.REPL_OWNER) {
+      // Priority 2: If we're in a deployed Replit app (.repl.co)
       redirectUri = `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co${req.originalUrl.split('?')[0]}`;
-      console.log(`UNIVERSAL CALLBACK [${req.path}]: Using Replit domain for redirect URI`);
+      console.log(`UNIVERSAL CALLBACK [${req.path}]: Using Replit domain for redirect URI: ${redirectUri}`);
     } else {
+      // Priority 3: Fallback to request headers (local development)
       const protocol = req.secure || (req.headers['x-forwarded-proto'] === 'https') ? 'https' : 'http';
       const host = req.headers.host || "";
       redirectUri = `${protocol}://${host}${req.originalUrl.split('?')[0]}`;
-      console.log(`UNIVERSAL CALLBACK [${req.path}]: Using request headers for redirect URI`);
-    }
-    
-    // Special case for Replit Nix environment (dev environment)
-    if (req.headers.host?.includes('picard.replit.dev')) {
-      redirectUri = `https://${req.headers.host}${req.originalUrl.split('?')[0]}`;
-      console.log(`UNIVERSAL CALLBACK [${req.path}]: Using picard.replit.dev domain for redirect URI`);
+      console.log(`UNIVERSAL CALLBACK [${req.path}]: Using request headers for redirect URI: ${redirectUri}`);
     }
     
     console.log(`UNIVERSAL CALLBACK [${req.path}]: Using redirect URI:`, redirectUri);
