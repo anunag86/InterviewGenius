@@ -6,10 +6,12 @@ import { analyzeResume, findSpecificSkills } from "../agents/profiler";
 import { highlightResumePoints } from "../agents/highlighter";
 import { researchCompanyAndRole } from "../agents/companyResearcher";
 import { researchInterviewPatterns } from "../agents/interviewPatternResearcher";
-import { generateInterviewQuestions } from "../agents/interviewPreparer";
+import { generateInterviewQuestions } from "../agents/interviewerAgent";
+import { generateCandidateAnswers } from "../agents/candidateAgent";
+import { storeUserMemory, storeUserResponse, getUserResponses } from "../agents/memoryAgent";
 import { validateInterviewPrep } from "../agents/qualityAgent";
 import { storage } from "../storage";
-import { AgentStep, AgentThought } from "../../client/src/types";
+import { AgentStep, AgentThought, InterviewRound, UserResponse } from "../../client/src/types";
 
 // Extend Request type to include file property from multer
 declare global {
@@ -254,34 +256,13 @@ async function processInterviewPrep(prepId: string, resumeFile: Express.Multer.F
       agentThoughts: allThoughts
     });
     
-    // Step 7: Generate interview questions based on all previous research
+    // Step 7: Generate interview questions with interviewer agent
     interviewPreps.set(prepId, {
       ...interviewPreps.get(prepId),
-      progress: AgentStep.QUESTION_GENERATION
+      progress: AgentStep.INTERVIEWER_AGENT
     });
     
-    const interviewQuestionsResult = await generateInterviewQuestions(
-      jobAnalysis, 
-      profileAnalysis, 
-      companyInfo, 
-      interviewPatterns
-    );
-    const interviewQuestions = interviewQuestionsResult.result;
-    allThoughts = [...allThoughts, ...interviewQuestionsResult.thoughts];
-    
-    // Update in-memory storage with agent thoughts
-    interviewPreps.set(prepId, {
-      ...interviewPreps.get(prepId),
-      agentThoughts: allThoughts
-    });
-    
-    // Step 8: Quality check all results
-    interviewPreps.set(prepId, {
-      ...interviewPreps.get(prepId),
-      progress: AgentStep.QUALITY_CHECK
-    });
-    
-    // Extract basic job details for the quality check
+    // Extract basic job details for the interviewer agent
     const jobDetails = {
       company: jobAnalysis.companyName || "",
       title: jobAnalysis.jobTitle || "",
@@ -289,12 +270,81 @@ async function processInterviewPrep(prepId: string, resumeFile: Express.Multer.F
       skills: jobAnalysis.requiredSkills || []
     };
     
+    // Generate questions through the interviewer agent
+    const interviewerResult = await generateInterviewQuestions(
+      jobDetails,
+      companyInfo,
+      interviewPatterns,
+      profileAnalysis,
+      candidateHighlights
+    );
+    
+    const interviewRounds = interviewerResult.rounds;
+    allThoughts = [...allThoughts, ...interviewerResult.thoughts];
+    
+    // Update in-memory storage with agent thoughts
+    interviewPreps.set(prepId, {
+      ...interviewPreps.get(prepId),
+      agentThoughts: allThoughts
+    });
+    
+    // Step 8: Generate candidate answers with candidate agent
+    interviewPreps.set(prepId, {
+      ...interviewPreps.get(prepId),
+      progress: AgentStep.CANDIDATE_AGENT
+    });
+    
+    const candidateResult = await generateCandidateAnswers(
+      interviewRounds,
+      profileAnalysis,
+      candidateHighlights,
+      resumeText
+    );
+    
+    const enhancedRounds = candidateResult.rounds;
+    allThoughts = [...allThoughts, ...candidateResult.thoughts];
+    
+    // Update in-memory storage with agent thoughts
+    interviewPreps.set(prepId, {
+      ...interviewPreps.get(prepId),
+      agentThoughts: allThoughts
+    });
+    
+    // Step 9: Store profile data with memory agent
+    interviewPreps.set(prepId, {
+      ...interviewPreps.get(prepId),
+      progress: AgentStep.MEMORY_AGENT
+    });
+    
+    const memoryResult = await storeUserMemory(
+      "anonymous", // No user authentication yet
+      prepId,
+      resumeText,
+      linkedinUrl,
+      profileAnalysis,
+      candidateHighlights
+    );
+    
+    allThoughts = [...allThoughts, ...memoryResult.thoughts];
+    
+    // Update in-memory storage with agent thoughts
+    interviewPreps.set(prepId, {
+      ...interviewPreps.get(prepId),
+      agentThoughts: allThoughts
+    });
+    
+    // Step 10: Quality check all results
+    interviewPreps.set(prepId, {
+      ...interviewPreps.get(prepId),
+      progress: AgentStep.QUALITY_CHECK
+    });
+    
     const qualityCheckResult = await validateInterviewPrep(
       jobUrl,
       jobDetails,
       companyInfo.companyInfo,
       candidateHighlights,
-      interviewQuestions.interviewRounds,
+      enhancedRounds,
       allThoughts
     );
     

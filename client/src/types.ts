@@ -49,6 +49,16 @@ export interface AgentThought {
   sourcesConsulted?: string[];
 }
 
+// User response for a specific question in SAR format
+export interface UserResponse {
+  questionId: string;
+  roundId: string;
+  situation: string;
+  action: string;
+  result: string;
+  updatedAt: string;
+}
+
 // Legacy question arrays for backward compatibility
 export interface LegacyInterviewQuestions {
   behavioralQuestions?: InterviewQuestion[];
@@ -63,6 +73,7 @@ export interface InterviewPrep extends Partial<LegacyInterviewQuestions> {
   candidateHighlights: CandidateHighlights;
   interviewRounds: InterviewRound[];
   agentThoughts?: AgentThought[];
+  userResponses?: UserResponse[]; // Added user responses
 }
 
 export enum QuestionType {
@@ -78,7 +89,9 @@ export enum AgentStep {
   HIGHLIGHT_GENERATION = 2,
   COMPANY_RESEARCH = 3,
   INTERVIEW_PATTERN_RESEARCH = 4,
-  QUESTION_GENERATION = 5,
-  QUALITY_CHECK = 6,
-  COMPLETED = 7
+  INTERVIEWER_AGENT = 5,
+  CANDIDATE_AGENT = 6,
+  MEMORY_AGENT = 7,
+  QUALITY_CHECK = 8,
+  COMPLETED = 9
 }

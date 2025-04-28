@@ -31,6 +31,20 @@ export const interviewPreps = pgTable("interview_preps", {
   userId: text("user_id"), // Optional for anonymous users
 });
 
+// User responses to interview questions in SAR format
+export const userResponses = pgTable("user_responses", {
+  id: serial("id").primaryKey(),
+  userId: text("user_id"),
+  interviewPrepId: text("interview_prep_id").notNull(),
+  questionId: text("question_id").notNull(),
+  roundId: text("round_id").notNull(),
+  situation: text("situation"),
+  action: text("action"),
+  result: text("result"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 // Feedback table
 export const feedback = pgTable("feedback", {
   id: serial("id").primaryKey(),
@@ -53,14 +67,36 @@ export const insertInterviewPrepSchema = createInsertSchema(interviewPreps);
 export type InterviewPrep = typeof interviewPreps.$inferSelect;
 export type InsertInterviewPrep = z.infer<typeof insertInterviewPrepSchema>;
 
+export const insertUserResponseSchema = createInsertSchema(userResponses, {
+  situation: (schema) => schema.min(3, "Situation must be at least 3 characters"),
+  action: (schema) => schema.min(3, "Action must be at least 3 characters"),
+  result: (schema) => schema.min(3, "Result must be at least 3 characters")
+}).omit({ id: true, createdAt: true, updatedAt: true });
+
+export type InsertUserResponse = z.infer<typeof insertUserResponseSchema>;
+export type UserResponse = typeof userResponses.$inferSelect;
+
 // Define relationship between users and interview preps
 export const usersRelations = relations(users, ({ many }) => ({
-  interviewPreps: many(interviewPreps)
+  interviewPreps: many(interviewPreps),
+  userResponses: many(userResponses)
 }));
 
-export const interviewPrepsRelations = relations(interviewPreps, ({ one }) => ({
+export const interviewPrepsRelations = relations(interviewPreps, ({ one, many }) => ({
   user: one(users, {
     fields: [interviewPreps.userId],
     references: [users.id]
+  }),
+  userResponses: many(userResponses)
+}));
+
+export const userResponsesRelations = relations(userResponses, ({ one }) => ({
+  user: one(users, {
+    fields: [userResponses.userId],
+    references: [users.id]
+  }),
+  interviewPrep: one(interviewPreps, {
+    fields: [userResponses.interviewPrepId],
+    references: [interviewPreps.id]
   })
 }));
