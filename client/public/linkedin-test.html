@@ -88,6 +88,12 @@
       <li>You may need to set the correct OAuth 2.0 scopes in your LinkedIn Developer Console</li>
       <li>Your application might not be approved for the scopes it's requesting</li>
     </ul>
+    
+    <div id="credentials-box" style="margin-top: 15px; padding: 10px; background: #f0f0f0; border-radius: 4px;">
+      <h4>Current Credentials Check</h4>
+      <div id="credentials-info">Loading credential info...</div>
+      <button id="check-credentials-btn" style="margin-top: 10px;">Check Credentials</button>
+    </div>
   </div>
   
   <div class="solution-box">
@@ -171,6 +177,61 @@
       document.getElementById('simple-uri').textContent = simpleUri;
       document.getElementById('api-uri').textContent = apiUri;
       document.getElementById('default-uri').textContent = defaultUri;
+      
+      // Check credentials on load
+      try {
+        const credResponse = await fetch('/api/linkedin/check-credentials');
+        const credData = await credResponse.json();
+        
+        let credHtml = '';
+        if (credData.clientIdExists && credData.clientSecretExists) {
+          credHtml = `
+            <div style="color: green; font-weight: bold;">✓ Credentials are configured</div>
+            <p>Client ID starts with: <code>${credData.clientIdPrefix}</code></p>
+            <p>Client Secret starts with: <code>${credData.clientSecretPrefix}</code></p>
+            <p>Updated: ${new Date(credData.timestamp).toLocaleTimeString()}</p>
+          `;
+        } else {
+          credHtml = `
+            <div style="color: red; font-weight: bold;">⚠ Credentials are missing</div>
+            <p>Client ID: ${credData.clientIdExists ? '✓ Set' : '✗ Missing'}</p>
+            <p>Client Secret: ${credData.clientSecretExists ? '✓ Set' : '✗ Missing'}</p>
+          `;
+        }
+        
+        document.getElementById('credentials-info').innerHTML = credHtml;
+      } catch (error) {
+        document.getElementById('credentials-info').innerHTML = `<div style="color: red;">Error checking credentials: ${error.message}</div>`;
+      }
+      
+      // Add credential check button handler
+      document.getElementById('check-credentials-btn').addEventListener('click', async () => {
+        document.getElementById('credentials-info').innerHTML = 'Checking credentials...';
+        try {
+          const credResponse = await fetch('/api/linkedin/check-credentials');
+          const credData = await credResponse.json();
+          
+          let credHtml = '';
+          if (credData.clientIdExists && credData.clientSecretExists) {
+            credHtml = `
+              <div style="color: green; font-weight: bold;">✓ Credentials are configured</div>
+              <p>Client ID starts with: <code>${credData.clientIdPrefix}</code></p>
+              <p>Client Secret starts with: <code>${credData.clientSecretPrefix}</code></p>
+              <p>Updated: ${new Date(credData.timestamp).toLocaleTimeString()}</p>
+            `;
+          } else {
+            credHtml = `
+              <div style="color: red; font-weight: bold;">⚠ Credentials are missing</div>
+              <p>Client ID: ${credData.clientIdExists ? '✓ Set' : '✗ Missing'}</p>
+              <p>Client Secret: ${credData.clientSecretExists ? '✓ Set' : '✗ Missing'}</p>
+            `;
+          }
+          
+          document.getElementById('credentials-info').innerHTML = credHtml;
+        } catch (error) {
+          document.getElementById('credentials-info').innerHTML = `<div style="color: red;">Error checking credentials: ${error.message}</div>`;
+        }
+      });
       
       // Set up link handlers
       document.getElementById('simple-auth-link').addEventListener('click', async (e) => {

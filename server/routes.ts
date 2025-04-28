@@ -11,6 +11,7 @@ import { handleManualLinkedInProfile } from "./controllers/manualAuth";
 import { getSimpleAuthUrl, handleSimpleCallback } from "./controllers/simpleAuth";
 import { handleUniversalCallback } from "./controllers/linkedinCallbacks";
 import { generateAuthUrl } from "./controllers/linkedinAuthGenerator";
+import { checkLinkedInCredentials } from "./controllers/credentials-check";
 import { testLinkedInPermutations, generateLinkedInDiagnosticPage } from "./controllers/linkedinDeepDiagnostics";
 import { 
   testLinkedInConnection, 
@@ -143,6 +144,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/linkedin/test", (req, res) => {
     res.sendFile('linkedin-test.html', { root: './client/public' });
   });
+  
+  // Credentials check endpoint
+  app.get("/api/linkedin/check-credentials", checkLinkedInCredentials);
   
   // Dynamic auth URL generator
   app.get("/api/auth/linkedin/generate", generateAuthUrl);
