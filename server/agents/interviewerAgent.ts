@@ -115,6 +115,9 @@ export async function generateInterviewQuestions(
         Team Information:
         ${JSON.stringify(teamInfo)}
         
+        Candidate Resume & LinkedIn Profile Details:
+        ${JSON.stringify(candidateProfile)}
+        
         Candidate Strengths:
         ${JSON.stringify(strengths)}
         
@@ -133,8 +136,12 @@ export async function generateInterviewQuestions(
         For each question, you MUST include:
         1. The question itself (clear and specific)
         2. 3-5 specific talking points that would make for a strong answer
-        3. These talking points should directly reference specific achievements or skills from the candidate's background
-        4. At least one talking point should address how to answer if the candidate lacks direct experience
+        3. These talking points MUST directly quote specific achievements, metrics, and tasks completed from the candidate's resume and LinkedIn profile
+        4. Include full statements that highlight the value added by the candidate, with specific metrics when available (percentages, dollar amounts, time saved, etc.)
+        5. Format talking points as complete statements that the candidate could use verbatim, for example:
+           - "When I was at Amazon, I reduced escalations by 89% and recovered $20M by creating and implementing a strategic risk assessment framework."
+           - "At Baxter Pharmaceuticals, I led a team of 15 regulatory specialists and improved compliance across 12 markets by implementing standardized documentation practices."
+        6. At least one talking point should address how to answer if the candidate lacks direct experience
         
         Format your response as a JSON array with this structure:
         [

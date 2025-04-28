@@ -312,21 +312,7 @@ const ResultsSection = ({ data }: ResultsSectionProps) => {
                           ))}
                         </ul>
                         
-                        {/* Narrative Guidance */}
-                        {question.narrative && (
-                          <>
-                            <h4 className="text-sm font-medium text-primary/80 uppercase tracking-wider mb-2 mt-4">Narrative Guidance</h4>
-                            <div className="narrative-text">
-                              {question.narrative}
-                            </div>
-                          </>
-                        )}
-                        {/* Fallback message if no narrative was generated */}
-                        {!question.narrative && (
-                          <div className="mt-4 p-2 border border-yellow-200 bg-yellow-50 text-yellow-800 rounded-md text-sm">
-                            No narrative guidance was generated for this question. Try refreshing or generating a new interview preparation.
-                          </div>
-                        )}
+
                       </div>
                     </div>
                     
