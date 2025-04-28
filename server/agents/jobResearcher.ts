@@ -100,14 +100,17 @@ export async function analyzeJobPosting(jobUrl: string, linkedinUrl?: string) {
           sourcesConsulted: [linkedinUrl]
         });
         
+        // Ensure job analysis is an object before spreading
+        const jobAnalysisObj = (typeof jobAnalysis === 'object' && jobAnalysis !== null) ? jobAnalysis : {};
+        
         // Merge the LinkedIn data with the original job analysis
         const mergedData = {
-          ...jobAnalysis,
+          ...jobAnalysisObj,
           additionalLinkedInData: linkedinAnalysis
         };
         
         return { analysis: mergedData, thoughts };
-      } catch (error) {
+      } catch (error: any) {
         // Record the failure but continue with the original job analysis
         thoughts.push({
           timestamp: Date.now(),
@@ -116,7 +119,7 @@ export async function analyzeJobPosting(jobUrl: string, linkedinUrl?: string) {
           sourcesConsulted: [linkedinUrl]
         });
         
-        console.warn("Error analyzing LinkedIn URL:", error.message);
+        console.warn("Error analyzing LinkedIn URL:", error.message || "Unknown error");
         return { analysis: jobAnalysis, thoughts };
       }
     }
@@ -129,17 +132,17 @@ export async function analyzeJobPosting(jobUrl: string, linkedinUrl?: string) {
     });
     
     return { analysis: jobAnalysis, thoughts };
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error in job researcher agent:", error);
     
     thoughts.push({
       timestamp: Date.now(),
       agent: "Job Researcher",
-      thought: `Error analyzing job posting: ${error.message}`,
+      thought: `Error analyzing job posting: ${error.message || "Unknown error"}`,
       sourcesConsulted: [jobUrl]
     });
     
-    throw new Error("Failed to analyze job posting: " + error.message);
+    throw new Error("Failed to analyze job posting: " + (error.message || "Unknown error"));
   }
 }
 
@@ -223,13 +226,13 @@ export async function researchCompanyCareerPage(companyName: string, jobTitle: s
     });
     
     return { analysis: careerPageAnalysis, thoughts };
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error researching company career page:", error);
     
     thoughts.push({
       timestamp: Date.now(),
       agent: "Job Researcher",
-      thought: `Error researching company career page: ${error.message}`,
+      thought: `Error researching company career page: ${error.message || "Unknown error"}`,
       sourcesConsulted: []
     });
     

@@ -97,8 +97,9 @@ export const getInterviewStatus = async (req: Request, res: Response) => {
       const userResponses = await getUserResponses(id);
       
       // If there are user responses, include them in the result
+      const resultData = prepData.result && typeof prepData.result === 'object' ? prepData.result : {};
       const resultWithResponses = prepData.result ? {
-        ...prepData.result,
+        ...resultData,
         userResponses
       } : null;
       
@@ -123,9 +124,10 @@ export const getInterviewStatus = async (req: Request, res: Response) => {
     // Get any stored user responses for this interview prep
     const userResponses = await getUserResponses(id);
     
-    // Add user responses to the prep data
+    // Add user responses to the prep data (ensure data is an object)
+    const prepData = typeof savedPrep.data === 'object' ? savedPrep.data : {};
     const resultWithResponses = {
-      ...savedPrep.data,
+      ...prepData,
       userResponses
     };
     
@@ -178,7 +180,7 @@ async function processInterviewPrep(prepId: string, resumeFile: Express.Multer.F
     
     // Get job analysis with agents' thoughts
     const jobResearchResult = await analyzeJobPosting(jobUrl, linkedinUrl || undefined);
-    const jobAnalysis = jobResearchResult.analysis;
+    const jobAnalysis = jobResearchResult.analysis as Record<string, any>;
     allThoughts = [...allThoughts, ...jobResearchResult.thoughts];
     
     // Update in-memory storage with agent thoughts
