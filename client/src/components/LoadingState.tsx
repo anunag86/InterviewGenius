@@ -59,10 +59,28 @@ const LoadingState = ({ currentStep, agentThoughts = [] }: LoadingStateProps) =>
       description: "Researching the company's interview process"
     },
     { 
-      id: AgentStep.QUESTION_GENERATION, 
+      id: AgentStep.INTERVIEWER_AGENT, 
       icon: "clipboard-list", 
       text: "Creating interview questions",
       description: "Generating tailored questions for each interview round"
+    },
+    { 
+      id: AgentStep.CANDIDATE_POINTS_AGENT, 
+      icon: "list", 
+      text: "Generating talking points",
+      description: "Creating relevant talking points from your resume"
+    },
+    { 
+      id: AgentStep.CANDIDATE_NARRATIVE_AGENT, 
+      icon: "book", 
+      text: "Structuring narratives",
+      description: "Providing guidance on how to answer questions"
+    },
+    {
+      id: AgentStep.MEMORY_AGENT,
+      icon: "save",
+      text: "Storing profile information",
+      description: "Saving your data for personalized responses"
     },
     { 
       id: AgentStep.QUALITY_CHECK, 
@@ -132,6 +150,18 @@ const LoadingState = ({ currentStep, agentThoughts = [] }: LoadingStateProps) =>
                     ) : item.icon === "clipboard-list" ? (
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                      </svg>
+                    ) : item.icon === "list" ? (
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                      </svg>
+                    ) : item.icon === "book" ? (
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                      </svg>
+                    ) : item.icon === "save" ? (
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
                       </svg>
                     ) : (
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">

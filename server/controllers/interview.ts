@@ -313,7 +313,7 @@ async function processInterviewPrep(prepId: string, resumeFile: Express.Multer.F
     // Step 8.1: Generate candidate talking points with Candidate_points agent
     interviewPreps.set(prepId, {
       ...interviewPreps.get(prepId),
-      progress: AgentStep.CANDIDATE_AGENT
+      progress: AgentStep.CANDIDATE_POINTS_AGENT
     });
     
     // First, generate relevant talking points based on the candidate's resume and profile
@@ -335,6 +335,11 @@ async function processInterviewPrep(prepId: string, resumeFile: Express.Multer.F
     
     // Step 8.2: Generate candidate narrative with Candidate_narrative agent
     // This agent builds upon the talking points to create narrative guidance
+    interviewPreps.set(prepId, {
+      ...interviewPreps.get(prepId),
+      progress: AgentStep.CANDIDATE_NARRATIVE_AGENT
+    });
+    
     const candidateNarrativeResult = await generateCandidateNarrative(
       roundsWithPoints,
       profileAnalysis,
