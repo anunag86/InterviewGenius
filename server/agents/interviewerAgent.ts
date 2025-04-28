@@ -2,10 +2,14 @@ import { callOpenAIWithJSON } from "../utils/openai";
 import { AgentThought, InterviewRound, JobDetails } from "../../client/src/types";
 
 /**
- * Interviewer Preparer Agent - Generates tailored interview questions based on company research
- * This agent uses knowledge of the hiring company, job role, and candidate profile
- * to generate relevant questions for different interview rounds and provides specific talking points
- * for each question based on candidate's resume and the job requirements.
+ * Interviewer Preparer Agent - Generates tailored interview questions with specific talking points
+ * 
+ * This agent uses knowledge of the hiring company, job role, and candidate profile to:
+ * 1. Generate relevant questions for different interview rounds based on company's typical interview structure
+ * 2. Create specific, personalized talking points for each question based on the candidate's resume
+ * 3. Include alternative talking points for areas where the candidate lacks direct experience
+ * 4. Align questions and talking points with the company's values and culture
+ * 5. Focus on the candidate's strengths while addressing potential gaps
  */
 export async function generateInterviewQuestions(
   jobDetails: JobDetails,
@@ -19,7 +23,14 @@ export async function generateInterviewQuestions(
   thoughts.push({
     timestamp: Date.now(),
     agent: "Interviewer Preparer Agent",
-    thought: `Starting question and talking points generation for ${jobDetails.title} at ${jobDetails.company} based on company research and candidate profile.`,
+    thought: `Initializing enhanced interview preparation process for ${jobDetails.title} at ${jobDetails.company}.`,
+    sourcesConsulted: []
+  });
+  
+  thoughts.push({
+    timestamp: Date.now(),
+    agent: "Interviewer Preparer Agent",
+    thought: `Starting question and talking points generation based on company research and candidate profile. This consolidated agent now handles both question generation and talking points creation in a single workflow.`,
     sourcesConsulted: []
   });
   
@@ -93,7 +104,7 @@ export async function generateInterviewQuestions(
       
       // Create a prompt that incorporates company values, job requirements, and candidate profile
       const questionPrompt = `
-        You are an expert interviewer at ${jobDetails.company} for the ${jobDetails.title} role.
+        You are the Interviewer Preparer Agent for ${jobDetails.company}'s ${jobDetails.title} role.
         
         Job Details:
         ${JSON.stringify(jobDetails)}
@@ -110,7 +121,7 @@ export async function generateInterviewQuestions(
         Candidate Areas for Development:
         ${JSON.stringify(gaps)}
         
-        You're conducting the "${round.roundName}" round which focuses on "${round.focus}".
+        You're preparing content for the "${round.roundName}" round which focuses on "${round.focus}".
         
         Generate at least 5 tailored, in-depth interview questions for this round that:
         1. Probe into relevant experiences based on the candidate's background
@@ -119,9 +130,11 @@ export async function generateInterviewQuestions(
         4. Assess specific skills required for the ${jobDetails.title} role
         5. Feel authentic and specific to this company (not generic questions)
         
-        For each question, include:
+        For each question, you MUST include:
         1. The question itself (clear and specific)
-        2. 3-4 specific talking points that would make for a strong answer
+        2. 3-5 specific talking points that would make for a strong answer
+        3. These talking points should directly reference specific achievements or skills from the candidate's background
+        4. At least one talking point should address how to answer if the candidate lacks direct experience
         
         Format your response as a JSON array with this structure:
         [
@@ -131,7 +144,7 @@ export async function generateInterviewQuestions(
             "talkingPoints": [
               {
                 "id": "tp-1",
-                "text": "Talking point 1"
+                "text": "Talking point with specific reference to candidate experience"
               },
               ...
             ]
@@ -171,15 +184,15 @@ export async function generateInterviewQuestions(
     
     return { rounds: enhancedRounds, thoughts };
   } catch (error: any) {
-    console.error("Error in interviewer agent:", error);
+    console.error("Error in Interviewer Preparer Agent:", error);
     
     thoughts.push({
       timestamp: Date.now(),
-      agent: "Interviewer Agent",
-      thought: `Error generating interview questions: ${error.message}`,
+      agent: "Interviewer Preparer Agent",
+      thought: `Error generating interview questions and talking points: ${error.message}`,
       sourcesConsulted: []
     });
     
-    throw new Error("Failed to generate interview questions: " + error.message);
+    throw new Error("Failed to generate interview questions and talking points: " + error.message);
   }
 }

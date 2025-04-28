@@ -62,7 +62,7 @@ const LoadingState = ({ currentStep, agentThoughts = [] }: LoadingStateProps) =>
       id: AgentStep.INTERVIEWER_AGENT, 
       icon: "clipboard-question", 
       text: "Interviewer Preparer Agent",
-      description: "Generating tailored questions for each interview round with talking points"
+      description: "Generating tailored questions with specific, personalized talking points based on your profile"
     },
     {
       id: AgentStep.MEMORY_AGENT,
