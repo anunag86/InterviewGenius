@@ -15,6 +15,7 @@ interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   isAuthenticated: boolean;
+  loginError: string | null;
   login: () => void;
   logout: () => Promise<void>;
   fetchCurrentUser: () => Promise<boolean>;
@@ -25,6 +26,7 @@ const AuthContext = createContext<AuthContextType | null>(null);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [loginError, setLoginError] = useState<string | null>(null);
   const { toast } = useToast();
 
   // Fetch current user on mount
@@ -58,6 +60,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const login = async () => {
     try {
+      // Clear any previous login errors
+      setLoginError(null);
+      setIsLoading(true);
+      
       const response = await fetch("/api/auth/linkedin/url");
       
       if (!response.ok) {
@@ -70,11 +76,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       window.location.href = url;
     } catch (error) {
       console.error("Login error:", error);
+      setLoginError("Could not connect to LinkedIn. Please check your internet connection and try again.");
       toast({
         title: "Authentication Error",
         description: "Could not connect to LinkedIn. Please try again.",
         variant: "destructive",
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -107,6 +116,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         user,
         isLoading,
         isAuthenticated: !!user,
+        loginError,
         login,
         logout,
         fetchCurrentUser,

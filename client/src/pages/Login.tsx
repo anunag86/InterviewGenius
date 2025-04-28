@@ -1,13 +1,40 @@
-import { useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { FaLinkedin } from "react-icons/fa";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { ChevronDown, AlertCircle } from "lucide-react";
 
 const Login = () => {
-  const { isAuthenticated, isLoading, login } = useAuth();
+  const { isAuthenticated, isLoading, login, loginError } = useAuth();
   const [, setLocation] = useLocation();
+  const [showDiagnostics, setShowDiagnostics] = useState(false);
+  const [redirectUri, setRedirectUri] = useState<string | null>(null);
+
+  // Get redirect URI for diagnostics
+  useEffect(() => {
+    // Only fetch the URL if there was an error
+    if (loginError) {
+      fetch("/api/auth/linkedin/url")
+        .then(res => res.json())
+        .then(data => {
+          try {
+            // Extract the redirect_uri from the auth URL
+            const url = new URL(data.url);
+            const redirectUri = url.searchParams.get("redirect_uri");
+            setRedirectUri(decodeURIComponent(redirectUri || ""));
+          } catch (e) {
+            console.error("Error parsing LinkedIn auth URL:", e);
+          }
+        })
+        .catch(err => {
+          console.error("Error fetching LinkedIn auth URL:", err);
+        });
+    }
+  }, [loginError]);
 
   // Redirect to home if already authenticated
   useEffect(() => {
@@ -37,6 +64,34 @@ const Login = () => {
           </CardHeader>
           <CardContent>
             <div className="flex flex-col space-y-4">
+              {loginError && (
+                <Alert variant="destructive" className="mb-4">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertTitle>LinkedIn Authentication Error</AlertTitle>
+                  <AlertDescription>
+                    {loginError}
+                    <Collapsible 
+                      open={showDiagnostics} 
+                      onOpenChange={setShowDiagnostics}
+                      className="mt-2"
+                    >
+                      <CollapsibleTrigger asChild>
+                        <Button variant="outline" size="sm" className="flex items-center">
+                          <span>Show Diagnostics</span>
+                          <ChevronDown className="h-4 w-4 ml-1" />
+                        </Button>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent className="mt-2 text-xs bg-gray-100 p-2 rounded">
+                        <p><strong>Problem:</strong> LinkedIn is refusing the connection. This usually means there's a mismatch between the redirect URI in our app and what's registered in LinkedIn.</p>
+                        <p className="mt-1"><strong>App Redirect URI:</strong></p>
+                        <p className="font-mono overflow-x-scroll mt-1">{redirectUri || "Loading..."}</p>
+                        <p className="mt-2">Please verify this URI exactly matches what's registered in your LinkedIn Developer Console.</p>
+                      </CollapsibleContent>
+                    </Collapsible>
+                  </AlertDescription>
+                </Alert>
+              )}
+
               <Button 
                 onClick={login} 
                 className="flex items-center justify-center bg-[#0077B5] hover:bg-[#005e8d]"
