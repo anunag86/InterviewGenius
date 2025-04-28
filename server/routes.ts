@@ -9,6 +9,7 @@ import { getSimpleLinkedInAuthUrl, handleSimpleLinkedInCallback } from "./contro
 import { getFixedLinkedInAuthUrl, handleFixedLinkedInCallback } from "./controllers/fixedAuthLinkedin";
 import { registerUser, loginUser } from "./controllers/manualAuth";
 import { getSimpleAuthUrl, handleSimpleCallback } from "./controllers/simpleAuth";
+import { getDirectLinkedInAuthUrl, handleDirectLinkedInCallback } from "./controllers/directLinkedinAuth";
 import { handleUniversalCallback } from "./controllers/linkedinCallbacks";
 import { generateAuthUrl } from "./controllers/linkedinAuthGenerator";
 import { checkLinkedInCredentials } from "./controllers/credentials-check";
@@ -84,6 +85,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/auth", renderAuthPage);
   app.get("/api/auth/linkedin/robust-url", getLinkedInRobustAuthUrl);
   app.get("/api/auth/linkedin/robust-callback", handleLinkedInRobustCallback);
+  
+  // New direct LinkedIn auth endpoints - these should work with LinkedIn's domain requirements
+  app.get("/api/auth/linkedin/direct-url", getDirectLinkedInAuthUrl);
+  app.get("/direct-callback", handleDirectLinkedInCallback);
   
   // Special direct LinkedIn connect endpoints
   app.get("/linkedin", (req, res) => {
@@ -167,6 +172,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.get("/linkedin/direct-test", (req, res) => {
     res.sendFile('linkedin-direct-test.html', { root: './client/public' });
+  });
+  
+  // Simple direct test page
+  app.get("/direct-linkedin", (req, res) => {
+    res.sendFile('direct-linkedin-test.html', { root: './client/public' });
   });
   
   app.get("/linkedin/advanced-diagnostics", (req, res) => {
