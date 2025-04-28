@@ -1,44 +1,35 @@
-import React, { useEffect } from 'react';
-import { useLocation } from 'wouter';
-import { useAuth } from '@/hooks/useAuth';
-import { Skeleton } from '@/components/ui/skeleton';
-
-interface ProtectedRouteProps {
-  children: React.ReactNode;
-}
+import { useEffect } from "react";
+import { useLocation } from "wouter";
+import { useAuth } from "@/hooks/useAuth";
+import { Loader2 } from "lucide-react";
 
 /**
- * ProtectedRoute component to restrict access to authenticated users only
- * Redirects to login page if user is not authenticated
+ * Protected Route Component
+ * 
+ * Wraps routes that require authentication. If the user is not logged in,
+ * they will be redirected to the login page.
  */
-const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
-  const { user, isLoading } = useAuth();
-  const [, setLocation] = useLocation();
+const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { isAuthenticated, isLoading } = useAuth();
+  const [location, setLocation] = useLocation();
 
   useEffect(() => {
-    if (!isLoading && !user) {
-      setLocation('/login');
+    if (!isAuthenticated && !isLoading) {
+      setLocation("/login");
     }
-  }, [user, isLoading, setLocation]);
+  }, [isAuthenticated, isLoading, setLocation]);
 
   if (isLoading) {
     return (
-      <div className="flex flex-col space-y-4 p-8">
-        <Skeleton className="h-12 w-48" />
-        <Skeleton className="h-32 w-full" />
-        <Skeleton className="h-8 w-32" />
-        <Skeleton className="h-8 w-full" />
-        <Skeleton className="h-8 w-3/4" />
+      <div className="flex flex-col items-center justify-center h-screen">
+        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+        <p className="mt-4 text-gray-700">Loading your profile...</p>
       </div>
     );
   }
 
-  if (!user) {
-    return (
-      <div className="flex flex-col space-y-4 p-8">
-        <p>Redirecting to login...</p>
-      </div>
-    );
+  if (!isAuthenticated) {
+    return null; // Will redirect to login in useEffect
   }
 
   return <>{children}</>;

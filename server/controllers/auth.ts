@@ -7,7 +7,11 @@ import "express-session";
 // LinkedIn OAuth configuration
 const LINKEDIN_CLIENT_ID = process.env.LINKEDIN_CLIENT_ID;
 const LINKEDIN_CLIENT_SECRET = process.env.LINKEDIN_CLIENT_SECRET;
-const REDIRECT_URI = process.env.REDIRECT_URI || "http://localhost:5000/api/auth/linkedin/callback";
+// For Replit, we need to use the full URL with the Replit domain
+const BASE_URL = process.env.NODE_ENV === 'production' 
+  ? `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co` 
+  : 'http://localhost:5000';
+const REDIRECT_URI = process.env.REDIRECT_URI || `${BASE_URL}/api/auth/linkedin/callback`;
 const LINKEDIN_AUTH_URL = "https://www.linkedin.com/oauth/v2/authorization";
 const LINKEDIN_TOKEN_URL = "https://www.linkedin.com/oauth/v2/accessToken";
 const LINKEDIN_PROFILE_URL = "https://api.linkedin.com/v2/me";
@@ -153,8 +157,8 @@ export const handleLinkedInCallback = async (req: Request, res: Response) => {
     req.session.linkedinId = linkedinId;
     req.session.linkedinProfileUrl = `https://www.linkedin.com/in/${linkedinId}`;
     
-    // Redirect to home page
-    return res.redirect("/");
+    // Redirect to client-side callback page
+    return res.redirect("/auth/callback");
   } catch (error) {
     console.error("LinkedIn callback error:", error);
     return res.status(500).json({ error: "Authentication failed" });

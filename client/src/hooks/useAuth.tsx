@@ -1,85 +1,128 @@
-import { useState, useEffect, useCallback, createContext, useContext, ReactNode } from "react";
-import { useLocation } from "wouter";
-import { getCurrentUser, getLinkedInAuthUrl, logout, UserProfile } from "@/lib/auth";
+import React, { createContext, useContext, useEffect, useState } from "react";
+import { useToast } from "@/hooks/use-toast";
+
+interface User {
+  id: number;
+  displayName: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  profilePictureUrl?: string;
+  linkedinProfileUrl?: string;
+}
 
 interface AuthContextType {
-  user: UserProfile | null;
+  user: User | null;
   isLoading: boolean;
-  error: string | null;
-  login: () => Promise<void>;
+  isAuthenticated: boolean;
+  login: () => void;
   logout: () => Promise<void>;
+  fetchCurrentUser: () => Promise<boolean>;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const AuthContext = createContext<AuthContextType | null>(null);
 
-export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<UserProfile | null>(null);
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [, setLocation] = useLocation();
+  const { toast } = useToast();
 
-  // Load user on initial mount
+  // Fetch current user on mount
   useEffect(() => {
-    async function loadUser() {
-      try {
-        setIsLoading(true);
-        const userProfile = await getCurrentUser();
-        setUser(userProfile);
-      } catch (err) {
-        setError("Failed to load user profile");
-        console.error(err);
-      } finally {
-        setIsLoading(false);
+    const initAuth = async () => {
+      await fetchCurrentUser();
+      setIsLoading(false);
+    };
+
+    initAuth();
+  }, []);
+
+  const fetchCurrentUser = async (): Promise<boolean> => {
+    try {
+      const response = await fetch("/api/auth/me");
+      
+      if (response.ok) {
+        const userData = await response.json();
+        setUser(userData);
+        return true;
+      } else {
+        setUser(null);
+        return false;
       }
-    }
-
-    loadUser();
-  }, []);
-
-  // Login function - redirects to LinkedIn OAuth flow
-  const handleLogin = useCallback(async () => {
-    try {
-      setIsLoading(true);
-      setError(null);
-      const authUrl = await getLinkedInAuthUrl();
-      window.location.href = authUrl;
-    } catch (err) {
-      setError("Failed to initiate login");
-      console.error(err);
-      setIsLoading(false);
-    }
-  }, []);
-
-  // Logout function
-  const handleLogout = useCallback(async () => {
-    try {
-      setIsLoading(true);
-      await logout();
+    } catch (error) {
+      console.error("Error fetching current user:", error);
       setUser(null);
-      setLocation("/login");
-    } catch (err) {
-      setError("Failed to logout");
-      console.error(err);
-    } finally {
-      setIsLoading(false);
+      return false;
     }
-  }, [setLocation]);
-
-  const value = {
-    user,
-    isLoading,
-    error,
-    login: handleLogin,
-    logout: handleLogout,
   };
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-}
+  const login = async () => {
+    try {
+      const response = await fetch("/api/auth/linkedin/url");
+      
+      if (!response.ok) {
+        throw new Error("Failed to get LinkedIn authorization URL");
+      }
+      
+      const { url } = await response.json();
+      
+      // Redirect to LinkedIn authorization page
+      window.location.href = url;
+    } catch (error) {
+      console.error("Login error:", error);
+      toast({
+        title: "Authentication Error",
+        description: "Could not connect to LinkedIn. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
 
-export function useAuth() {
+  const logout = async (): Promise<void> => {
+    try {
+      const response = await fetch("/api/auth/logout", {
+        method: "POST",
+      });
+      
+      if (response.ok) {
+        setUser(null);
+        // Redirect to login page
+        window.location.href = "/login";
+      } else {
+        throw new Error("Logout failed");
+      }
+    } catch (error) {
+      console.error("Logout error:", error);
+      toast({
+        title: "Logout Error",
+        description: "Could not log out. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  return (
+    <AuthContext.Provider
+      value={{
+        user,
+        isLoading,
+        isAuthenticated: !!user,
+        login,
+        logout,
+        fetchCurrentUser,
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
+};
+
+export const useAuth = (): AuthContextType => {
   const context = useContext(AuthContext);
-  if (context === undefined) {
+  
+  if (!context) {
     throw new Error("useAuth must be used within an AuthProvider");
   }
+  
   return context;
-}
+};

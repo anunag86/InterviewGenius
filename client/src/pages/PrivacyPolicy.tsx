@@ -1,43 +1,100 @@
+import { Button } from "@/components/ui/button";
+import { useLocation } from "wouter";
 
-import { Card, CardContent } from "@/components/ui/card";
+const PrivacyPolicy = () => {
+  const [, setLocation] = useLocation();
 
-export default function PrivacyPolicy() {
   return (
-    <div className="max-w-4xl mx-auto px-4 py-12">
-      <Card>
-        <CardContent className="pt-6">
-          <h1 className="text-3xl font-bold mb-6">Privacy Policy</h1>
-          
-          <div className="space-y-6 text-foreground/90">
-            <p>At PrepTalk, we value your privacy and are committed to protecting your personal information.</p>
-            
-            <section className="space-y-2">
-              <h2 className="text-xl font-semibold">Information Collection</h2>
-              <p>We collect basic profile information (name, email address) through third-party authentication services like LinkedIn or Google solely for authentication purposes. Additionally, we process work experience details from your resume and public work profile from LinkedIn to provide personalized interview preparation advice.</p>
-            </section>
+    <div className="container max-w-3xl mx-auto px-4 py-8">
+      <Button 
+        variant="outline" 
+        onClick={() => setLocation("/")}
+        className="mb-6"
+      >
+        Back to Home
+      </Button>
 
-            <section className="space-y-2">
-              <h2 className="text-xl font-semibold">Use of Information</h2>
-              <p>The information we collect is used exclusively to provide you with tailored interview preparation assistance. We do not sell, trade, or rent your personal identification information to others.</p>
-            </section>
+      <h1 className="text-3xl font-bold mb-6 bg-gradient-to-r from-blue-700 to-purple-600 bg-clip-text text-transparent">
+        Privacy Policy
+      </h1>
 
-            <section className="space-y-2">
-              <h2 className="text-xl font-semibold">Data Protection</h2>
-              <p>We implement appropriate security measures to protect your personal information and ensure it is used only for the intended purposes outlined in this policy.</p>
-            </section>
+      <div className="space-y-6 text-gray-700">
+        <section>
+          <h2 className="text-xl font-bold mb-3">Overview</h2>
+          <p>
+            PrepTalk is committed to protecting your privacy. This Privacy Policy explains how we collect, use, and safeguard your information when you use our application.
+          </p>
+        </section>
 
-            <section className="space-y-2">
-              <h2 className="text-xl font-semibold">Contact Us</h2>
-              <p>If you have any questions about your data or this privacy policy, please use our feedback form within the application, and we will respond to your inquiry.</p>
-            </section>
+        <section>
+          <h2 className="text-xl font-bold mb-3">Information We Collect</h2>
+          <ul className="list-disc pl-5 space-y-2">
+            <li>LinkedIn profile information (name, email, profile picture, profile URL)</li>
+            <li>Resume content you upload</li>
+            <li>Job postings you analyze</li>
+            <li>Your interview responses</li>
+          </ul>
+        </section>
 
-            <footer className="text-sm text-muted-foreground pt-6 border-t">
-              <p>Last updated: {new Date().toLocaleDateString()}</p>
-              <p className="mt-2">- The PrepTalk Team</p>
-            </footer>
-          </div>
-        </CardContent>
-      </Card>
+        <section>
+          <h2 className="text-xl font-bold mb-3">How We Use Your Information</h2>
+          <ul className="list-disc pl-5 space-y-2">
+            <li>To provide personalized interview preparation services</li>
+            <li>To analyze your qualifications against job requirements</li>
+            <li>To generate tailored interview questions and talking points</li>
+            <li>To improve our application and services</li>
+          </ul>
+        </section>
+
+        <section>
+          <h2 className="text-xl font-bold mb-3">Third-Party Services</h2>
+          <p>
+            We use the following third-party services to power our application:
+          </p>
+          <ul className="list-disc pl-5 space-y-2">
+            <li>LinkedIn OAuth for authentication</li>
+            <li>OpenAI for analyzing job postings and resumes</li>
+          </ul>
+        </section>
+
+        <section>
+          <h2 className="text-xl font-bold mb-3">Data Retention</h2>
+          <p>
+            We store your interview preparations and responses for 30 days after creation, after which they are automatically deleted.
+          </p>
+        </section>
+
+        <section>
+          <h2 className="text-xl font-bold mb-3">Your Rights</h2>
+          <p>
+            You have the right to:
+          </p>
+          <ul className="list-disc pl-5 space-y-2">
+            <li>Access your personal data</li>
+            <li>Request deletion of your data</li>
+            <li>Opt-out of marketing communications</li>
+          </ul>
+        </section>
+
+        <section>
+          <h2 className="text-xl font-bold mb-3">Updates to This Policy</h2>
+          <p>
+            We may update this Privacy Policy from time to time. We will notify you of any changes by posting the new Privacy Policy on this page.
+          </p>
+        </section>
+
+        <section>
+          <h2 className="text-xl font-bold mb-3">Contact Us</h2>
+          <p>
+            If you have any questions about this Privacy Policy, please contact us at:
+          </p>
+          <p className="mt-2">
+            <strong>Email:</strong> privacy@preptalk.ai
+          </p>
+        </section>
+      </div>
     </div>
   );
-}
+};
+
+export default PrivacyPolicy;

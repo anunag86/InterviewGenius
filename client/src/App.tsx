@@ -17,7 +17,7 @@ function Router() {
     <Switch>
       <Route path="/login" component={Login} />
       <Route path="/privacy" component={PrivacyPolicy} />
-      <Route path="/api/auth/linkedin/callback" component={LinkedInCallback} />
+      <Route path="/auth/callback" component={LinkedInCallback} />
       
       {/* Protected Routes - require authentication */}
       <Route path="/">

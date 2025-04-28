@@ -1,70 +1,68 @@
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { BsLinkedin } from "react-icons/bs";
-import { Link, useLocation } from "wouter";
-import { useAuth } from "@/hooks/useAuth";
 import { useEffect } from "react";
+import { useLocation } from "wouter";
+import { useAuth } from "@/hooks/useAuth";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { FaLinkedin } from "react-icons/fa";
 
 const Login = () => {
-  const { login, isLoading, user } = useAuth();
+  const { isAuthenticated, isLoading, login } = useAuth();
   const [, setLocation] = useLocation();
-  
-  // Redirect to home if user is already logged in
-  useEffect(() => {
-    if (user) {
-      setLocation('/');
-    }
-  }, [user, setLocation]);
 
-  const handleLinkedInLogin = async () => {
-    await login();
-  };
+  // Redirect to home if already authenticated
+  useEffect(() => {
+    if (isAuthenticated && !isLoading) {
+      setLocation("/");
+    }
+  }, [isAuthenticated, isLoading, setLocation]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-background to-muted">
+    <div className="container flex flex-col items-center justify-center min-h-screen p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <Link href="/" className="inline-block">
-            <div className="flex flex-col items-center">
-              <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-purple-500 bg-clip-text text-transparent">
-                PrepTalk
-              </h1>
-              <p className="text-sm text-muted-foreground mt-1">Your Interview Coach</p>
-            </div>
-          </Link>
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-700 to-purple-600 bg-clip-text text-transparent">
+            PrepTalk
+          </h1>
+          <p className="text-lg text-gray-600 mt-2">
+            Your AI-powered interview coach
+          </p>
         </div>
 
-        <Card className="border-border shadow-lg">
-          <CardHeader className="space-y-1 text-center">
-            <CardTitle className="text-2xl font-bold">Welcome to PrepTalk</CardTitle>
-            <CardDescription className="text-muted-foreground">
-              Turn your experiences into clear, confident answers.
-              <br />
-              No shortcuts, just real preparation.
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-2xl text-center">Welcome to PrepTalk</CardTitle>
+            <CardDescription className="text-center">
+              Sign in with your LinkedIn account to get started
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="text-center px-6 py-4">
-              <p className="mb-6 text-muted-foreground">
-                Sign in with LinkedIn to access your personalized interview preparation experience.
-              </p>
+          <CardContent>
+            <div className="flex flex-col space-y-4">
               <Button 
-                className="w-full flex items-center justify-center gap-2 py-6"
-                onClick={handleLinkedInLogin}
+                onClick={login} 
+                className="flex items-center justify-center bg-[#0077B5] hover:bg-[#005e8d]"
                 disabled={isLoading}
               >
-                <BsLinkedin className="h-5 w-5" />
-                <span>{isLoading ? "Connecting to LinkedIn..." : "Sign in with LinkedIn"}</span>
+                <FaLinkedin className="mr-2 h-5 w-5" />
+                Connect with LinkedIn
               </Button>
+
+              <div className="text-center text-sm text-gray-500 mt-2">
+                <p>
+                  By signing in, you agree to our{" "}
+                  <a href="/privacy" className="text-blue-600 hover:underline">
+                    Privacy Policy
+                  </a>
+                </p>
+              </div>
             </div>
           </CardContent>
-          <CardFooter className="border-t border-border/30 p-4">
-            <p className="text-xs text-center text-muted-foreground w-full">
-              By signing in, you agree to our Terms of Service and Privacy Policy. 
-              We use LinkedIn to customize your interview preparation experience.
-            </p>
-          </CardFooter>
         </Card>
+
+        <div className="mt-8 text-center">
+          <p className="text-sm text-gray-500">
+            PrepTalk helps you prepare for job interviews by analyzing job postings and your LinkedIn profile.
+          </p>
+        </div>
       </div>
     </div>
   );
