@@ -61,8 +61,8 @@ export default function AuthPage() {
   // Handle LinkedIn login
   const handleLinkedInLogin = async () => {
     try {
-      // Try the direct LinkedIn approach first for improved compatibility
-      const response = await fetch("/api/auth/linkedin/direct-url");
+      // Use the new minimal LinkedIn authentication approach for maximum compatibility
+      const response = await fetch("/api/auth/linkedin/minimal-url");
       if (!response.ok) {
         throw new Error("Failed to get LinkedIn auth URL");
       }

@@ -11,25 +11,36 @@ import { users } from "@shared/schema";
 
 // Get the redirect URI based on the current environment
 function getRedirectUri(req: Request): string {
-  // First check for environment variable override
+  // Explicit environment variable override has highest priority
   if (process.env.LINKEDIN_REDIRECT_URI) {
+    console.log(`Using explicit LINKEDIN_REDIRECT_URI override: ${process.env.LINKEDIN_REDIRECT_URI}`);
     return process.env.LINKEDIN_REDIRECT_URI;
   }
   
-  // Get the host from request or use Replit URL
+  // Detect if we're running on Replit
+  const isReplit = !!process.env.REPL_SLUG && !!process.env.REPL_OWNER;
+  
+  // Get the domain
   let baseUrl;
   
-  if (process.env.REPL_SLUG && process.env.REPL_OWNER) {
-    // Use Replit URL pattern if running on Replit
-    baseUrl = `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`;
+  if (isReplit) {
+    // On Replit, we have multiple options
+    const replitDomain = `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`;
+    console.log(`Using Replit domain: ${replitDomain}`);
+    baseUrl = replitDomain;
   } else {
-    // Use request host
+    // Local development
     const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'http';
     baseUrl = `${protocol}://${req.headers.host}`;
+    console.log(`Using local domain: ${baseUrl}`);
   }
   
-  // Use a simple callback path that LinkedIn will accept
-  return `${baseUrl}/minimal-callback`;
+  // LinkedIn prefers simpler callback URLs - use root-level path
+  const callbackPath = '/minimal-callback';
+  const redirectUri = `${baseUrl}${callbackPath}`;
+  
+  console.log(`Final LinkedIn redirect URI: ${redirectUri}`);
+  return redirectUri;
 }
 
 // Generate the LinkedIn authorization URL

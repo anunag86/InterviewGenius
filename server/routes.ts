@@ -181,6 +181,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.sendFile('direct-linkedin-test.html', { root: './client/public' });
   });
   
+  // Direct LinkedIn auth page - minimal approach
+  app.get("/linkedin-auth", (req, res) => {
+    res.sendFile('direct-linkedin-auth.html', { root: './client/public' });
+  });
+  
   app.get("/linkedin/advanced-diagnostics", (req, res) => {
     res.sendFile('linkedin-deep-diagnostics.html', { root: './client/public' });
   });
