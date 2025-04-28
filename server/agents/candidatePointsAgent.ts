@@ -69,22 +69,23 @@ export async function generateCandidatePoints(
           Candidate Profile Information:
           ${JSON.stringify(candidateProfile)}
           
-          Generate 3-5 specific talking points extracted directly from the resume and candidate profile that:
-          1. Are directly relevant to answering this interview question
-          2. Highlight specific accomplishments, skills, or experiences from the resume
-          3. Relate to the strengths identified in the candidate profile
+          Generate 3-5 HIGHLY SPECIFIC talking points extracted directly from the resume and candidate profile that:
+          1. MUST be directly relevant to answering this interview question
+          2. MUST highlight SPECIFIC accomplishments, metrics, skills, or REAL experiences from the resume
+          3. MUST relate to the strengths identified in the candidate profile
+          4. MUST include concrete examples, numbers, and achievements whenever possible
           
           Format your response as a JSON object with this structure:
           {
             "points": [
-              "Point 1 with specific accomplishment or skill from resume",
-              "Point 2 with specific example from resume",
+              "Led a global quality management team of 15 members at Amazon, achieving 98% compliance rate across 12 regions",
+              "Implemented an end-to-end escalation system that reduced issue resolution time by 35% for critical product defects",
               ...
             ],
             "relevance": "Brief explanation of how these points relate to the question"
           }
           
-          IMPORTANT: Only include points that are explicitly mentioned in the resume or candidate profile. Do NOT invent examples or experiences not present in the provided information.
+          CRITICAL: Each point MUST be a real, specific experience or achievement from the resume or profile. NEVER make up or generalize experiences. Use exact metrics, team sizes, and outcomes if they're in the data. If you can't find sufficient specific details, indicate where more information would be needed rather than inventing details.
         `;
         
         // Get talking points from OpenAI

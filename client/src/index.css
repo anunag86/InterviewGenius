@@ -147,6 +147,6 @@
   }
   
   .narrative-text {
-    @apply italic text-muted-foreground text-sm pl-4 border-l-2 border-primary/20 my-2;
+    @apply italic text-muted-foreground text-sm pl-4 border-l-2 border-primary/20 my-4 whitespace-pre-wrap leading-relaxed;
   }
 }
