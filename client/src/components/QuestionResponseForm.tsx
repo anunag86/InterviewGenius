@@ -229,20 +229,33 @@ const QuestionResponseForm = ({
     // Extract the SAR components from the text
     const { situation, action, result } = extractSARComponents(responseText);
     
-    // Save the response using the provided onSave function
-    onSave({
-      questionId,
-      roundId,
-      situation,
-      action,
-      result
-    });
-    
-    // Since saving is handled by the mutation in parent component,
-    // we can immediately run the grading here
-    handleGradeResponse();
-    
-    // The toast message will be shown by the parent component's onSuccess handler
+    try {
+      // Save the response using the provided onSave function
+      onSave({
+        questionId,
+        roundId,
+        situation,
+        action,
+        result
+      });
+      
+      // Update the UI to show the response has been saved
+      if (existingResponse) {
+        toast({
+          title: "Response Updated",
+          description: "Your answer has been updated successfully.",
+        });
+      }
+      
+      // Since saving is handled by the mutation in parent component,
+      // we can immediately trigger grading
+      setTimeout(() => {
+        handleGradeResponse();
+      }, 100); // Add a small delay to ensure saving is processed first
+    } catch (error) {
+      console.error("Error in handleSubmit:", error);
+      // Error will be handled by the parent component's onError handler
+    }
   };
   
   // Function to grade the response
@@ -256,6 +269,9 @@ const QuestionResponseForm = ({
     setIsGrading(true);
     
     try {
+      // Add a short delay to prevent race conditions with saving
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
       const result = await gradeResponse(
         interviewPrepId,
         questionId,
@@ -264,14 +280,21 @@ const QuestionResponseForm = ({
         responseText
       );
       
-      setGradingResult(result);
+      if (result) {
+        setGradingResult(result);
+      } else {
+        throw new Error("Empty grading result");
+      }
     } catch (error) {
       console.error("Error grading response:", error);
-      toast({
-        title: "Grading Failed",
-        description: "We couldn't grade your response at this time. Please try again later.",
-        variant: "destructive"
-      });
+      // Don't show toast unless this was explicitly initiated by user (not auto-grading on save)
+      if (!existingResponse) {
+        toast({
+          title: "Grading Note", 
+          description: "Your response was saved, but we couldn't grade it at this time. You can try grading again later.",
+          variant: "default"
+        });
+      }
     } finally {
       setIsGrading(false);
     }

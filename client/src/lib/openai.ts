@@ -115,7 +115,7 @@ export async function gradeResponse(
   roundId: string,
   question: string,
   responseText: string
-): Promise<GradingResult> {
+): Promise<GradingResult | null> {
   try {
     const response = await fetch('/api/interview/response/grade', {
       method: 'POST',
@@ -135,12 +135,19 @@ export async function gradeResponse(
     const data = await response.json();
     
     if (!response.ok) {
-      throw new Error(data.error || 'Failed to grade response');
+      console.warn('API Error in gradeResponse:', data.error || response.statusText);
+      return null;
+    }
+    
+    if (!data.success || !data.result) {
+      console.warn('Invalid grading result format:', data);
+      return null;
     }
     
     return data.result;
   } catch (error) {
     console.error('Error grading response:', error);
-    throw new Error(error instanceof Error ? error.message : 'Failed to grade response');
+    // Return null instead of throwing, so calling code can handle gracefully
+    return null;
   }
 }

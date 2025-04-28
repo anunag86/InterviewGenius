@@ -44,20 +44,26 @@ export function useUserResponses({ interviewPrepId }: UseUserResponsesProps) {
       action: string;
       result: string;
     }) => {
-      const response = await fetch(`/api/interview/${interviewPrepId}/responses`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify(responseData)
-      });
-      
-      if (!response.ok) {
-        throw new Error("Failed to save response");
+      try {
+        const response = await fetch(`/api/interview/${interviewPrepId}/responses`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(responseData)
+        });
+        
+        if (!response.ok) {
+          throw new Error("Failed to save response");
+        }
+        
+        const data = await response.json();
+        // Return the data, but don't need to modify its type
+        return data.thoughts ? data : responseData;
+      } catch (error) {
+        console.error("Fetch error in saveResponse:", error);
+        throw error;
       }
-      
-      const data = await response.json();
-      return data.thoughts ? data : responseData as UserResponse;
     },
     onSuccess: (savedResponse: any) => {
       // Create a properly formatted user response object
