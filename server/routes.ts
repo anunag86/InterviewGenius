@@ -4,6 +4,7 @@ import multer from "multer";
 import { generateInterview, getInterviewStatus, getInterviewHistory, saveUserResponse, getUserResponsesForInterview, gradeUserResponse } from "./controllers/interview";
 import { submitFeedback } from "./controllers/feedback";
 import { getLinkedInAuthUrl, handleLinkedInCallback, getCurrentUser, logout } from "./controllers/auth";
+import { getLinkedInDiagnostics } from "./controllers/diagnostics";
 
 // Configure multer for memory storage (files are processed in memory)
 const upload = multer({
@@ -55,6 +56,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/linkedin", (req, res) => {
     res.sendFile('linkedin-connect.html', { root: './client/public' });
   });
+  
+  // LinkedIn settings helper page
+  app.get("/linkedin/settings", (req, res) => {
+    res.sendFile('linkedin-settings.html', { root: './client/public' });
+  });
+  
+  // LinkedIn diagnostics endpoint
+  app.get("/api/diagnostics/linkedin", getLinkedInDiagnostics);
   
   // Direct auth route - no JavaScript intermediary
   app.get("/linkedin/auth", (req, res) => {
