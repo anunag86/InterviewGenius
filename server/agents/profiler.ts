@@ -28,22 +28,51 @@ export async function analyzeResume(resumeText: string, linkedinUrl: string | nu
     7. Areas of expertise and specialization
     8. Any potential gaps or areas for improvement in their profile
     
+    IMPORTANT: Extract SPECIFIC and DETAILED content from the resume. Focus on capturing:
+    - Quantitative metrics (percentages, numbers, dollar amounts, team sizes)
+    - Specific project names and methodologies used
+    - Direct quotes of technical terms, tools, and technologies
+    - Exact timeframes and company names
+    - Verbatim achievements exactly as written on the resume
+    
     If a LinkedIn URL is provided, mention that it was considered in your analysis.
     
     Respond with a JSON object containing these details organized in a structured format.
     
     JSON Format:
     {
-      "professionalExperience": ["exp1", "exp2", ...],
+      "professionalExperience": [
+        {
+          "company": "Company Name",
+          "title": "Job Title",
+          "period": "Start date - End date",
+          "description": "Detailed description exactly as written in resume",
+          "verbatimResponsibilities": ["Direct quote 1", "Direct quote 2", ...],
+          "verbatimAchievements": ["Direct metric 1", "Direct metric 2", ...]
+        },
+        ...
+      ],
       "technicalSkills": ["skill1 (proficiency)", "skill2 (proficiency)", ...],
-      "achievements": ["achievement1", "achievement2", ...],
+      "quantifiableAchievements": [
+        {
+          "company": "Company Name",
+          "achievement": "Direct quote of achievement with metrics",
+          "metrics": ["metric1", "metric2", ...]
+        },
+        ...
+      ],
       "education": ["edu1", "edu2", ...],
       "certifications": ["cert1", "cert2", ...],
       "softSkills": ["skill1", "skill2", ...],
       "careerProgression": "string description",
       "areasOfExpertise": ["area1", "area2", ...],
       "potentialGaps": ["gap1", "gap2", ...],
-      "overallAssessment": "string with brief assessment"
+      "overallAssessment": "string with brief assessment",
+      "rawHighlights": [
+        "Direct quote 1 with context (company, role, etc.)",
+        "Direct quote 2 with context",
+        ...
+      ]
     }
   `;
 
@@ -132,7 +161,7 @@ export async function analyzeResume(resumeText: string, linkedinUrl: string | nu
         });
         
         return { analysis: combinedAnalysis, thoughts };
-      } catch (error) {
+      } catch (error: any) {
         thoughts.push({
           timestamp: Date.now(),
           agent: "Profile Analyzer",
@@ -153,7 +182,7 @@ export async function analyzeResume(resumeText: string, linkedinUrl: string | nu
     });
     
     return { analysis: resumeAnalysis, thoughts };
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error in profiler agent:", error);
     
     thoughts.push({
