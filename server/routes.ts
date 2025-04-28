@@ -140,6 +140,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.sendFile('linkedin-diagnostic-results.html', { root: './client/public' });
   });
   
+  app.get("/linkedin/test", (req, res) => {
+    res.sendFile('linkedin-test.html', { root: './client/public' });
+  });
+  
   // Dynamic auth URL generator
   app.get("/api/auth/linkedin/generate", generateAuthUrl);
   
