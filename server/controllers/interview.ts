@@ -385,14 +385,14 @@ async function processInterviewPrep(prepId: string, resumeFile: Express.Multer.F
  */
 export const saveUserResponse = async (req: Request, res: Response) => {
   try {
-    const { interviewPrepId, questionId, roundId, situation, action, resultText } = req.body;
+    const { interviewPrepId, questionId, roundId, situation, action, result } = req.body;
     
     if (!interviewPrepId || !questionId || !roundId) {
       return res.status(400).json({ error: "Missing required fields" });
     }
     
     // Validate input data
-    if (!situation || !action || !resultText) {
+    if (!situation || !action || !result) {
       return res.status(400).json({ 
         error: "Incomplete SAR response. Situation, Action, and Result are all required." 
       });
@@ -410,7 +410,7 @@ export const saveUserResponse = async (req: Request, res: Response) => {
       interviewPrepId,
       questionId,
       roundId,
-      { situation, action, result: resultText }
+      { situation, action, result }
     );
     
     if (!response || !response.success) {

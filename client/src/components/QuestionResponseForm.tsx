@@ -312,19 +312,19 @@ const QuestionResponseForm = ({
       ) : (
         <form onSubmit={handleSubmit}>
           <CardContent className="p-4 space-y-4">
-            <CardDescription className="text-sm text-muted-foreground">
-              <p className="mb-2">
+            <div className="text-sm text-muted-foreground mb-2">
+              <div className="mb-2">
                 For effective interview responses, use the <strong>Situation-Action-Result (SAR)</strong> format:
-              </p>
+              </div>
               <ul className="list-disc pl-5 space-y-1 text-xs">
                 <li><strong>Situation:</strong> Describe the context and challenge you faced</li>
                 <li><strong>Action:</strong> Explain the specific steps you took</li>
                 <li><strong>Result:</strong> Share the outcomes and value you delivered</li>
               </ul>
-              <p className="mt-2 text-xs">
+              <div className="mt-2 text-xs">
                 Include specific data points and metrics whenever possible to make your answer more impactful.
-              </p>
-            </CardDescription>
+              </div>
+            </div>
             
             <Textarea
               value={responseText}
@@ -332,51 +332,52 @@ const QuestionResponseForm = ({
               placeholder="Start your response using the SAR format... &#10;&#10;Situation: [Describe the specific situation]&#10;&#10;Action: [Explain what you did to address it]&#10;&#10;Result: [Share the outcomes you achieved]"
               className="min-h-[250px] border-primary/20 focus-visible:ring-primary/30"
             />
+            
+            <div className="flex justify-between items-center">
+              <Button 
+                variant="ghost"
+                type="button"
+                onClick={() => setIsExpanded(false)}
+                className="flex items-center gap-1 text-muted-foreground"
+              >
+                <ChevronUp size={16} />
+                <span>{existingResponse ? "Cancel" : "Hide"}</span>
+              </Button>
+              
+              <div className="flex gap-2">
+                {!isGrading && !gradingResult && responseText.trim().length > 50 && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleGradeResponse}
+                    className="flex items-center gap-2"
+                  >
+                    <Award size={16} />
+                    <span>Grade Response</span>
+                  </Button>
+                )}
+                
+                <Button 
+                  type="submit"
+                  disabled={isSaving || isGrading}
+                  className="flex items-center gap-2 shadow-sm"
+                >
+                  {isSaving ? (
+                    <>Saving...</>
+                  ) : isGrading ? (
+                    <>Grading...</>
+                  ) : (
+                    <>
+                      <CheckCircle size={16} />
+                      <span>Save Response</span>
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
 
             {gradingResult && <GradingResultDisplay result={gradingResult} />}
           </CardContent>
-          
-          <CardFooter className="flex justify-between pb-4 pt-2 px-4">
-            <Button 
-              variant="ghost"
-              onClick={() => setIsExpanded(false)}
-              className="flex items-center gap-1 text-muted-foreground"
-            >
-              <ChevronUp size={16} />
-              <span>{existingResponse ? "Cancel" : "Hide"}</span>
-            </Button>
-            
-            <div className="flex gap-2">
-              {!isGrading && !gradingResult && responseText.trim().length > 50 && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={handleGradeResponse}
-                  className="flex items-center gap-2"
-                >
-                  <Award size={16} />
-                  <span>Grade Response</span>
-                </Button>
-              )}
-              
-              <Button 
-                type="submit"
-                disabled={isSaving || isGrading}
-                className="flex items-center gap-2 shadow-sm"
-              >
-                {isSaving ? (
-                  <>Saving...</>
-                ) : isGrading ? (
-                  <>Grading...</>
-                ) : (
-                  <>
-                    <CheckCircle size={16} />
-                    <span>Save Response</span>
-                  </>
-                )}
-              </Button>
-            </div>
-          </CardFooter>
         </form>
       )}
     </Card>
