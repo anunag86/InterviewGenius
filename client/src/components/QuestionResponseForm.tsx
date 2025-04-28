@@ -229,18 +229,32 @@ const QuestionResponseForm = ({
     // Extract the SAR components from the text
     const { situation, action, result } = extractSARComponents(responseText);
     
-    // Save the response
-    onSave({
-      questionId,
-      roundId,
-      situation,
-      action,
-      result
-    });
-    
-    // Grade the response if not already graded
-    if (!gradingResult && !isGrading) {
+    try {
+      // Save the response
+      await onSave({
+        questionId,
+        roundId,
+        situation,
+        action,
+        result
+      });
+      
+      // Always re-grade the response when saved
+      // This ensures the user gets updated feedback if they change their response
       handleGradeResponse();
+      
+      // Show success message
+      toast({
+        title: "Response Saved",
+        description: "Your response has been saved successfully.",
+      });
+    } catch (error) {
+      console.error("Error saving response:", error);
+      toast({
+        title: "Save Failed",
+        description: "Failed to save your response. Please try again.",
+        variant: "destructive"
+      });
     }
   };
   
@@ -250,6 +264,8 @@ const QuestionResponseForm = ({
       return;
     }
     
+    // Reset any previous grading result
+    setGradingResult(null);
     setIsGrading(true);
     
     try {
@@ -329,7 +345,7 @@ const QuestionResponseForm = ({
             <Textarea
               value={responseText}
               onChange={(e) => setResponseText(e.target.value)}
-              placeholder="Start your response using the SAR format... &#10;&#10;Situation: [Describe the specific situation]&#10;&#10;Action: [Explain what you did to address it]&#10;&#10;Result: [Share the outcomes you achieved]"
+              placeholder="Write your response using Situation, Action, and Result format..."
               className="min-h-[250px] border-primary/20 focus-visible:ring-primary/30"
             />
             
