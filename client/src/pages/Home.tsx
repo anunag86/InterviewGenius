@@ -153,7 +153,8 @@ const Home = () => {
             <div className="text-center mb-8">
               <h1 className="text-4xl font-bold mb-4 gradient-heading">Welcome to PrepTalk - Your Interview Coach</h1>
               <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-6">
-                PrepTalk helps you turn your experiences into clear, confident answers - no shortcuts, just real preparation
+                PrepTalk helps you turn your experiences into clear, confident answers.<br/>
+                No shortcuts, just real preparation.
               </p>
             </div>
           </div>
