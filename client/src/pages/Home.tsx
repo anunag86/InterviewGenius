@@ -12,9 +12,11 @@ import { InterviewPrep, AgentStep, AgentThought } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowRightIcon, CalendarIcon, BuildingIcon, BriefcaseIcon, ClockIcon } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 
 const Home = () => {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [showHero, setShowHero] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [currentStep, setCurrentStep] = useState<AgentStep>(AgentStep.JOB_RESEARCH);

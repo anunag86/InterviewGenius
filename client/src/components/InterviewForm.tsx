@@ -3,6 +3,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useFileUpload } from "@/hooks/useFileUpload";
+import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -11,7 +12,6 @@ import { useToast } from "@/hooks/use-toast";
 
 const formSchema = z.object({
   jobUrl: z.string().url("Please enter a valid URL").min(1, "Job posting URL is required"),
-  linkedinUrl: z.string().url("Please enter a valid LinkedIn URL").min(1, "LinkedIn profile URL is required"),
 });
 
 interface InterviewFormProps {
@@ -21,6 +21,7 @@ interface InterviewFormProps {
 
 const InterviewForm = ({ onSubmit, isSubmitting }: InterviewFormProps) => {
   const { toast } = useToast();
+  const { user } = useAuth();
   const { 
     selectedFile, 
     fileInputRef, 
@@ -34,7 +35,6 @@ const InterviewForm = ({ onSubmit, isSubmitting }: InterviewFormProps) => {
     resolver: zodResolver(formSchema),
     defaultValues: {
       jobUrl: "",
-      linkedinUrl: "",
     },
   });
 
@@ -48,9 +48,18 @@ const InterviewForm = ({ onSubmit, isSubmitting }: InterviewFormProps) => {
       return;
     }
 
+    if (!user?.linkedinProfileUrl) {
+      toast({
+        title: "LinkedIn Profile Required",
+        description: "Your LinkedIn profile is required. Please make sure you're signed in.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     const formData = new FormData();
     formData.append("jobUrl", values.jobUrl);
-    formData.append("linkedinUrl", values.linkedinUrl);
+    formData.append("linkedinUrl", user.linkedinProfileUrl);
     formData.append("resume", selectedFile);
 
     onSubmit(formData);
@@ -129,35 +138,29 @@ const InterviewForm = ({ onSubmit, isSubmitting }: InterviewFormProps) => {
             </div>
           </div>
 
-          {/* LinkedIn URL Input */}
-          <FormField
-            control={form.control}
-            name="linkedinUrl"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel className="text-sm font-medium text-foreground">
-                  LinkedIn Profile URL
-                </FormLabel>
-                <FormControl>
-                  <div className="mt-1 relative rounded-md shadow-sm">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 8a6 6 0 016 6v7h-4v-7a2 2 0 00-2-2 2 2 0 00-2 2v7h-4v-7a6 6 0 016-6z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v6h4v-6M4 10a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1v-2z" />
-                      </svg>
-                    </div>
-                    <Input
-                      {...field}
-                      placeholder="https://linkedin.com/in/yourprofile"
-                      className="pl-10 py-3 border-border focus:border-primary focus:ring-primary"
-                    />
+          {/* LinkedIn profile notice */}
+          <div className="rounded-md bg-muted/50 p-4 border border-border/50">
+            <div className="flex">
+              <div className="flex-shrink-0">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 8a6 6 0 016 6v7h-4v-7a2 2 0 00-2-2 2 2 0 00-2 2v7h-4v-7a6 6 0 016-6z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v6h4v-6M4 10a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1v-2z" />
+                </svg>
+              </div>
+              <div className="ml-3 flex-1">
+                <h3 className="text-sm font-medium text-foreground">LinkedIn Profile</h3>
+                {user && user.linkedinProfileUrl ? (
+                  <div className="mt-1 text-sm text-muted-foreground">
+                    <p>Using your LinkedIn profile: <a href={user.linkedinProfileUrl} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{user.linkedinProfileUrl}</a></p>
                   </div>
-                </FormControl>
-                <p className="mt-1 text-xs text-muted-foreground">Enter your LinkedIn profile URL</p>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+                ) : (
+                  <div className="mt-1 text-sm text-destructive">
+                    <p>Please sign in with LinkedIn to continue</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
 
           <div className="flex justify-center pt-4">
             <Button 

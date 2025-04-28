@@ -1,5 +1,5 @@
-import React from 'react';
-import { Redirect, useLocation } from 'wouter';
+import React, { useEffect } from 'react';
+import { useLocation } from 'wouter';
 import { useAuth } from '@/hooks/useAuth';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -15,6 +15,12 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   const { user, isLoading } = useAuth();
   const [, setLocation] = useLocation();
 
+  useEffect(() => {
+    if (!isLoading && !user) {
+      setLocation('/login');
+    }
+  }, [user, isLoading, setLocation]);
+
   if (isLoading) {
     return (
       <div className="flex flex-col space-y-4 p-8">
@@ -28,8 +34,11 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   }
 
   if (!user) {
-    setLocation('/login');
-    return null;
+    return (
+      <div className="flex flex-col space-y-4 p-8">
+        <p>Redirecting to login...</p>
+      </div>
+    );
   }
 
   return <>{children}</>;

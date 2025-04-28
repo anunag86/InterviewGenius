@@ -62,7 +62,7 @@ const InterviewDetail = ({ id }: InterviewDetailProps) => {
     };
     
     fetchInterviewDetails();
-  }, [interviewId, toast]);
+  }, [id, toast]);
   
   const handleBackToHome = () => {
     setLocation("/");
