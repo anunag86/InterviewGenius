@@ -98,22 +98,22 @@ export async function generateCandidatePoints(
           pointsResponse.points.forEach((point, index) => {
             enhancedTalkingPoints.push({
               id: `${question.id}-point-${index}`,
-              text: `• ${point}`
+              text: point // Clean text without bullets - CSS will handle formatting
             });
           });
           
-          // Add relevance explanation if provided
+          // Add relevance explanation as the last point with a special format
           if (pointsResponse.relevance) {
             enhancedTalkingPoints.push({
               id: `${question.id}-relevance`,
-              text: `_Relevance: ${pointsResponse.relevance}_`
+              text: pointsResponse.relevance
             });
           }
         } else {
           // Fallback if no points were generated
           enhancedTalkingPoints.push({
             id: `${question.id}-no-points`,
-            text: `• You should provide specific examples from your experience for this question.`
+            text: `You should provide specific examples from your experience for this question.`
           });
         }
         

@@ -87,42 +87,23 @@ export async function generateCandidateNarrative(
         // Get narrative guidance from OpenAI
         const sarNarrative = await callOpenAIWithJSON<SARNarrative>(narrativePrompt);
         
-        // Create combined talking points array with original points + narrative guidance
-        const enhancedTalkingPoints: TalkingPoint[] = [...question.talkingPoints];
+        // Create a narrative guidance text
+        let narrativeText = `Suggested Narrative Structure:\n\n`;
         
-        // Add narrative guidance section
-        enhancedTalkingPoints.push({
-          id: `${question.id}-narrative-header`,
-          text: `\n**Suggested Narrative Structure:**`
-        });
-        
-        // Add SAR components as narrative guidance
         if (sarNarrative.situation) {
-          enhancedTalkingPoints.push({
-            id: `${question.id}-narrative-situation`,
-            text: `_"${sarNarrative.situation}"_`
-          });
+          narrativeText += `Situation: ${sarNarrative.situation}\n\n`;
         }
         
         if (sarNarrative.action) {
-          enhancedTalkingPoints.push({
-            id: `${question.id}-narrative-action`,
-            text: `_"${sarNarrative.action}"_`
-          });
+          narrativeText += `Action: ${sarNarrative.action}\n\n`;
         }
         
         if (sarNarrative.result) {
-          enhancedTalkingPoints.push({
-            id: `${question.id}-narrative-result`,
-            text: `_"${sarNarrative.result}"_`
-          });
+          narrativeText += `Result: ${sarNarrative.result}\n\n`;
         }
         
         if (sarNarrative.guidance) {
-          enhancedTalkingPoints.push({
-            id: `${question.id}-narrative-guidance`,
-            text: `_"${sarNarrative.guidance}"_`
-          });
+          narrativeText += `Guidance: ${sarNarrative.guidance}`;
         }
         
         thoughts.push({
@@ -132,11 +113,14 @@ export async function generateCandidateNarrative(
           sourcesConsulted: []
         });
         
-        // Add the enhanced question with narrative guidance
-        enhancedQuestions.push({
+        // Create an enhanced question with narrative field
+        const enhancedQuestion: InterviewQuestion = {
           ...question,
-          talkingPoints: enhancedTalkingPoints
-        });
+          narrative: narrativeText
+        };
+        
+        // Add the enhanced question
+        enhancedQuestions.push(enhancedQuestion);
       }
       
       // Add the enhanced round with all its questions
