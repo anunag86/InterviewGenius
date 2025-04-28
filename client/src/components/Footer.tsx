@@ -42,6 +42,10 @@ const Footer = () => {
           <div className="flex flex-col md:flex-row space-y-3 md:space-y-0 md:space-x-6">
             <FeedbackDialog />
             
+            <Link href="/privacy" className="text-sm text-primary hover:text-primary/80 transition-colors duration-200">
+              Privacy Policy
+            </Link>
+            
             <div className="text-sm text-muted-foreground">
               &copy; {new Date().getFullYear()} PrepTalk. All rights reserved.
             </div>
