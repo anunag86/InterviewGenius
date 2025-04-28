@@ -2,9 +2,10 @@ import { callOpenAIWithJSON } from "../utils/openai";
 import { AgentThought, InterviewRound, JobDetails } from "../../client/src/types";
 
 /**
- * Interviewer Agent - Generates tailored interview questions based on company research
+ * Interviewer Preparer Agent - Generates tailored interview questions based on company research
  * This agent uses knowledge of the hiring company, job role, and candidate profile
- * to generate relevant questions for different interview rounds
+ * to generate relevant questions for different interview rounds and provides specific talking points
+ * for each question based on candidate's resume and the job requirements.
  */
 export async function generateInterviewQuestions(
   jobDetails: JobDetails,

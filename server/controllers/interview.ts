@@ -7,9 +7,7 @@ import { highlightResumePoints } from "../agents/highlighter";
 import { researchCompanyAndRole } from "../agents/companyResearcher";
 import { researchInterviewPatterns } from "../agents/interviewPatternResearcher";
 import { generateInterviewQuestions } from "../agents/interviewerAgent";
-// Import new agents instead of the original candidate agent
-import { generateCandidatePoints } from "../agents/candidatePointsAgent";
-import { generateCandidateNarrative } from "../agents/candidateNarrativeAgent";
+// We no longer need candidate points and narrative agents in the new architecture
 import { storeUserMemory, storeUserResponse, getUserResponses } from "../agents/memoryAgent";
 import { validateInterviewPrep } from "../agents/qualityAgent";
 import { storage } from "../storage";
@@ -311,6 +309,7 @@ async function processInterviewPrep(prepId: string, resumeFile: Express.Multer.F
     });
     
     // The interviewer agent now includes talking points directly
+    // No need for separate candidate points or narrative agents anymore
     
     // Step 7: Store profile data with memory agent
     interviewPreps.set(prepId, {
@@ -335,7 +334,7 @@ async function processInterviewPrep(prepId: string, resumeFile: Express.Multer.F
       agentThoughts: allThoughts
     });
     
-    // Step 10: Quality Agent - Ensure all agent outputs meet quality standards
+    // Step 8: Quality Agent - Ensure all agent outputs meet quality standards
     interviewPreps.set(prepId, {
       ...interviewPreps.get(prepId),
       progress: AgentStep.QUALITY_CHECK
@@ -347,7 +346,7 @@ async function processInterviewPrep(prepId: string, resumeFile: Express.Multer.F
       jobDetails,
       companyInfo: companyInfo.companyInfo,
       candidateHighlights,
-      interviewRounds: enhancedRounds,
+      interviewRounds: interviewRounds,
       agentThoughts: allThoughts
     };
     
@@ -363,7 +362,7 @@ async function processInterviewPrep(prepId: string, resumeFile: Express.Multer.F
       jobDetails,
       companyInfo.companyInfo,
       candidateHighlights,
-      enhancedRounds,
+      interviewRounds,
       allThoughts
     );
     
