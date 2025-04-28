@@ -4,6 +4,7 @@ import { useToast } from "@/hooks/use-toast";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import ResultsSection from "@/components/ResultsSection";
+import ErrorState from "@/components/ErrorState";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { InterviewPrep } from "@/types";

@@ -5,6 +5,7 @@ import Footer from "@/components/Footer";
 import InterviewForm from "@/components/InterviewForm";
 import LoadingState from "@/components/LoadingState";
 import ResultsSection from "@/components/ResultsSection";
+import ErrorState from "@/components/ErrorState";
 import { generateInterviewPrep, checkInterviewPrepStatus } from "@/lib/openai";
 import { InterviewPrep, AgentStep, AgentThought } from "@/types";
 import { Button } from "@/components/ui/button";
@@ -17,6 +18,7 @@ const Home = () => {
   const [prepId, setPrepId] = useState<string | null>(null);
   const [interviewPrep, setInterviewPrep] = useState<InterviewPrep | null>(null);
   const [agentThoughts, setAgentThoughts] = useState<AgentThought[]>([]);
+  const [error, setError] = useState<{ title: string; message: string } | null>(null);
 
   useEffect(() => {
     // If we have a prep ID, poll for updates
@@ -36,10 +38,9 @@ const Home = () => {
             setIsLoading(false);
             clearInterval(pollInterval);
           } else if (result.status === "failed") {
-            toast({
+            setError({
               title: "Generation Failed",
-              description: "There was an error generating your interview prep. Please try again.",
-              variant: "destructive",
+              message: "There was an error generating your interview prep. Please try again."
             });
             setIsLoading(false);
             clearInterval(pollInterval);
@@ -48,10 +49,9 @@ const Home = () => {
           console.error("Error polling for updates:", error);
           setIsLoading(false);
           clearInterval(pollInterval);
-          toast({
+          setError({
             title: "Error",
-            description: "Failed to check interview preparation status.",
-            variant: "destructive",
+            message: "Failed to check interview preparation status. Please try again."
           });
         }
       }, 3000);
@@ -83,10 +83,9 @@ const Home = () => {
       // The rest will be handled by the polling effect
     } catch (error) {
       console.error("Error submitting form:", error);
-      toast({
-        title: "Error",
-        description: "Failed to generate interview preparation. Please try again.",
-        variant: "destructive",
+      setError({
+        title: "Generation Failed",
+        message: "There was an error generating your interview prep. Please check your inputs and try again."
       });
       setIsLoading(false);
     }
@@ -96,6 +95,12 @@ const Home = () => {
     setShowHero(false);
     // Scroll to the form section
     document.getElementById("input-form")?.scrollIntoView({ behavior: "smooth" });
+  };
+  
+  const handleRetry = () => {
+    setError(null);
+    setIsLoading(false);
+    setPrepId(null);
   };
 
   return (
@@ -135,8 +140,19 @@ const Home = () => {
           </section>
         )}
 
+        {/* Error State */}
+        {error && !isLoading && !interviewPrep && (
+          <div className="max-w-3xl mx-auto mb-12">
+            <ErrorState
+              title={error.title}
+              message={error.message}
+              onRetry={handleRetry}
+            />
+          </div>
+        )}
+        
         {/* Input Form */}
-        {!isLoading && !interviewPrep && (
+        {!isLoading && !interviewPrep && !error && (
           <InterviewForm onSubmit={handleFormSubmit} isSubmitting={isLoading} />
         )}
 
