@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
 import { UserResponse } from "@/types";
 import { useToast } from "@/hooks/use-toast";
 
@@ -22,11 +21,12 @@ export function useUserResponses({ interviewPrepId }: UseUserResponsesProps) {
     queryKey: [`/api/interview/${interviewPrepId}/responses`],
     queryFn: async () => {
       try {
-        const response = await apiRequest<ResponsesApiResponse>({
-          url: `/api/interview/${interviewPrepId}/responses`,
-          method: "GET"
-        });
-        return response;
+        const response = await fetch(`/api/interview/${interviewPrepId}/responses`);
+        if (!response.ok) {
+          throw new Error("Failed to fetch responses");
+        }
+        const data = await response.json();
+        return data as ResponsesApiResponse;
       } catch (error) {
         console.error("Error fetching user responses:", error);
         return { responses: [] as UserResponse[] };
@@ -44,28 +44,45 @@ export function useUserResponses({ interviewPrepId }: UseUserResponsesProps) {
       action: string;
       result: string;
     }) => {
-      return apiRequest<UserResponse>({
-        url: `/api/interview/${interviewPrepId}/responses`,
+      const response = await fetch(`/api/interview/${interviewPrepId}/responses`, {
         method: "POST",
-        data: {
-          ...responseData
-        }
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(responseData)
       });
+      
+      if (!response.ok) {
+        throw new Error("Failed to save response");
+      }
+      
+      const data = await response.json();
+      return data.thoughts ? data : responseData as UserResponse;
     },
-    onSuccess: (savedResponse: UserResponse) => {
+    onSuccess: (savedResponse: any) => {
+      // Create a properly formatted user response object
+      const userResponse: UserResponse = {
+        questionId: savedResponse.questionId,
+        roundId: savedResponse.roundId,
+        situation: savedResponse.situation,
+        action: savedResponse.action,
+        result: savedResponse.result,
+        updatedAt: new Date().toISOString()
+      };
+      
       // Update local state
       setUserResponses(prev => {
         const existingIndex = prev.findIndex(r => 
-          r.questionId === savedResponse.questionId && r.roundId === savedResponse.roundId);
+          r.questionId === userResponse.questionId && r.roundId === userResponse.roundId);
         
         if (existingIndex >= 0) {
           // Update existing response
           const updated = [...prev];
-          updated[existingIndex] = savedResponse;
+          updated[existingIndex] = userResponse;
           return updated;
         } else {
           // Add new response
-          return [...prev, savedResponse];
+          return [...prev, userResponse];
         }
       });
       

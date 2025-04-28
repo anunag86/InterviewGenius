@@ -19,6 +19,7 @@ export interface InterviewQuestion {
   id: string;
   question: string;
   talkingPoints: TalkingPoint[];
+  narrative?: string; // Narrative guidance from the Candidate_narrative agent
 }
 
 export interface InterviewRound {
