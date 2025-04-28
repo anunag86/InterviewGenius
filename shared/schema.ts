@@ -5,8 +5,10 @@ import { relations } from "drizzle-orm";
 
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
-  email: text("email").notNull().default(""), // Make sure email has a default value
-  linkedinId: text("linkedin_id").notNull().unique(),
+  username: text("username").notNull().unique(),
+  email: text("email").notNull().default(""), // Email may come from LinkedIn or manual entry
+  password: text("password"), // Only present for non-LinkedIn users
+  linkedinId: text("linkedin_id").unique(), // Can be null for manual users
   firstName: text("first_name").notNull().default(""),
   lastName: text("last_name").notNull().default(""),
   displayName: text("display_name").notNull().default(""),
