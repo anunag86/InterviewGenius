@@ -93,11 +93,20 @@ export const getInterviewStatus = async (req: Request, res: Response) => {
     if (interviewPreps.has(id)) {
       const prepData = interviewPreps.get(id);
       
+      // Check if there are any stored user responses for this interview prep
+      const userResponses = await getUserResponses(id);
+      
+      // If there are user responses, include them in the result
+      const resultWithResponses = prepData.result ? {
+        ...prepData.result,
+        userResponses
+      } : null;
+      
       // Include agent thoughts for showing the thinking process
       return res.status(200).json({
         status: prepData.status,
         progress: prepData.progress,
-        result: prepData.result,
+        result: resultWithResponses,
         error: prepData.error,
         agentThoughts: prepData.agentThoughts
       });
@@ -111,11 +120,20 @@ export const getInterviewStatus = async (req: Request, res: Response) => {
       return res.status(404).json({ error: "Interview preparation request not found" });
     }
     
+    // Get any stored user responses for this interview prep
+    const userResponses = await getUserResponses(id);
+    
+    // Add user responses to the prep data
+    const resultWithResponses = {
+      ...savedPrep.data,
+      userResponses
+    };
+    
     // Return the saved data from the database
     return res.status(200).json({
       status: "completed", // If it's in the database, it's completed
-      progress: 7, // AgentStep.COMPLETED
-      result: savedPrep.data,
+      progress: AgentStep.COMPLETED,
+      result: resultWithResponses,
       error: null,
       agentThoughts: [] // Thoughts might not be stored in DB
     });
