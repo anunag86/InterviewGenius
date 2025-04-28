@@ -17,7 +17,7 @@ import { AgentStep, AgentThought, InterviewRound, UserResponse } from "../../cli
 declare global {
   namespace Express {
     interface Request {
-      file?: any;
+      file?: Multer.File;
     }
     
     namespace Multer {
@@ -159,7 +159,7 @@ async function processInterviewPrep(prepId: string, resumeFile: Express.Multer.F
     });
     
     // Get job analysis with agents' thoughts
-    const jobResearchResult = await analyzeJobPosting(jobUrl, linkedinUrl);
+    const jobResearchResult = await analyzeJobPosting(jobUrl, linkedinUrl || undefined);
     const jobAnalysis = jobResearchResult.analysis;
     allThoughts = [...allThoughts, ...jobResearchResult.thoughts];
     
@@ -381,3 +381,82 @@ async function processInterviewPrep(prepId: string, resumeFile: Express.Multer.F
     throw error;
   }
 }
+
+/**
+ * Save a user's response to an interview question
+ */
+export const saveUserResponse = async (req: Request, res: Response) => {
+  try {
+    const { interviewPrepId, questionId, roundId, situation, action, resultText } = req.body;
+    
+    if (!interviewPrepId || !questionId || !roundId) {
+      return res.status(400).json({ error: "Missing required fields" });
+    }
+    
+    // Validate input data
+    if (!situation || !action || !resultText) {
+      return res.status(400).json({ 
+        error: "Incomplete SAR response. Situation, Action, and Result are all required." 
+      });
+    }
+    
+    // Check if the interview prep exists
+    const savedPrep = await storage.getInterviewPrep(interviewPrepId);
+    if (!savedPrep) {
+      return res.status(404).json({ error: "Interview preparation not found" });
+    }
+    
+    // Store the user response using the memory agent
+    const response = await storeUserResponse(
+      "anonymous", // No user authentication yet
+      interviewPrepId,
+      questionId,
+      roundId,
+      { situation, action, result: resultText }
+    );
+    
+    if (!response || !response.success) {
+      return res.status(500).json({ error: "Failed to save user response" });
+    }
+    
+    // Return success response
+    return res.status(200).json({ 
+      success: true, 
+      message: "User response saved successfully",
+      thoughts: response.thoughts
+    });
+  } catch (error) {
+    console.error("Error saving user response:", error);
+    return res.status(500).json({ error: "Failed to save user response" });
+  }
+};
+
+/**
+ * Get all user responses for an interview prep
+ */
+export const getUserResponsesForInterview = async (req: Request, res: Response) => {
+  try {
+    const { interviewPrepId } = req.params;
+    
+    if (!interviewPrepId) {
+      return res.status(400).json({ error: "Interview prep ID is required" });
+    }
+    
+    // Check if the interview prep exists
+    const savedPrep = await storage.getInterviewPrep(interviewPrepId);
+    if (!savedPrep) {
+      return res.status(404).json({ error: "Interview preparation not found" });
+    }
+    
+    // Get user responses for this interview prep
+    const responses = await getUserResponses(interviewPrepId);
+    
+    return res.status(200).json({ 
+      success: true,
+      responses
+    });
+  } catch (error) {
+    console.error("Error getting user responses:", error);
+    return res.status(500).json({ error: "Failed to retrieve user responses" });
+  }
+};

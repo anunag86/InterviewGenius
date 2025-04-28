@@ -2,7 +2,7 @@ import { fetchWebContent, callOpenAIWithJSON } from "../utils/openai";
 import { AgentThought } from "../../client/src/types";
 
 // Job Researcher agent that analyzes job postings
-export async function analyzeJobPosting(jobUrl: string, linkedinUrl: string = null) {
+export async function analyzeJobPosting(jobUrl: string, linkedinUrl?: string) {
   const thoughts: AgentThought[] = [];
   
   // Record the agent's thought

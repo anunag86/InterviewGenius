@@ -1,7 +1,7 @@
-import { db } from "@db";
+import { db } from "../../db";
 import { AgentThought } from "../../client/src/types";
 import { callOpenAIWithJSON } from "../utils/openai";
-import { userResponses } from "@shared/schema";
+import { userResponses } from "../../shared/schema";
 import { eq } from "drizzle-orm";
 
 /**
