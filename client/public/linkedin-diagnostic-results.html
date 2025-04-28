@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LinkedIn OAuth Diagnostics</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+      margin: 0;
+      padding: 20px;
+      line-height: 1.5;
+      color: #333;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    h1 {
+      color: #0077B5;
+      border-bottom: 2px solid #eee;
+      padding-bottom: 10px;
+    }
+    h2 {
+      color: #0077B5;
+      margin-top: 30px;
+    }
+    pre {
+      background-color: #f5f5f5;
+      padding: 10px;
+      border-radius: 4px;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+    .diagnostic-section {
+      margin-bottom: 30px;
+      padding: 15px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+    }
+    .test-url {
+      display: block;
+      padding: 8px;
+      margin: 8px 0;
+      background-color: #f0f7ff;
+      border-radius: 4px;
+      word-break: break-all;
+    }
+    .test-url a {
+      color: #0077B5;
+      text-decoration: none;
+    }
+    .test-url a:hover {
+      text-decoration: underline;
+    }
+    .error {
+      background-color: #fff0f0;
+      color: #c00;
+      padding: 10px;
+      border-radius: 4px;
+      margin: 10px 0;
+    }
+    .success {
+      background-color: #f0fff0;
+      color: #0a0;
+      padding: 10px;
+      border-radius: 4px;
+      margin: 10px 0;
+    }
+    .credential-status {
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 4px;
+    }
+    .recommendations {
+      background-color: #fff8e1;
+      padding: 15px;
+      border-radius: 4px;
+      margin: 20px 0;
+      border-left: 4px solid #ffc107;
+    }
+    .btn-container {
+      display: flex;
+      justify-content: space-between;
+      margin: 20px 0;
+    }
+    button {
+      background-color: #0077B5;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    button:hover {
+      background-color: #005e93;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>LinkedIn OAuth Diagnostics Results</h1>
+    
+    <div class="btn-container">
+      <button onclick="window.location.href='/'">Back to Home</button>
+    </div>
+    
+    <div class="diagnostic-section">
+      <h2>How to Fix LinkedIn Authentication</h2>
+      <p>Based on our diagnostics, we've found some common issues with LinkedIn OAuth:</p>
+      
+      <div class="recommendations">
+        <h3>Recommended Steps:</h3>
+        <ol>
+          <li>
+            <strong>Check Redirect URI in LinkedIn Developer Console:</strong>
+            <p>Make sure your LinkedIn application has the correct redirect URI configured. It should match exactly what is being used in the application.</p>
+            <p>Current configured redirect URI: <code>/api/auth/linkedin/callback</code></p>
+          </li>
+          <li>
+            <strong>Verify Application Permissions:</strong>
+            <p>Ensure your LinkedIn application has the following permissions:</p>
+            <ul>
+              <li><code>r_liteprofile</code> - To access basic profile information</li>
+              <li><code>r_emailaddress</code> - To access email address</li>
+            </ul>
+          </li>
+          <li>
+            <strong>Check App Review Status:</strong>
+            <p>If your LinkedIn application is still in development mode, it might have limited access. You can only use it with developer accounts.</p>
+          </li>
+          <li>
+            <strong>Test with Different Callback Paths:</strong>
+            <p>Try different callback paths to see which one works with your LinkedIn application configuration:</p>
+            <div id="callback-links"></div>
+          </li>
+        </ol>
+      </div>
+    </div>
+    
+    <div class="diagnostic-section">
+      <h2>Diagnostic Data</h2>
+      <p>The following data was returned from diagnostic tests:</p>
+      <pre id="diagnostic-data">Loading diagnostics data...</pre>
+    </div>
+    
+    <div class="diagnostic-section">
+      <h2>Debug Info</h2>
+      <p>Common issues and solutions for LinkedIn OAuth:</p>
+      <ul>
+        <li><strong>Invalid client error:</strong> Your Client ID or Client Secret might be incorrect or expired.</li>
+        <li><strong>Redirect URI mismatch:</strong> The redirect URI in your code must exactly match what's configured in LinkedIn Developer Console.</li>
+        <li><strong>Access denied:</strong> Your application may not have permission to use the requested scopes or might not be approved for production use.</li>
+        <li><strong>Invalid_request:</strong> Usually means a parameter is missing or improperly formatted in your request.</li>
+      </ul>
+    </div>
+  </div>
+  
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      try {
+        // Fetch diagnostic data
+        const response = await fetch('/api/deep-diagnostics/linkedin');
+        const diagnostics = await response.json();
+        
+        // Display diagnostic data
+        document.getElementById('diagnostic-data').textContent = JSON.stringify(diagnostics, null, 2);
+        
+        // Generate callback links
+        const callbackLinksContainer = document.getElementById('callback-links');
+        
+        // Extract unique redirect URIs
+        const redirectUris = [];
+        diagnostics.permutations.forEach(p => {
+          if (!redirectUris.includes(p.redirectUri)) {
+            redirectUris.push(p.redirectUri);
+          }
+        });
+        
+        // Create links for each redirect URI
+        redirectUris.forEach(uri => {
+          const perm = diagnostics.permutations.find(p => p.redirectUri === uri && p.scope === "r_liteprofile r_emailaddress");
+          if (perm) {
+            const link = document.createElement('div');
+            link.className = 'test-url';
+            
+            // Extract just the path portion for display
+            const urlObj = new URL(uri);
+            const path = urlObj.pathname;
+            
+            link.innerHTML = `
+              <strong>URI Path:</strong> ${path}<br>
+              <a href="${perm.authUrl}" target="_blank">Test with this redirect URI</a>
+            `;
+            callbackLinksContainer.appendChild(link);
+          }
+        });
+      } catch (error) {
+        console.error("Diagnostics error:", error);
+        document.getElementById('diagnostic-data').textContent = "Error loading diagnostics data: " + error.message;
+      }
+    });
+  </script>
+</body>
+</html>
