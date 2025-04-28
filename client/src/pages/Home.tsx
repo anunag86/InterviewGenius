@@ -1,14 +1,17 @@
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { useLocation } from "wouter";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import InterviewForm from "@/components/InterviewForm";
 import LoadingState from "@/components/LoadingState";
 import ResultsSection from "@/components/ResultsSection";
 import ErrorState from "@/components/ErrorState";
-import { generateInterviewPrep, checkInterviewPrepStatus } from "@/lib/openai";
+import { generateInterviewPrep, checkInterviewPrepStatus, getInterviewHistory, InterviewHistoryItem } from "@/lib/openai";
 import { InterviewPrep, AgentStep, AgentThought } from "@/types";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { ArrowRightIcon, CalendarIcon, BuildingIcon, BriefcaseIcon, ClockIcon } from "lucide-react";
 
 const Home = () => {
   const { toast } = useToast();
@@ -103,42 +106,58 @@ const Home = () => {
     setPrepId(null);
   };
 
+  // Define state for history
+  const [, setLocation] = useLocation();
+  const [historyItems, setHistoryItems] = useState<InterviewHistoryItem[]>([]);
+  const [isHistoryLoading, setIsHistoryLoading] = useState(false);
+
+  // Fetch interview history
+  useEffect(() => {
+    const fetchHistory = async () => {
+      setIsHistoryLoading(true);
+      try {
+        const history = await getInterviewHistory();
+        setHistoryItems(history);
+      } catch (error) {
+        console.error("Error fetching history:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load interview history",
+          variant: "destructive",
+        });
+      } finally {
+        setIsHistoryLoading(false);
+      }
+    };
+    
+    fetchHistory();
+  }, [toast]);
+
+  // Format date for display
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return new Intl.DateTimeFormat('en-US', { 
+      month: 'short', 
+      day: 'numeric', 
+      year: 'numeric' 
+    }).format(date);
+  };
+
   return (
     <>
       <Header />
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Hero Section */}
-        {showHero && (
-          <section className="mb-12" id="hero-section">
-            <div className="max-w-3xl mx-auto py-6">
-              <div className="text-center mb-8">
-                <h1 className="text-3xl font-bold mb-3 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">AI-Powered Interview Prep</h1>
-                <p className="text-muted-foreground max-w-xl mx-auto">
-                  Get comprehensive interview preparation tailored to your specific job opportunity
-                </p>
-              </div>
-              
-              <div className="flex justify-center gap-4">
-                <Button
-                  id="new-prep-btn"
-                  onClick={handleGetStarted}
-                  className="bg-primary hover:bg-primary/90 text-primary-foreground px-6 py-2 rounded-md font-medium transition-all duration-200 shadow-sm"
-                >
-                  New Preparation
-                </Button>
-                
-                <Button
-                  id="view-history-btn"
-                  onClick={() => window.location.href = '/history'}
-                  className="bg-muted hover:bg-muted/80 text-foreground px-6 py-2 rounded-md font-medium transition-all duration-200"
-                  variant="outline"
-                >
-                  View History
-                </Button>
-              </div>
+        <section className="mb-12" id="hero-section">
+          <div className="max-w-4xl mx-auto py-8">
+            <div className="text-center mb-8">
+              <h1 className="text-4xl font-bold mb-4 gradient-heading">Welcome to PrepTalk - Your Interview Coach</h1>
+              <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-6">
+                PrepTalk helps you turn your experiences into clear, confident answers - no shortcuts, just real preparation
+              </p>
             </div>
-          </section>
-        )}
+          </div>
+        </section>
 
         {/* Error State */}
         {error && !isLoading && !interviewPrep && (
@@ -151,9 +170,96 @@ const Home = () => {
           </div>
         )}
         
-        {/* Input Form */}
+        {/* Card Grid Layout */}
         {!isLoading && !interviewPrep && !error && (
-          <InterviewForm onSubmit={handleFormSubmit} isSubmitting={isLoading} />
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 mb-12">
+            {/* New Preparation Card */}
+            <Card className="lg:col-span-5 hover-card border-primary/10">
+              <CardHeader className="pb-4">
+                <CardTitle className="text-2xl gradient-heading">New Interview Preparation</CardTitle>
+                <CardDescription>
+                  Create a new preparation for your upcoming interview
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <InterviewForm onSubmit={handleFormSubmit} isSubmitting={isLoading} />
+              </CardContent>
+            </Card>
+
+            {/* History Cards Section */}
+            <div className="lg:col-span-7 space-y-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-2xl font-semibold">Recent Preparations</h2>
+              </div>
+              
+              {isHistoryLoading ? (
+                <div className="space-y-4">
+                  {[1, 2].map((i) => (
+                    <Card key={i} className="animate-pulse bg-muted/50">
+                      <CardHeader className="pb-2">
+                        <div className="h-7 bg-muted rounded w-3/4"></div>
+                        <div className="h-5 bg-muted rounded w-1/2 mt-2"></div>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="h-5 bg-muted rounded w-full mt-2"></div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              ) : historyItems.length > 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {historyItems.slice(0, 4).map((item) => (
+                    <Card 
+                      key={item.id} 
+                      className="hover-card cursor-pointer"
+                      onClick={() => setLocation(`/interview/${item.id}`)}
+                    >
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-lg font-medium">{item.jobTitle}</CardTitle>
+                        <CardDescription className="flex items-center">
+                          <BuildingIcon size={14} className="mr-1" />
+                          {item.company}
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="pb-3">
+                        <div className="flex items-center text-sm text-muted-foreground">
+                          <CalendarIcon size={14} className="mr-1" />
+                          <span>Created: {formatDate(item.createdAt)}</span>
+                        </div>
+                      </CardContent>
+                      <CardFooter className="pt-0">
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="w-full justify-between hover:bg-primary/5"
+                        >
+                          <span>View Details</span>
+                          <ArrowRightIcon size={14} />
+                        </Button>
+                      </CardFooter>
+                    </Card>
+                  ))}
+                </div>
+              ) : (
+                <Card className="bg-muted/30">
+                  <CardContent className="py-8 text-center">
+                    <p className="text-muted-foreground">No interview preparations yet. Create your first one!</p>
+                  </CardContent>
+                </Card>
+              )}
+              
+              {historyItems.length > 4 && (
+                <div className="text-center mt-4">
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setLocation('/history')}
+                  >
+                    View All Preparations
+                  </Button>
+                </div>
+              )}
+            </div>
+          </div>
         )}
 
         {/* Loading State with Agent Thoughts */}
@@ -167,6 +273,16 @@ const Home = () => {
         {/* Results Section */}
         {interviewPrep && (
           <ResultsSection data={interviewPrep} />
+        )}
+        
+        {/* Mission Statement */}
+        {!isLoading && !interviewPrep && !error && (
+          <div className="max-w-3xl mx-auto mt-16 mb-8 text-center">
+            <p className="text-muted-foreground text-sm italic px-4">
+              "Our mission is to help you crystallize your personal experiences into strong, authentic answers 
+              - not to hand you shortcuts or generic response guides."
+            </p>
+          </div>
         )}
       </main>
       <Footer />
