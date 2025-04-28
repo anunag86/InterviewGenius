@@ -10,9 +10,9 @@ import { generateInterviewQuestions } from "../agents/interviewerAgent";
 // We no longer need candidate points and narrative agents in the new architecture
 import { storeUserMemory, storeUserResponse, getUserResponses } from "../agents/memoryAgent";
 import { reviewInterviewPrep } from "../agents/qualityAgent";
-import { gradeResponse, GradingResult } from "../agents/gradingAgent";
+import { gradeResponse } from "../agents/gradingAgent";
 import { storage } from "../storage";
-import { AgentStep, AgentThought, InterviewRound, UserResponse, InterviewPrep } from "../../client/src/types";
+import { AgentStep, AgentThought, InterviewRound, UserResponse, InterviewPrep, GradingResult } from "../../client/src/types";
 
 // Extend Request type to include file property from multer
 declare global {
@@ -479,7 +479,7 @@ export const gradeUserResponse = async (req: Request, res: Response) => {
     
     // Extract the candidate highlights from the saved prep
     const prepData = typeof savedPrep.data === 'object' ? savedPrep.data : {};
-    const candidateHighlights = prepData.candidateHighlights || {
+    const candidateHighlights = prepData && 'candidateHighlights' in prepData ? prepData.candidateHighlights : {
       relevantPoints: [],
       gapAreas: []
     };

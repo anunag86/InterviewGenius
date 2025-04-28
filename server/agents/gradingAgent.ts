@@ -1,16 +1,10 @@
-import { analyzeDocument } from "../utils/openai";
-import { CandidateHighlights } from "../../client/src/types";
+import { GradingResult, CandidateHighlights } from "@/types";
+import { callOpenAIWithJSON } from "../utils/openai";
 
-export interface GradingResult {
-  score: number;          // 1-10 score
-  feedback: string;       // Overall assessment
-  strengths: string[];    // What was done well
-  improvements: string[]; // Suggestions for improvement
-  suggestedPoints: {      // Resume points that could be incorporated
-    situation: string[];
-    action: string[];
-    result: string[];
-  };
+export interface GradingRequest {
+  question: string;
+  responseText: string;
+  candidateHighlights: CandidateHighlights;
 }
 
 /**
@@ -26,17 +20,86 @@ export async function gradeResponse(
   candidateHighlights: CandidateHighlights
 ): Promise<GradingResult> {
   try {
-    // Default response in case of error
+    const systemPrompt = `You are an expert interview coach responsible for evaluating interview responses using the Situation-Action-Result (SAR) framework.
+Focus on these key evaluation areas:
+1. Structure - Does the response follow the SAR format with clear sections?
+2. Detail - Is the response specific with examples, metrics and achievements?
+3. Relevance - Does the response directly address the question asked?
+4. Impact - Does the response highlight the candidate's unique contributions?
+
+Your evaluation should be constructive, specific, and actionable. Provide a numerical score (1-10) and clear feedback on strengths and areas for improvement.
+
+Additionally, analyze the candidate's highlights (relevant points from their resume) and suggest specific points they could incorporate to strengthen their response.
+
+Please respond with the following JSON format:
+{
+  "score": number (1-10),
+  "feedback": "overall feedback on the response",
+  "strengths": ["specific strength 1", "specific strength 2", ...],
+  "improvements": ["specific improvement 1", "specific improvement 2", ...],
+  "suggestedPoints": {
+    "situation": ["specific point 1", "specific point 2", ...],
+    "action": ["specific point 1", "specific point 2", ...],
+    "result": ["specific point 1", "specific point 2", ...]
+  }
+}`;
+
+    // Extract candidate highlights for contextual grading
+    const relevantPoints = candidateHighlights?.relevantPoints || [];
+    const keyMetrics = candidateHighlights?.keyMetrics || [];
+    const directExperienceQuotes = candidateHighlights?.directExperienceQuotes || [];
+    const suggestedTalkingPoints = candidateHighlights?.suggestedTalkingPoints || [];
+    
+    // Build a context-rich prompt
+    const prompt = `
+Question: ${question}
+
+Candidate Response:
+${responseText}
+
+Candidate Highlights from Resume:
+${relevantPoints.map(point => `- ${point}`).join('\n')}
+
+${keyMetrics && keyMetrics.length > 0 ? `Key Metrics:\n${keyMetrics.map(metric => `- ${metric}`).join('\n')}\n` : ''}
+
+${directExperienceQuotes && directExperienceQuotes.length > 0 ? 
+  `Direct Experience Quotes:\n${directExperienceQuotes.map(q => `- ${q.skill}: "${q.quote}" (${q.context})`).join('\n')}\n` : ''}
+
+${suggestedTalkingPoints && suggestedTalkingPoints.length > 0 ? 
+  `Suggested Talking Points:\n${suggestedTalkingPoints.map(category => 
+    `- ${category.category}: ${category.points.join(', ')}`).join('\n')}\n` : ''}
+
+Evaluate this interview response and provide constructive feedback. Suggest specific points from their resume that could strengthen their answer.`;
+
+    const result = await callOpenAIWithJSON<GradingResult>(prompt, systemPrompt);
+    
+    // Ensure result is properly formatted
+    return {
+      score: Math.max(1, Math.min(10, result.score || 5)),
+      feedback: result.feedback || "Your response shows potential but needs improvement in structure and specificity.",
+      strengths: result.strengths || ["You've provided an answer that addresses the question"],
+      improvements: result.improvements || ["Try using the SAR format more explicitly", "Include more specific examples"],
+      suggestedPoints: {
+        situation: result.suggestedPoints?.situation || [],
+        action: result.suggestedPoints?.action || [],
+        result: result.suggestedPoints?.result || []
+      }
+    };
+  } catch (error) {
+    console.error("Error grading response:", error);
+    
+    // Return a fallback result if grading fails
     const defaultGrading: GradingResult = {
-      score: 7,
-      feedback: "Your response demonstrates understanding of the SAR format. Consider adding more specific details and metrics to strengthen your answer.",
+      score: 5,
+      feedback: "We encountered an issue while grading your response. Here's some general feedback instead.",
       strengths: [
-        "Good structure following the SAR format",
-        "Clear narrative flow"
+        "You've provided a response to the question",
+        "You've made an effort to address the key points"
       ],
       improvements: [
-        "Add specific metrics to demonstrate impact",
-        "Include more context in the situation section"
+        "Try to structure your answer using the Situation-Action-Result format",
+        "Include specific examples and metrics where possible",
+        "Connect your experience directly to the requirements of the role"
       ],
       suggestedPoints: {
         situation: [],
@@ -44,67 +107,7 @@ export async function gradeResponse(
         result: []
       }
     };
-
-    // Create the system prompt for evaluation
-    const systemPrompt = `You are an expert interview coach with experience grading thousands of interview responses.
-    You understand the importance of structured answers using the Situation-Action-Result format in interviews.
     
-    Your task is to evaluate a candidate's response to an interview question and provide a score and constructive feedback.
-    Score the response on a scale of 1-10 based on:
-    1. Structure: How well the response follows the SAR format
-    2. Specificity: The use of concrete examples and data points
-    3. Relevance: How well the response addresses the question
-    4. Impact: The significance of the results described
-    
-    Then, recommend specific points from the candidate's background that could strengthen the response.
-    
-    Format your analysis as valid JSON with the following structure:
-    {
-      "score": number (1-10),
-      "feedback": "overall assessment",
-      "strengths": ["strength1", "strength2", ...],
-      "improvements": ["improvement1", "improvement2", ...],
-      "suggestedPoints": {
-        "situation": ["point1", "point2", ...],
-        "action": ["point1", "point2", ...],
-        "result": ["point1", "point2", ...]
-      }
-    }`;
-
-    // Create the user prompt with all information
-    const userPrompt = `
-    INTERVIEW QUESTION:
-    ${question}
-    
-    CANDIDATE'S RESPONSE:
-    ${responseText}
-    
-    CANDIDATE BACKGROUND INFORMATION:
-    Relevant Experience Points: ${JSON.stringify(candidateHighlights.relevantPoints)}
-    ${candidateHighlights.directExperienceQuotes ? `Direct Experience Quotes: ${JSON.stringify(candidateHighlights.directExperienceQuotes)}` : ''}
-    ${candidateHighlights.keyMetrics ? `Key Metrics: ${JSON.stringify(candidateHighlights.keyMetrics)}` : ''}
-    
-    Please evaluate this response and provide constructive feedback with specific suggestions from the candidate's background.`;
-
-    // Call OpenAI for analysis
-    const analysis = await analyzeDocument<GradingResult>(userPrompt, systemPrompt);
-    
-    // Return the analysis or default if something goes wrong with the structure
-    return analysis || defaultGrading;
-  } catch (error) {
-    console.error("Error in grading agent:", error);
-    
-    // Return default grading in case of error
-    return {
-      score: 6,
-      feedback: "We encountered an issue while analyzing your response. However, using the SAR format is a great start. Try to include specific metrics and details from your experience.",
-      strengths: ["Using structured format for your answer"],
-      improvements: ["Add specific metrics when possible", "Provide more context about the situation"],
-      suggestedPoints: {
-        situation: [],
-        action: [],
-        result: []
-      }
-    };
+    return defaultGrading;
   }
 }
