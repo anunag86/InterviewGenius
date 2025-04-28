@@ -24,8 +24,8 @@ export function getLinkedInRedirectUri(req: Request): string {
   // Start with a default domain assuming Replit
   let domain = replitDomain ? `${protocol}://${replitDomain}` : `${protocol}://${host}`;
   
-  // Add the callback path
-  const callbackPath = '/api/auth/linkedin/callback';
+  // Add the callback path - Using direct-callback path for better compatibility with LinkedIn
+  const callbackPath = '/direct-callback';
   
   // Construct the full URI
   const redirectUri = `${domain}${callbackPath}`;

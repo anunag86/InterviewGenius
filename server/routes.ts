@@ -88,6 +88,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // New direct LinkedIn auth endpoints - these should work with LinkedIn's domain requirements
   app.get("/api/auth/linkedin/direct-url", getDirectLinkedInAuthUrl);
+  app.get("/api/auth/linkedin/direct-callback", handleDirectLinkedInCallback);
   app.get("/direct-callback", handleDirectLinkedInCallback);
   
   // Special direct LinkedIn connect endpoints

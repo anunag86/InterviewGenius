@@ -63,7 +63,7 @@ export const handleDirectLinkedInCallback = async (req: Request, res: Response) 
     }
     
     // Validate state parameter
-    const sessionState = req.session?.linkedinState;
+    const sessionState = req.session?.oauthState;
     if (!state || !sessionState || state !== sessionState) {
       console.error("Invalid state parameter", { 
         receivedState: state, 
