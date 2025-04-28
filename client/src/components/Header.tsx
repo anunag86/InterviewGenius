@@ -1,6 +1,10 @@
 import { Link } from "wouter";
+import UserProfileDisplay from "./UserProfileDisplay";
+import { useAuth } from "@/hooks/useAuth";
 
 const Header = () => {
+  const { user } = useAuth();
+  
   return (
     <header className="bg-card shadow-sm rounded-b-lg">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -13,21 +17,27 @@ const Header = () => {
             </span>
             <h1 className="text-xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">PrepTalk</h1>
           </Link>
-          <nav>
-            <ul className="flex space-x-4">
-              <li>
-                <Link href="/" className="text-foreground hover:text-primary transition-colors duration-200 font-medium">
-                  Home
-                </Link>
-              </li>
-
-              <li>
-                <Link href="/about" className="text-foreground hover:text-primary transition-colors duration-200 font-medium">
-                  About
-                </Link>
-              </li>
-            </ul>
-          </nav>
+          
+          <div className="flex items-center">
+            <nav className="mr-6">
+              <ul className="flex space-x-4">
+                <li>
+                  <Link href="/" className="text-foreground hover:text-primary transition-colors duration-200 font-medium">
+                    Home
+                  </Link>
+                </li>
+                {user && (
+                  <li>
+                    <Link href="/history" className="text-foreground hover:text-primary transition-colors duration-200 font-medium">
+                      History
+                    </Link>
+                  </li>
+                )}
+              </ul>
+            </nav>
+            
+            <UserProfileDisplay compact />
+          </div>
         </div>
       </div>
     </header>

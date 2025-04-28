@@ -1,28 +1,23 @@
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { BsLinkedin } from "react-icons/bs";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
+import { useAuth } from "@/hooks/useAuth";
+import { useEffect } from "react";
 
 const Login = () => {
-  const [isLoading, setIsLoading] = useState(false);
+  const { login, isLoading, user } = useAuth();
+  const [, setLocation] = useLocation();
+  
+  // Redirect to home if user is already logged in
+  useEffect(() => {
+    if (user) {
+      setLocation('/');
+    }
+  }, [user, setLocation]);
 
   const handleLinkedInLogin = async () => {
-    setIsLoading(true);
-    try {
-      // Redirect to LinkedIn OAuth endpoint
-      const response = await fetch('/api/auth/linkedin/url');
-      const data = await response.json();
-      
-      if (data.url) {
-        window.location.href = data.url;
-      } else {
-        throw new Error('Failed to get LinkedIn authorization URL');
-      }
-    } catch (error) {
-      console.error('Login error:', error);
-      setIsLoading(false);
-    }
+    await login();
   };
 
   return (
