@@ -4,6 +4,7 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { pool } from "../db";
 import connectPgSimple from "connect-pg-simple";
+import { migrationCode } from "./migrations";
 
 const PgSession = connectPgSimple(session);
 
@@ -60,6 +61,16 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  try {
+    // Run database migrations
+    log("Running database migrations...");
+    await migrationCode();
+    log("Database migrations completed successfully");
+  } catch (err) {
+    log("Error running migrations: " + (err instanceof Error ? err.message : String(err)));
+    // Continue anyway to allow development without complete DB setup
+  }
+  
   const server = await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
