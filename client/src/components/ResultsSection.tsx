@@ -321,6 +321,12 @@ const ResultsSection = ({ data }: ResultsSectionProps) => {
                             </div>
                           </>
                         )}
+                        {/* Fallback message if no narrative was generated */}
+                        {!question.narrative && (
+                          <div className="mt-4 p-2 border border-yellow-200 bg-yellow-50 text-yellow-800 rounded-md text-sm">
+                            No narrative guidance was generated for this question. Try refreshing or generating a new interview preparation.
+                          </div>
+                        )}
                       </div>
                     </div>
                     

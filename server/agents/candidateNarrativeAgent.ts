@@ -106,6 +106,9 @@ export async function generateCandidateNarrative(
           narrativeText += `Guidance: ${sarNarrative.guidance}`;
         }
         
+        // Log the narrative guidance for debugging
+        console.log(`Generated narrative for question '${question.id}': ${narrativeText.substring(0, 50)}...`);
+        
         thoughts.push({
           timestamp: Date.now(),
           agent: "Candidate Narrative Agent",

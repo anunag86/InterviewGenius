@@ -13,7 +13,7 @@ import { generateCandidateNarrative } from "../agents/candidateNarrativeAgent";
 import { storeUserMemory, storeUserResponse, getUserResponses } from "../agents/memoryAgent";
 import { validateInterviewPrep } from "../agents/qualityAgent";
 import { storage } from "../storage";
-import { AgentStep, AgentThought, InterviewRound, UserResponse } from "../../client/src/types";
+import { AgentStep, AgentThought, InterviewRound, UserResponse, InterviewPrep } from "../../client/src/types";
 
 // Extend Request type to include file property from multer
 declare global {
