@@ -51,6 +51,7 @@ export const getLinkedInAuthUrl = (req: Request, res: Response) => {
     `&state=${state}` +
     `&scope=r_liteprofile%20r_emailaddress`;
   
+  console.log("LinkedIn Auth URL generated:", authUrl);
   return res.json({ url: authUrl });
 };
 
