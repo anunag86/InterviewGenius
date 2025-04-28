@@ -1,5 +1,5 @@
 import { apiRequest } from "./queryClient";
-import { InterviewFormData, InterviewPrep, AgentThought } from "@/types";
+import { InterviewFormData, InterviewPrep, AgentThought, GradingResult } from "@/types";
 
 // Interface for history items
 export interface InterviewHistoryItem {
@@ -106,5 +106,41 @@ export async function submitFeedback(feedbackData: FeedbackData): Promise<{ succ
       success: false,
       message: error instanceof Error ? error.message : 'Failed to submit feedback'
     };
+  }
+}
+
+export async function gradeResponse(
+  interviewPrepId: string,
+  questionId: string,
+  roundId: string,
+  question: string,
+  responseText: string
+): Promise<GradingResult> {
+  try {
+    const response = await fetch('/api/interview/response/grade', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        interviewPrepId,
+        questionId,
+        roundId,
+        question,
+        responseText
+      }),
+      credentials: 'include',
+    });
+    
+    const data = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(data.error || 'Failed to grade response');
+    }
+    
+    return data.result;
+  } catch (error) {
+    console.error('Error grading response:', error);
+    throw new Error(error instanceof Error ? error.message : 'Failed to grade response');
   }
 }

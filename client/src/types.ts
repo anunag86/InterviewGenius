@@ -69,6 +69,18 @@ export interface UserResponse {
   updatedAt: string;
 }
 
+export interface GradingResult {
+  score: number;
+  feedback: string;
+  strengths: string[];
+  improvements: string[];
+  suggestedPoints: {
+    situation: string[];
+    action: string[];
+    result: string[];
+  };
+}
+
 // Legacy question arrays for backward compatibility
 export interface LegacyInterviewQuestions {
   behavioralQuestions?: InterviewQuestion[];

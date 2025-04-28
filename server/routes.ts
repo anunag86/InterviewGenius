@@ -39,6 +39,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // User responses endpoints - new!
   app.post("/api/interview/response", saveUserResponse);
   app.get("/api/interview/:interviewPrepId/responses", getUserResponsesForInterview);
+  app.post("/api/interview/response/grade", gradeUserResponse);
   
   // Feedback endpoint
   app.post("/api/feedback", submitFeedback);
