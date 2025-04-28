@@ -5,13 +5,24 @@ import { relations } from "drizzle-orm";
 
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
-  username: text("username").notNull().unique(),
-  password: text("password").notNull(),
+  email: text("email"),
+  linkedinId: text("linkedin_id").notNull().unique(),
+  firstName: text("first_name"),
+  lastName: text("last_name"),
+  displayName: text("display_name"),
+  profilePictureUrl: text("profile_picture_url"),
+  linkedinProfileUrl: text("linkedin_profile_url"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  lastLoginAt: timestamp("last_login_at").defaultNow().notNull(),
 });
 
-export const insertUserSchema = createInsertSchema(users).pick({
-  username: true,
-  password: true,
+export const insertUserSchema = createInsertSchema(users, {
+  email: (schema) => schema.optional(),
+  firstName: (schema) => schema.optional(),
+  lastName: (schema) => schema.optional(),
+  displayName: (schema) => schema.optional(),
+  profilePictureUrl: (schema) => schema.optional(),
+  linkedinProfileUrl: (schema) => schema.optional(),
 });
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -28,13 +39,13 @@ export const interviewPreps = pgTable("interview_preps", {
   data: jsonb("data").notNull(), // JSON data for interview prep results
   createdAt: timestamp("created_at").defaultNow().notNull(),
   expiresAt: timestamp("expires_at").notNull(), // Will be set to createdAt + 30 days
-  userId: text("user_id"), // Optional for anonymous users
+  userId: integer("user_id").references(() => users.id), // Reference to users.id
 });
 
 // User responses to interview questions in SAR format
 export const userResponses = pgTable("user_responses", {
   id: serial("id").primaryKey(),
-  userId: text("user_id"),
+  userId: integer("user_id").references(() => users.id),
   interviewPrepId: text("interview_prep_id").notNull(),
   questionId: text("question_id").notNull(),
   roundId: text("round_id").notNull(),
