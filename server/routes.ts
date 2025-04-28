@@ -6,6 +6,7 @@ import { submitFeedback } from "./controllers/feedback";
 import { getLinkedInAuthUrl, handleLinkedInCallback, getCurrentUser, logout } from "./controllers/auth";
 import { getLinkedInDiagnostics } from "./controllers/diagnostics";
 import { getSimpleLinkedInAuthUrl, handleSimpleLinkedInCallback } from "./controllers/altauth";
+import { getFixedLinkedInAuthUrl, handleFixedLinkedInCallback } from "./controllers/fixedAuthLinkedin";
 import { 
   testLinkedInConnection, 
   testLinkedInCredentials,
@@ -93,6 +94,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Simple LinkedIn auth endpoints with different redirect URI pattern
   app.get("/api/auth/linkedin/simple-url", getSimpleLinkedInAuthUrl);
   app.get("/callback", handleSimpleLinkedInCallback);
+  
+  // Fixed LinkedIn auth endpoints with simpler redirect URI
+  app.get("/api/auth/linkedin/fixed-url", getFixedLinkedInAuthUrl);
+  app.get("/fixed-callback", handleFixedLinkedInCallback);
+  
+  // Fixed method interface
+  app.get("/linkedin/fixed", (req, res) => {
+    res.sendFile('linkedin-fixed.html', { root: './client/public' });
+  });
   
   // Direct auth route - no JavaScript intermediary
   app.get("/linkedin/auth", (req, res) => {
