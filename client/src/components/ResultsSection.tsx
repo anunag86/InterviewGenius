@@ -1,8 +1,11 @@
 import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { TabsNav, TabsList, TabButton, TabPanel } from "@/components/ui/tabs-2";
-import { InterviewPrep, InterviewRound } from "@/types";
+import { InterviewPrep, InterviewRound, UserResponse } from "@/types";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import QuestionResponseForm from "./QuestionResponseForm";
+import { useUserResponses } from "@/hooks/useUserResponses";
+import { Badge } from "@/components/ui/badge";
 
 interface ResultsSectionProps {
   data: InterviewPrep;
@@ -10,12 +13,21 @@ interface ResultsSectionProps {
 
 const ResultsSection = ({ data }: ResultsSectionProps) => {
   const [activeTab, setActiveTab] = useState<string>("overview");
-
+  
   // Check if data structure follows the new format with interviewRounds
   const hasRoundFormat = data.interviewRounds && data.interviewRounds.length > 0;
   
   // This tracks all the rounds available for navigation tabs
   const rounds = hasRoundFormat ? data.interviewRounds : [];
+  
+  // Get user responses from the hook
+  const { 
+    userResponses,
+    getResponseForQuestion, 
+    saveResponse,
+    isLoading: isLoadingResponses,
+    isSaving
+  } = useUserResponses({ interviewPrepId: data.id || "" });
 
   return (
     <section>
@@ -285,25 +297,50 @@ const ResultsSection = ({ data }: ResultsSectionProps) => {
               
               <div className="space-y-8">
                 {round.questions.map((question) => (
-                  <div key={question.id} className="bg-card rounded-lg border border-border overflow-hidden shadow-sm hover:shadow transition-shadow duration-200">
-                    <div className="p-4 bg-muted/50 border-b border-border">
-                      <h3 className="text-lg font-medium text-foreground">{question.question}</h3>
+                  <div key={question.id}>
+                    <div className="bg-card rounded-lg border border-border overflow-hidden shadow-sm hover:shadow transition-shadow duration-200 mb-4">
+                      <div className="p-4 bg-muted/50 border-b border-border">
+                        <h3 className="text-lg font-medium text-foreground">{question.question}</h3>
+                      </div>
+                      <div className="p-4">
+                        <h4 className="text-sm font-medium text-primary/80 uppercase tracking-wider mb-3">Talking Points</h4>
+                        <ul className="space-y-3 text-foreground">
+                          {question.talkingPoints.map((point) => (
+                            <li key={point.id} className="flex items-start">
+                              <span className="h-5 w-5 text-primary mr-2 flex-shrink-0">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                              </span>
+                              <span>{point.text}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
                     </div>
-                    <div className="p-4">
-                      <h4 className="text-sm font-medium text-primary/80 uppercase tracking-wider mb-3">Talking Points</h4>
-                      <ul className="space-y-3 text-foreground">
-                        {question.talkingPoints.map((point) => (
-                          <li key={point.id} className="flex items-start">
-                            <span className="h-5 w-5 text-primary mr-2 flex-shrink-0">
-                              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                              </svg>
-                            </span>
-                            <span>{point.text}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
+                    
+                    {/* Response Form */}
+                    {data.id && (
+                      <div className="mb-8">
+                        <h4 className="text-sm font-medium text-primary/80 uppercase tracking-wider mb-3 flex items-center">
+                          <span>Your Response</span>
+                          {getResponseForQuestion(question.id, round.id) && (
+                            <Badge className="ml-2 bg-green-100 text-green-800 hover:bg-green-200">
+                              Saved
+                            </Badge>
+                          )}
+                        </h4>
+                        <QuestionResponseForm
+                          interviewPrepId={data.id}
+                          questionId={question.id}
+                          roundId={round.id}
+                          question={question.question}
+                          existingResponse={getResponseForQuestion(question.id, round.id)}
+                          onSave={saveResponse}
+                          isSaving={isSaving}
+                        />
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -320,25 +357,50 @@ const ResultsSection = ({ data }: ResultsSectionProps) => {
               >
                 <div className="space-y-8">
                   {data.behavioralQuestions?.map((question) => (
-                    <div key={question.id} className="bg-card rounded-lg border border-border overflow-hidden shadow-sm hover:shadow transition-shadow duration-200">
-                      <div className="p-4 bg-muted/50 border-b border-border">
-                        <h3 className="text-lg font-medium text-foreground">{question.question}</h3>
+                    <div key={question.id}>
+                      <div className="bg-card rounded-lg border border-border overflow-hidden shadow-sm hover:shadow transition-shadow duration-200 mb-4">
+                        <div className="p-4 bg-muted/50 border-b border-border">
+                          <h3 className="text-lg font-medium text-foreground">{question.question}</h3>
+                        </div>
+                        <div className="p-4">
+                          <h4 className="text-sm font-medium text-primary/80 uppercase tracking-wider mb-3">Talking Points</h4>
+                          <ul className="space-y-3 text-foreground">
+                            {question.talkingPoints.map((point) => (
+                              <li key={point.id} className="flex items-start">
+                                <span className="h-5 w-5 text-primary mr-2 flex-shrink-0">
+                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                  </svg>
+                                </span>
+                                <span>{point.text}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
                       </div>
-                      <div className="p-4">
-                        <h4 className="text-sm font-medium text-primary/80 uppercase tracking-wider mb-3">Talking Points</h4>
-                        <ul className="space-y-3 text-foreground">
-                          {question.talkingPoints.map((point) => (
-                            <li key={point.id} className="flex items-start">
-                              <span className="h-5 w-5 text-primary mr-2 flex-shrink-0">
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                              </span>
-                              <span>{point.text}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
+
+                      {/* Response Form for behavioral questions */}
+                      {data.id && (
+                        <div className="mb-8">
+                          <h4 className="text-sm font-medium text-primary/80 uppercase tracking-wider mb-3 flex items-center">
+                            <span>Your Response</span>
+                            {getResponseForQuestion(question.id, "behavioral") && (
+                              <Badge className="ml-2 bg-green-100 text-green-800 hover:bg-green-200">
+                                Saved
+                              </Badge>
+                            )}
+                          </h4>
+                          <QuestionResponseForm
+                            interviewPrepId={data.id}
+                            questionId={question.id}
+                            roundId="behavioral"
+                            question={question.question}
+                            existingResponse={getResponseForQuestion(question.id, "behavioral")}
+                            onSave={saveResponse}
+                            isSaving={isSaving}
+                          />
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -351,25 +413,50 @@ const ResultsSection = ({ data }: ResultsSectionProps) => {
               >
                 <div className="space-y-8">
                   {data.technicalQuestions?.map((question) => (
-                    <div key={question.id} className="bg-card rounded-lg border border-border overflow-hidden shadow-sm hover:shadow transition-shadow duration-200">
-                      <div className="p-4 bg-muted/50 border-b border-border">
-                        <h3 className="text-lg font-medium text-foreground">{question.question}</h3>
+                    <div key={question.id}>
+                      <div className="bg-card rounded-lg border border-border overflow-hidden shadow-sm hover:shadow transition-shadow duration-200 mb-4">
+                        <div className="p-4 bg-muted/50 border-b border-border">
+                          <h3 className="text-lg font-medium text-foreground">{question.question}</h3>
+                        </div>
+                        <div className="p-4">
+                          <h4 className="text-sm font-medium text-primary/80 uppercase tracking-wider mb-3">Talking Points</h4>
+                          <ul className="space-y-3 text-foreground">
+                            {question.talkingPoints.map((point) => (
+                              <li key={point.id} className="flex items-start">
+                                <span className="h-5 w-5 text-primary mr-2 flex-shrink-0">
+                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                  </svg>
+                                </span>
+                                <span>{point.text}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
                       </div>
-                      <div className="p-4">
-                        <h4 className="text-sm font-medium text-primary/80 uppercase tracking-wider mb-3">Talking Points</h4>
-                        <ul className="space-y-3 text-foreground">
-                          {question.talkingPoints.map((point) => (
-                            <li key={point.id} className="flex items-start">
-                              <span className="h-5 w-5 text-primary mr-2 flex-shrink-0">
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                              </span>
-                              <span>{point.text}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
+                      
+                      {/* Response Form for technical questions */}
+                      {data.id && (
+                        <div className="mb-8">
+                          <h4 className="text-sm font-medium text-primary/80 uppercase tracking-wider mb-3 flex items-center">
+                            <span>Your Response</span>
+                            {getResponseForQuestion(question.id, "technical") && (
+                              <Badge className="ml-2 bg-green-100 text-green-800 hover:bg-green-200">
+                                Saved
+                              </Badge>
+                            )}
+                          </h4>
+                          <QuestionResponseForm
+                            interviewPrepId={data.id}
+                            questionId={question.id}
+                            roundId="technical"
+                            question={question.question}
+                            existingResponse={getResponseForQuestion(question.id, "technical")}
+                            onSave={saveResponse}
+                            isSaving={isSaving}
+                          />
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -382,25 +469,50 @@ const ResultsSection = ({ data }: ResultsSectionProps) => {
               >
                 <div className="space-y-8">
                   {data.roleSpecificQuestions?.map((question) => (
-                    <div key={question.id} className="bg-card rounded-lg border border-border overflow-hidden shadow-sm hover:shadow transition-shadow duration-200">
-                      <div className="p-4 bg-muted/50 border-b border-border">
-                        <h3 className="text-lg font-medium text-foreground">{question.question}</h3>
+                    <div key={question.id}>
+                      <div className="bg-card rounded-lg border border-border overflow-hidden shadow-sm hover:shadow transition-shadow duration-200 mb-4">
+                        <div className="p-4 bg-muted/50 border-b border-border">
+                          <h3 className="text-lg font-medium text-foreground">{question.question}</h3>
+                        </div>
+                        <div className="p-4">
+                          <h4 className="text-sm font-medium text-primary/80 uppercase tracking-wider mb-3">Talking Points</h4>
+                          <ul className="space-y-3 text-foreground">
+                            {question.talkingPoints.map((point) => (
+                              <li key={point.id} className="flex items-start">
+                                <span className="h-5 w-5 text-primary mr-2 flex-shrink-0">
+                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                  </svg>
+                                </span>
+                                <span>{point.text}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
                       </div>
-                      <div className="p-4">
-                        <h4 className="text-sm font-medium text-primary/80 uppercase tracking-wider mb-3">Talking Points</h4>
-                        <ul className="space-y-3 text-foreground">
-                          {question.talkingPoints.map((point) => (
-                            <li key={point.id} className="flex items-start">
-                              <span className="h-5 w-5 text-primary mr-2 flex-shrink-0">
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                              </span>
-                              <span>{point.text}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
+                      
+                      {/* Response Form for role-specific questions */}
+                      {data.id && (
+                        <div className="mb-8">
+                          <h4 className="text-sm font-medium text-primary/80 uppercase tracking-wider mb-3 flex items-center">
+                            <span>Your Response</span>
+                            {getResponseForQuestion(question.id, "role-specific") && (
+                              <Badge className="ml-2 bg-green-100 text-green-800 hover:bg-green-200">
+                                Saved
+                              </Badge>
+                            )}
+                          </h4>
+                          <QuestionResponseForm
+                            interviewPrepId={data.id}
+                            questionId={question.id}
+                            roundId="role-specific"
+                            question={question.question}
+                            existingResponse={getResponseForQuestion(question.id, "role-specific")}
+                            onSave={saveResponse}
+                            isSaving={isSaving}
+                          />
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>

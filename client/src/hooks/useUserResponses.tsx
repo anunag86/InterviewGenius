@@ -8,6 +8,10 @@ interface UseUserResponsesProps {
   interviewPrepId: string;
 }
 
+interface ResponsesApiResponse {
+  responses: UserResponse[];
+}
+
 export function useUserResponses({ interviewPrepId }: UseUserResponsesProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -18,14 +22,14 @@ export function useUserResponses({ interviewPrepId }: UseUserResponsesProps) {
     queryKey: [`/api/interview/${interviewPrepId}/responses`],
     queryFn: async () => {
       try {
-        const response = await apiRequest<{ responses: UserResponse[] }>({
+        const response = await apiRequest<ResponsesApiResponse>({
           url: `/api/interview/${interviewPrepId}/responses`,
           method: "GET"
         });
         return response;
       } catch (error) {
         console.error("Error fetching user responses:", error);
-        return { responses: [] };
+        return { responses: [] as UserResponse[] };
       }
     },
     enabled: !!interviewPrepId
@@ -33,30 +37,35 @@ export function useUserResponses({ interviewPrepId }: UseUserResponsesProps) {
 
   // Mutation to add or update a user response
   const { mutate: saveResponse, isPending: isSaving } = useMutation({
-    mutationFn: async (responseData: Omit<UserResponse, "id" | "userId" | "interviewPrepId" | "createdAt" | "updatedAt">) => {
+    mutationFn: async (responseData: {
+      questionId: string;
+      roundId: string;
+      situation: string;
+      action: string;
+      result: string;
+    }) => {
       return apiRequest<UserResponse>({
         url: `/api/interview/${interviewPrepId}/responses`,
         method: "POST",
         data: {
-          ...responseData,
-          interviewPrepId
+          ...responseData
         }
       });
     },
-    onSuccess: (newResponse) => {
+    onSuccess: (savedResponse: UserResponse) => {
       // Update local state
       setUserResponses(prev => {
         const existingIndex = prev.findIndex(r => 
-          r.questionId === newResponse.questionId && r.roundId === newResponse.roundId);
+          r.questionId === savedResponse.questionId && r.roundId === savedResponse.roundId);
         
         if (existingIndex >= 0) {
           // Update existing response
           const updated = [...prev];
-          updated[existingIndex] = newResponse;
+          updated[existingIndex] = savedResponse;
           return updated;
         } else {
           // Add new response
-          return [...prev, newResponse];
+          return [...prev, savedResponse];
         }
       });
       

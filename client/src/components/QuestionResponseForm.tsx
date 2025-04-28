@@ -3,8 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { InterviewQuestion, UserResponse } from "@/types";
-import { apiRequest } from "@/lib/queryClient";
+import { UserResponse } from "@/types";
 
 interface QuestionResponseFormProps {
   interviewPrepId: string;
@@ -13,6 +12,14 @@ interface QuestionResponseFormProps {
   question: string;
   existingResponse?: UserResponse;
   onSaveSuccess?: (response: UserResponse) => void;
+  onSave: (responseData: {
+    questionId: string;
+    roundId: string;
+    situation: string;
+    action: string;
+    result: string;
+  }) => void;
+  isSaving: boolean;
 }
 
 const QuestionResponseForm = ({
@@ -21,10 +28,11 @@ const QuestionResponseForm = ({
   roundId,
   question,
   existingResponse,
-  onSaveSuccess
+  onSaveSuccess,
+  onSave,
+  isSaving
 }: QuestionResponseFormProps) => {
   const { toast } = useToast();
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [situation, setSituation] = useState(existingResponse?.situation || "");
   const [action, setAction] = useState(existingResponse?.action || "");
   const [result, setResult] = useState(existingResponse?.result || "");
@@ -52,40 +60,13 @@ const QuestionResponseForm = ({
       return;
     }
 
-    setIsSubmitting(true);
-
-    try {
-      const response = await apiRequest<UserResponse>({
-        url: `/api/interview/${interviewPrepId}/responses`,
-        method: "POST",
-        data: {
-          questionId,
-          roundId,
-          situation,
-          action,
-          result
-        }
-      });
-
-      toast({
-        title: "Response saved",
-        description: "Your answer has been saved successfully.",
-        variant: "default"
-      });
-
-      if (onSaveSuccess) {
-        onSaveSuccess(response);
-      }
-    } catch (error) {
-      console.error("Error saving response:", error);
-      toast({
-        title: "Error",
-        description: "Failed to save your response. Please try again.",
-        variant: "destructive"
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
+    onSave({
+      questionId,
+      roundId,
+      situation,
+      action,
+      result
+    });
   };
 
   return (
@@ -158,9 +139,9 @@ const QuestionResponseForm = ({
             )}
             <Button 
               type="submit"
-              disabled={isSubmitting}
+              disabled={isSaving}
             >
-              {isSubmitting ? "Saving..." : "Save Response"}
+              {isSaving ? "Saving..." : "Save Response"}
             </Button>
           </CardFooter>
         </form>
