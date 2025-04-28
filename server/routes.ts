@@ -153,6 +153,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.sendFile('linkedin-deep-diagnostics.html', { root: './client/public' });
   });
   
+  app.get("/linkedin/direct-connection", (req, res) => {
+    res.sendFile('linkedin-direct-connection.html', { root: './client/public' });
+  });
+  
   // API endpoint for LinkedIn diagnostics
   app.get("/api/linkedin/diagnostics", getLinkedInDiagnostics);
   
