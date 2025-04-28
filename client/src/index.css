@@ -143,7 +143,12 @@
   
   /* Talking points formatting */
   .talking-point-bullet {
-    @apply pl-4 relative before:content-['•'] before:absolute before:left-0 before:text-primary text-sm;
+    @apply pl-4 relative before:content-['•'] before:absolute before:left-0 before:text-primary text-sm leading-relaxed mb-5 text-justify;
+  }
+  
+  /* Special formatting for the last talking point (strategy) */
+  li.talking-point-bullet:last-of-type {
+    @apply mt-6 pt-4 border-t border-border italic text-primary/80 font-medium;
   }
   
   .narrative-text {

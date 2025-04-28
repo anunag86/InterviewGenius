@@ -136,12 +136,19 @@ export async function generateInterviewQuestions(
         For each question, you MUST include:
         1. The question itself (clear and specific)
         2. 3-5 specific talking points that would make for a strong answer
-        3. These talking points MUST directly quote specific achievements, metrics, and tasks completed from the candidate's resume and LinkedIn profile
-        4. Include full statements that highlight the value added by the candidate, with specific metrics when available (percentages, dollar amounts, time saved, etc.)
-        5. Format talking points as complete statements that the candidate could use verbatim, for example:
-           - "When I was at Amazon, I reduced escalations by 89% and recovered $20M by creating and implementing a strategic risk assessment framework."
-           - "At Baxter Pharmaceuticals, I led a team of 15 regulatory specialists and improved compliance across 12 markets by implementing standardized documentation practices."
-        6. At least one talking point should address how to answer if the candidate lacks direct experience
+        3. These talking points MUST be COMPREHENSIVE PARAGRAPHS (3-5 sentences each) that provide detailed context and full descriptions
+        4. Include EXTENSIVE details directly quoted from the candidate's resume and LinkedIn profile
+        5. Each talking point MUST include:
+           - The specific company and timeframe where the experience occurred
+           - The candidate's exact role and responsibilities in the situation
+           - Quantifiable metrics and achievements with precise numbers (percentages, dollar amounts, time saved, team sizes, etc.)
+           - The methodologies, technologies, or approaches used
+           - The business impact and value delivered to the organization
+        6. Format each talking point as a complete, detailed paragraph that provides the full story, NOT just a short phrase
+        7. IMPORTANT: Do not use short bullet points. Each talking point should be a substantial paragraph of 3-5 sentences with all relevant context
+        8. Example format (but with MUCH more detail specific to the candidate):
+           "During my tenure at Amazon (2019-2021) as a Senior Risk Manager, I was responsible for evaluating critical escalation processes across 5 international markets. I identified systemic bottlenecks that were causing delays in issue resolution and designed a comprehensive risk assessment framework involving 12 key metrics. By implementing this framework and training cross-functional teams of 20+ analysts, I reduced escalation resolution time by 89% and recovered $20M in operational costs within the first year. This initiative was recognized by senior leadership and adopted as the company standard for all risk mitigation procedures globally."
+        9. At least one talking point should address how to answer if the candidate lacks direct experience, but still be substantive and detailed
         
         Format your response as a JSON array with this structure:
         [

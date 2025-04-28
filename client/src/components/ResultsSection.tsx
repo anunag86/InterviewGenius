@@ -39,14 +39,14 @@ const ResultsSection = ({ data }: ResultsSectionProps) => {
   }
 
   // User response tracking
-  const { saveResponse, isSaving, responses } = useUserResponses({
+  const { saveResponse, isSaving, userResponses } = useUserResponses({
     interviewPrepId: data.id || ""
   });
   
   // A helper function to get the response for a specific question
   const getResponseForQuestion = (questionId: string, roundId: string): UserResponse | undefined => {
-    if (!responses) return undefined;
-    return responses.find(r => r.questionId === questionId && r.roundId === roundId);
+    if (!userResponses) return undefined;
+    return userResponses.find((r: UserResponse) => r.questionId === questionId && r.roundId === roundId);
   };
 
   return (
@@ -81,7 +81,6 @@ const ResultsSection = ({ data }: ResultsSectionProps) => {
                     <TabButton
                       key={tabId}
                       id={`tab-${tabId}`}
-                      value={tabId}
                       className={`py-2 px-4 whitespace-nowrap ${activeTab === tabId ? "bg-primary text-primary-foreground" : ""}`}
                       onClick={() => setActiveTab(tabId)}
                     >

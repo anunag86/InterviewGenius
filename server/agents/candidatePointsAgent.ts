@@ -74,22 +74,22 @@ export async function generateCandidatePoints(
           - Must come directly from the resume text - never fabricate or embellish
           - Must include company names and timeframes where available
           
-          FORMAT EACH POINT LIKE THIS:
-          "At [Company] ([Years]): [Specific project] that [specific measurable outcome], using [specific methods/tools/approaches]"
+          FORMAT EACH POINT AS A COMPREHENSIVE PARAGRAPH (not bullet points):
           
-          EXAMPLES OF GOOD TALKING POINTS:
-          "At Amazon (2019-2021): Implemented an automated escalation framework that reduced critical issue resolution time by 89%, saving the company $2.4M annually in delayed resolution costs"
+          EXAMPLES OF GOOD TALKING POINTS (but with MUCH more specific details from the candidate's experience):
           
-          "At Baxter (2016-2018): Led a team of 8 quality analysts in developing a real-time compliance dashboard tracking 230+ metrics across 5 manufacturing sites, improving audit readiness by 65%"
+          "During my tenure at Amazon (2019-2021) as a Senior Risk Manager, I was responsible for evaluating critical escalation processes across 5 international markets. I identified systemic bottlenecks that were causing delays in issue resolution and designed a comprehensive risk assessment framework involving 12 key metrics. By implementing this framework and training cross-functional teams of 20+ analysts, I reduced escalation resolution time by 89% and recovered $20M in operational costs within the first year. This initiative was recognized by senior leadership and adopted as the company standard for all risk mitigation procedures globally."
+          
+          "At Baxter Pharmaceuticals (2016-2018), I led a cross-functional team of 8 quality analysts responsible for regulatory compliance across 12 European markets. We identified critical gaps in documentation processes that were causing audit failures in 35% of cases. I developed and implemented a standardized documentation framework with real-time tracking of 230+ compliance metrics across 5 manufacturing sites. This initiative improved audit readiness by 65%, eliminated compliance penalties estimated at $1.2M annually, and became the gold standard for the company's global compliance program. My leadership in this project led to my promotion and being asked to train other regional teams on the new methodology."
           
           Format your response as a JSON object with this structure:
           {
             "points": [
-              "At [Company] ([Years]): [Specific achievement with metrics and outcomes]",
-              "At [Company] ([Years]): [Specific project with team size and measurable impact]",
-              "At [Company] ([Years]): [Specific contribution with quantifiable results]"
+              "During my tenure at [Company] ([Years]) as [Role], I was responsible for [specific responsibilities]. I identified [specific challenge or opportunity] and [actions taken with detailed methodologies]. By implementing this approach, I achieved [specific metrics and quantifiable outcomes]. This initiative [broader impact and recognition].",
+              "While working at [Company] ([Years]) in the [Department/Team] department, I led a team of [team size] focused on [specific project]. We faced challenges including [specific challenges] that were causing [specific negative outcomes]. I developed and implemented [detailed solution approach] which resulted in [multiple specific metrics and outcomes]. This work was significant because [business impact and value].",
+              "At [Company] ([Years]), I served as [Role] where I was tasked with [specific responsibility]. Using my expertise in [relevant skills], I [detailed actions taken with process information]. This resulted in [multiple detailed metrics showing improvement] and [business value]. Additionally, [recognition or additional impact of the work]."
             ],
-            "relevance": "Brief explanation of how these specific examples help answer the interview question"
+            "relevance": "Detailed explanation of how these comprehensive examples directly address the interview question, highlighting the most relevant aspects of each experience"
           }
           
           IMPORTANT: If the resume lacks sufficient specific details, avoid making up information. Instead, provide as much specific detail as possible from what's available, and indicate what additional information would strengthen the examples.
@@ -114,7 +114,7 @@ export async function generateCandidatePoints(
           if (pointsResponse.relevance) {
             enhancedTalkingPoints.push({
               id: `${question.id}-relevance`,
-              text: pointsResponse.relevance
+              text: `💡 Strategy for answering: ${pointsResponse.relevance}`
             });
           }
         } else {
