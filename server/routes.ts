@@ -24,6 +24,14 @@ import { generateQuickTestUrl, handleQuickTestCallback } from "./controllers/qui
 import { debugRequestHeaders } from "./controllers/debugRequestHeaders";
 import { handleMinimalCallback } from "./controllers/minimalCallbackHandler";
 import { generateAutoDetectAuthUrl, handleAutoDetectCallback } from "./controllers/autoDetectAuth";
+import { 
+  testSystematicConnection,
+  testSystematicCredentials,
+  testAuthorizationUrl,
+  handleSystematicCallback,
+  exchangeToken,
+  getProfile
+} from "./controllers/linkedinSystematicTest";
 
 // Configure multer for memory storage (files are processed in memory)
 const upload = multer({
@@ -202,6 +210,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Quick test routes - simplified minimal OAuth flow
   app.get("/api/quicktest/url", generateQuickTestUrl);
   app.get("/api/quicktest/callback", handleQuickTestCallback);
+  
+  // NEW SYSTEMATIC TESTING ROUTES
+  app.get("/linkedin/systematic", (req, res) => {
+    res.sendFile('linkedin-systematic-test.html', { root: './client/public' });
+  });
+  app.get("/api/linkedin/systematic/connection", testSystematicConnection);
+  app.get("/api/linkedin/systematic/credentials", testSystematicCredentials);
+  app.get("/api/linkedin/systematic/auth-url", testAuthorizationUrl);
+  app.get("/api/linkedin/systematic/callback", handleSystematicCallback);
+  app.post("/api/linkedin/systematic/exchange-token", exchangeToken);
+  app.post("/api/linkedin/systematic/get-profile", getProfile);
   
   // Quick test HTML page
   app.get("/linkedin/quicktest", (req, res) => {

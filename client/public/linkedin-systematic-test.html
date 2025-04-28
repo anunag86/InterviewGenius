@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LinkedIn OAuth Systematic Test</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+      margin: 0;
+      padding: 20px;
+      line-height: 1.5;
+      max-width: 1000px;
+      margin: 0 auto;
+      color: #333;
+    }
+    h1, h2, h3 {
+      color: #0077B5;
+    }
+    .step-card {
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+    .step-header {
+      display: flex;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+    .step-number {
+      background: #0077B5;
+      color: white;
+      width: 30px;
+      height: 30px;
+      border-radius: 15px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      margin-right: 10px;
+    }
+    button {
+      background: #0077B5;
+      color: white;
+      border: none;
+      padding: 10px 15px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 14px;
+    }
+    button:hover {
+      background: #005e93;
+    }
+    button:disabled {
+      background: #cccccc;
+      cursor: not-allowed;
+    }
+    pre {
+      background: #f5f5f5;
+      padding: 10px;
+      border-radius: 4px;
+      overflow-x: auto;
+      margin-top: 10px;
+    }
+    .result {
+      margin-top: 15px;
+      display: none;
+    }
+    .success {
+      color: #2ecc71;
+    }
+    .error {
+      color: #e74c3c;
+    }
+    .warning {
+      color: #f39c12;
+    }
+    .loader {
+      border: 3px solid #f3f3f3;
+      border-top: 3px solid #0077B5;
+      border-radius: 50%;
+      width: 20px;
+      height: 20px;
+      animation: spin 1s linear infinite;
+      display: inline-block;
+      margin-right: 10px;
+      vertical-align: middle;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    .status-icon {
+      font-size: 18px;
+      margin-right: 10px;
+      display: inline-block;
+      width: 20px;
+      text-align: center;
+    }
+    .description {
+      color: #666;
+      margin-bottom: 15px;
+    }
+    .note {
+      font-size: 14px;
+      color: #666;
+      font-style: italic;
+      margin-top: 5px;
+    }
+    .header-summary {
+      display: flex;
+      align-items: center;
+      margin-bottom: 20px;
+      background: #f7f9fc;
+      padding: 15px;
+      border-radius: 8px;
+    }
+    .summary-item {
+      margin-right: 25px;
+    }
+    .summary-label {
+      font-size: 12px;
+      color: #666;
+      margin-bottom: 5px;
+    }
+    .summary-value {
+      font-weight: bold;
+    }
+    details {
+      margin-top: 10px;
+    }
+    summary {
+      cursor: pointer;
+      color: #0077B5;
+      font-weight: bold;
+    }
+    .auth-button {
+      background: linear-gradient(to right, #0077B5, #00a0dc);
+      padding: 12px 20px;
+      font-size: 16px;
+      margin-top: 10px;
+      transition: transform 0.2s;
+    }
+    .auth-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+  </style>
+</head>
+<body>
+  <h1>LinkedIn OAuth Systematic Test</h1>
+  <p>This page tests every step of the LinkedIn OAuth flow to identify exactly where the failure occurs.</p>
+  
+  <div class="header-summary">
+    <div class="summary-item">
+      <div class="summary-label">Browser Domain</div>
+      <div class="summary-value" id="browser-domain">-</div>
+    </div>
+    <div class="summary-item">
+      <div class="summary-label">LinkedIn Client ID</div>
+      <div class="summary-value" id="client-id-status">-</div>
+    </div>
+    <div class="summary-item">
+      <div class="summary-label">LinkedIn Client Secret</div>
+      <div class="summary-value" id="client-secret-status">-</div>
+    </div>
+  </div>
+  
+  <!-- Step 1: Test LinkedIn Connection -->
+  <div class="step-card">
+    <div class="step-header">
+      <div class="step-number">1</div>
+      <h2>Test LinkedIn Connection</h2>
+    </div>
+    <div class="description">
+      This test checks if we can reach LinkedIn's servers and that there are no network or firewall issues.
+    </div>
+    <button id="test-connection">Test Connection</button>
+    <div id="connection-result" class="result">
+      <div id="connection-loader" class="loader"></div>
+      <div id="connection-status"></div>
+      <details>
+        <summary>Technical Details</summary>
+        <pre id="connection-details"></pre>
+      </details>
+    </div>
+  </div>
+  
+  <!-- Step 2: Test Credentials -->
+  <div class="step-card">
+    <div class="step-header">
+      <div class="step-number">2</div>
+      <h2>Test OAuth Credentials</h2>
+    </div>
+    <div class="description">
+      This test verifies that the LinkedIn Client ID and Client Secret are properly configured.
+    </div>
+    <button id="test-credentials">Test Credentials</button>
+    <div id="credentials-result" class="result">
+      <div id="credentials-loader" class="loader"></div>
+      <div id="credentials-status"></div>
+      <details>
+        <summary>Technical Details</summary>
+        <pre id="credentials-details"></pre>
+      </details>
+    </div>
+  </div>
+  
+  <!-- Step 3: Generate Authorization URL -->
+  <div class="step-card">
+    <div class="step-header">
+      <div class="step-number">3</div>
+      <h2>Generate Authorization URL</h2>
+    </div>
+    <div class="description">
+      This test creates the LinkedIn authorization URL with the proper redirect URI and scopes.
+    </div>
+    <button id="test-auth-url">Generate Auth URL</button>
+    <div id="auth-url-result" class="result">
+      <div id="auth-url-loader" class="loader"></div>
+      <div id="auth-url-status"></div>
+      <div id="auth-url-button-container"></div>
+      <details>
+        <summary>Technical Details</summary>
+        <pre id="auth-url-details"></pre>
+      </details>
+    </div>
+  </div>
+  
+  <!-- Final Step Explainer -->
+  <div class="step-card">
+    <div class="step-header">
+      <div class="step-number">4</div>
+      <h2>Complete OAuth Flow</h2>
+    </div>
+    <div class="description">
+      The remaining steps will be tested when you authorize with LinkedIn:
+      <ul>
+        <li>Step 4: Handle the callback from LinkedIn</li>
+        <li>Step 5: Exchange the authorization code for an access token</li>
+        <li>Step 6: Retrieve the LinkedIn profile using the access token</li>
+      </ul>
+      <div class="note">
+        These steps are tested sequentially on the results page after you authorize with LinkedIn.
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    // Populate browser domain
+    document.getElementById('browser-domain').textContent = window.location.hostname;
+    
+    // Step 1: Test LinkedIn Connection
+    document.getElementById('test-connection').addEventListener('click', async () => {
+      const resultDiv = document.getElementById('connection-result');
+      const loader = document.getElementById('connection-loader');
+      const status = document.getElementById('connection-status');
+      const details = document.getElementById('connection-details');
+      
+      resultDiv.style.display = 'block';
+      loader.style.display = 'inline-block';
+      status.innerHTML = 'Testing connection to LinkedIn...';
+      
+      try {
+        const response = await fetch('/api/linkedin/systematic/connection');
+        const data = await response.json();
+        
+        loader.style.display = 'none';
+        details.textContent = JSON.stringify(data, null, 2);
+        
+        if (data.success) {
+          status.innerHTML = '<span class="status-icon success">✓</span> Successfully connected to LinkedIn';
+        } else {
+          status.innerHTML = '<span class="status-icon error">✗</span> Failed to connect to LinkedIn';
+        }
+      } catch (error) {
+        loader.style.display = 'none';
+        status.innerHTML = '<span class="status-icon error">✗</span> Error testing connection: ' + error.message;
+      }
+    });
+    
+    // Step 2: Test Credentials
+    document.getElementById('test-credentials').addEventListener('click', async () => {
+      const resultDiv = document.getElementById('credentials-result');
+      const loader = document.getElementById('credentials-loader');
+      const status = document.getElementById('credentials-status');
+      const details = document.getElementById('credentials-details');
+      
+      resultDiv.style.display = 'block';
+      loader.style.display = 'inline-block';
+      status.innerHTML = 'Checking LinkedIn credentials...';
+      
+      try {
+        const response = await fetch('/api/linkedin/systematic/credentials');
+        const data = await response.json();
+        
+        loader.style.display = 'none';
+        details.textContent = JSON.stringify(data, null, 2);
+        
+        // Update summary
+        document.getElementById('client-id-status').textContent = data.client_id.exists ? 'Present' : 'Missing';
+        document.getElementById('client-secret-status').textContent = data.client_secret.exists ? 'Present' : 'Missing';
+        
+        if (data.client_id.exists && data.client_secret.exists) {
+          status.innerHTML = '<span class="status-icon success">✓</span> LinkedIn credentials are configured';
+        } else {
+          let missingCredentials = [];
+          if (!data.client_id.exists) missingCredentials.push('Client ID');
+          if (!data.client_secret.exists) missingCredentials.push('Client Secret');
+          
+          status.innerHTML = `<span class="status-icon error">✗</span> Missing LinkedIn credentials: ${missingCredentials.join(', ')}`;
+        }
+      } catch (error) {
+        loader.style.display = 'none';
+        status.innerHTML = '<span class="status-icon error">✗</span> Error checking credentials: ' + error.message;
+      }
+    });
+    
+    // Step 3: Generate Authorization URL
+    document.getElementById('test-auth-url').addEventListener('click', async () => {
+      const resultDiv = document.getElementById('auth-url-result');
+      const loader = document.getElementById('auth-url-loader');
+      const status = document.getElementById('auth-url-status');
+      const details = document.getElementById('auth-url-details');
+      const buttonContainer = document.getElementById('auth-url-button-container');
+      
+      resultDiv.style.display = 'block';
+      loader.style.display = 'inline-block';
+      status.innerHTML = 'Generating LinkedIn authorization URL...';
+      buttonContainer.innerHTML = '';
+      
+      try {
+        const response = await fetch('/api/linkedin/systematic/auth-url');
+        const data = await response.json();
+        
+        loader.style.display = 'none';
+        details.textContent = JSON.stringify(data, null, 2);
+        
+        if (data.success) {
+          status.innerHTML = '<span class="status-icon success">✓</span> Successfully generated authorization URL';
+          buttonContainer.innerHTML = `
+            <p>Click the button below to begin the LinkedIn OAuth flow:</p>
+            <button class="auth-button" onclick="window.location.href='${data.url}'">
+              Authorize with LinkedIn
+            </button>
+            <p class="note">This will redirect you to LinkedIn for authentication.</p>
+          `;
+        } else {
+          status.innerHTML = '<span class="status-icon error">✗</span> Failed to generate authorization URL: ' + data.error;
+        }
+      } catch (error) {
+        loader.style.display = 'none';
+        status.innerHTML = '<span class="status-icon error">✗</span> Error generating authorization URL: ' + error.message;
+      }
+    });
+    
+    // Run credential check on page load
+    window.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('test-credentials').click();
+    });
+  </script>
+</body>
+</html>
