@@ -23,6 +23,7 @@ import {
 import { generateQuickTestUrl, handleQuickTestCallback } from "./controllers/quickTest";
 import { debugRequestHeaders } from "./controllers/debugRequestHeaders";
 import { handleMinimalCallback } from "./controllers/minimalCallbackHandler";
+import { generateAutoDetectAuthUrl, handleAutoDetectCallback } from "./controllers/autoDetectAuth";
 
 // Configure multer for memory storage (files are processed in memory)
 const upload = multer({
@@ -171,6 +172,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.sendFile('linkedin-direct-minimal.html', { root: './client/public' });
   });
   
+  // Auto-detecting LinkedIn test
+  app.get("/linkedin/auto-detect", (req, res) => {
+    res.sendFile('linkedin-auto-detect.html', { root: './client/public' });
+  });
+  
   // API endpoint for LinkedIn diagnostics
   app.get("/api/linkedin/diagnostics", getLinkedInDiagnostics);
   
@@ -188,6 +194,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Minimal test callback handler
   app.get("/api/auth/linkedin/minimal-callback", handleMinimalCallback);
+  
+  // Auto-detect route for LinkedIn OAuth
+  app.get("/api/auth/linkedin/auto-detect", generateAutoDetectAuthUrl);
+  app.get("/api/auto-detect/callback", handleAutoDetectCallback);
   
   // Quick test routes - simplified minimal OAuth flow
   app.get("/api/quicktest/url", generateQuickTestUrl);
