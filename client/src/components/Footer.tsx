@@ -17,11 +17,12 @@ const Footer = () => {
           
           <div className="flex items-center mb-4 md:mb-0">
             <div className="flex items-center space-x-3">
-              <div className="h-10 w-10 rounded-full overflow-hidden bg-primary/10 border border-border shadow-sm">
+              <div className="h-12 w-12 rounded-full overflow-hidden bg-primary/10 border-2 border-primary/20 shadow-md">
                 <img 
-                  src="/images/author.jpg" 
+                  src="/images/author-hires.jpg" 
                   alt="Anunag Jayanti" 
                   className="h-full w-full object-cover" 
+                  loading="lazy"
                 />
               </div>
               <div className="text-sm">
