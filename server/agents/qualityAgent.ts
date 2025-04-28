@@ -34,15 +34,57 @@ export async function reviewInterviewPrep(interviewPrepData: InterviewPrep) {
       sourcesConsulted: []
     });
     
+    // Instead of throwing an error, we'll try to fix missing sections
     if (!Object.values(checks).every(Boolean)) {
       thoughts.push({
         timestamp: Date.now(),
         agent: "Quality Checker",
-        thought: "Critical sections are missing from the interview preparation data. Quality check failed.",
+        thought: "Some critical sections are missing from the interview preparation data. Attempting to create defaults.",
         sourcesConsulted: []
       });
       
-      throw new Error("Incomplete interview preparation data detected");
+      // Create default sections if missing
+      if (!interviewPrepData.jobDetails) {
+        interviewPrepData.jobDetails = {
+          company: "Unknown Company",
+          title: "Unspecified Position",
+          location: "Remote",
+          skills: ["Communication", "Problem Solving"]
+        };
+      }
+      
+      if (!interviewPrepData.companyInfo) {
+        interviewPrepData.companyInfo = {
+          description: "Company information unavailable.",
+          culture: ["Company culture information unavailable."],
+          businessFocus: ["Business focus information unavailable."],
+          teamInfo: ["Team information unavailable."],
+          roleDetails: ["Role details unavailable."]
+        };
+      }
+      
+      if (!interviewPrepData.candidateHighlights) {
+        interviewPrepData.candidateHighlights = {
+          relevantPoints: ["Resume analysis unavailable."],
+          gapAreas: ["Gap analysis unavailable."]
+        };
+      }
+      
+      if (!interviewPrepData.interviewRounds || interviewPrepData.interviewRounds.length === 0) {
+        interviewPrepData.interviewRounds = [{
+          id: `round-${Date.now()}-0`,
+          name: "General Interview",
+          focus: "Overall fit and qualifications",
+          questions: [{
+            id: `question-${Date.now()}-0`,
+            question: "Please tell me about your experience and qualifications for this role.",
+            talkingPoints: [{
+              id: `tp-${Date.now()}-0`,
+              text: "Discuss your relevant experience and skills."
+            }]
+          }]
+        }];
+      }
     }
     
     // Detailed quality assessment

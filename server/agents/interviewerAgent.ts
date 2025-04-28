@@ -14,10 +14,10 @@ import {
  * interview round, ensuring they align with the company culture and job requirements.
  */
 export async function generateInterviewQuestions(
-  jobAnalysis: any,
-  profileAnalysis: any,
+  jobDetails: any,
   companyInfo: any,
   interviewPatterns: any,
+  profileAnalysis: any,
   candidateHighlights: any
 ) {
   const thoughts: AgentThought[] = [];
@@ -31,8 +31,8 @@ export async function generateInterviewQuestions(
   
   try {
     // Extract key information for question generation
-    const companyName = jobAnalysis.companyName || "the company";
-    const jobTitle = jobAnalysis.jobTitle || "the role";
+    const companyName = jobDetails.company || "the company";
+    const jobTitle = jobDetails.title || "the role";
     const rounds = interviewPatterns.interviewRounds || [];
     
     thoughts.push({
@@ -68,7 +68,7 @@ export async function generateInterviewQuestions(
         ${JSON.stringify(companyInfo, null, 2)}
         
         Job Requirements:
-        ${JSON.stringify(jobAnalysis, null, 2)}
+        ${JSON.stringify(jobDetails, null, 2)}
         
         Candidate Background:
         ${JSON.stringify(candidateHighlights, null, 2)}
