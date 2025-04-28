@@ -50,6 +50,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/auth/linkedin/callback", handleLinkedInCallback);
   app.get("/api/auth/me", getCurrentUser);
   app.post("/api/auth/logout", logout);
+  
+  // Special direct LinkedIn connect endpoints
+  app.get("/linkedin", (req, res) => {
+    res.sendFile('linkedin-connect.html', { root: './client/public' });
+  });
+  
+  // Direct auth route - no JavaScript intermediary
+  app.get("/linkedin/auth", (req, res) => {
+    try {
+      if (!process.env.LINKEDIN_CLIENT_ID) {
+        return res.status(500).send("LinkedIn client ID not configured");
+      }
+      
+      // Generate state
+      const state = Math.random().toString(36).substring(2, 15);
+      req.session.oauthState = state;
+      
+      // Get redirect URI
+      let redirectUri = "";
+      if (process.env.REPL_SLUG && process.env.REPL_OWNER) {
+        redirectUri = `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co/api/auth/linkedin/callback`;
+      } else if (process.env.REDIRECT_URI) {
+        redirectUri = process.env.REDIRECT_URI;
+      } else {
+        redirectUri = 'http://localhost:5000/api/auth/linkedin/callback';
+      }
+      
+      // Build LinkedIn auth URL
+      const params = new URLSearchParams({
+        response_type: 'code',
+        client_id: process.env.LINKEDIN_CLIENT_ID,
+        redirect_uri: redirectUri,
+        state: state,
+        scope: 'r_liteprofile r_emailaddress'
+      });
+      
+      const authUrl = `https://www.linkedin.com/oauth/v2/authorization?${params.toString()}`;
+      console.log("Direct LinkedIn auth redirect to:", authUrl);
+      
+      // Redirect user directly to LinkedIn
+      res.redirect(authUrl);
+    } catch (error) {
+      console.error("Direct LinkedIn auth error:", error);
+      res.status(500).send("Error initiating LinkedIn authentication");
+    }
+  });
 
   const httpServer = createServer(app);
 

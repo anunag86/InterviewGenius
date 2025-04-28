@@ -100,6 +100,10 @@ const Login = () => {
                 <FaLinkedin className="mr-2 h-5 w-5" />
                 Connect with LinkedIn
               </Button>
+              
+              <p className="text-center text-sm text-gray-500 mt-2">
+                Having trouble? Try our <a href="/linkedin" className="text-blue-600 hover:underline">alternative connection method</a>
+              </p>
 
               <div className="text-center text-sm text-gray-500 mt-2">
                 <p>

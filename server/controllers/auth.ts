@@ -49,24 +49,52 @@ const LINKEDIN_EMAIL_URL = "https://api.linkedin.com/v2/emailAddress?q=members&p
  * Get LinkedIn authorization URL
  */
 export const getLinkedInAuthUrl = (req: Request, res: Response) => {
-  if (!LINKEDIN_CLIENT_ID) {
-    return res.status(500).json({ 
-      error: "LinkedIn client ID not configured" 
-    });
-  }
+  try {
+    // Validate required environment variables
+    if (!LINKEDIN_CLIENT_ID) {
+      console.error("LinkedIn client ID is not configured");
+      return res.status(500).json({ 
+        error: "LinkedIn client ID not configured" 
+      });
+    }
+    
+    if (!LINKEDIN_CLIENT_SECRET) {
+      console.error("LinkedIn client secret is not configured");
+      return res.status(500).json({ 
+        error: "LinkedIn client secret not configured" 
+      });
+    }
 
-  const state = Math.random().toString(36).substring(2, 15);
-  // Store state in session to prevent CSRF attacks
-  req.session.oauthState = state;
-  
-  const authUrl = `${LINKEDIN_AUTH_URL}?response_type=code` +
-    `&client_id=${LINKEDIN_CLIENT_ID}` +
-    `&redirect_uri=${encodeURIComponent(REDIRECT_URI)}` +
-    `&state=${state}` +
-    `&scope=r_liteprofile%20r_emailaddress`;
-  
-  console.log("LinkedIn Auth URL generated:", authUrl);
-  return res.json({ url: authUrl });
+    // Generate a unique state parameter for CSRF protection
+    const state = Math.random().toString(36).substring(2, 15);
+    
+    // Store state in session to prevent CSRF attacks
+    req.session.oauthState = state;
+    
+    // Create basic minimal parameters for OAuth 2.0
+    // This creates a more compatible URL with minimal parameters to reduce errors
+    const params = new URLSearchParams({
+      response_type: 'code',
+      client_id: LINKEDIN_CLIENT_ID,
+      redirect_uri: REDIRECT_URI,
+      state: state,
+      scope: 'r_liteprofile r_emailaddress'
+    });
+    
+    // Construct the final authorization URL
+    const authUrl = `${LINKEDIN_AUTH_URL}?${params.toString()}`;
+    
+    console.log("LinkedIn Auth URL generated with params:", {
+      client_id: LINKEDIN_CLIENT_ID, 
+      redirect_uri: REDIRECT_URI,
+      state: state
+    });
+    
+    return res.json({ url: authUrl });
+  } catch (error) {
+    console.error("Error generating LinkedIn auth URL:", error);
+    return res.status(500).json({ error: "Failed to generate LinkedIn authorization URL" });
+  }
 };
 
 /**
