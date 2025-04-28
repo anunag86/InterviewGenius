@@ -284,13 +284,18 @@ async function processInterviewPrep(prepId: string, resumeFile: Express.Multer.F
       agentThoughts: allThoughts
     });
     
-    // Step 6: Interviewer Preparer Agent - Generate interview questions for each round
+    // Step 6: Interviewer Preparer Agent - Generate interview questions and talking points
+    // This is now an enhanced agent that consolidates multiple previous responsibilities:
+    // - Creates customized interview questions based on company research and role requirements
+    // - Generates specific, personalized talking points for each question based on candidate's profile
+    // - Provides alternative points for areas where the candidate lacks experience
+    // - Ensures alignment with company values and culture
     interviewPreps.set(prepId, {
       ...interviewPreps.get(prepId),
       progress: AgentStep.INTERVIEWER_AGENT
     });
     
-    // Generate questions through the interviewer agent
+    // Generate questions and talking points through the enhanced interviewer agent
     const interviewerResult = await generateInterviewQuestions(
       jobDetails,
       companyInfo,
@@ -308,8 +313,9 @@ async function processInterviewPrep(prepId: string, resumeFile: Express.Multer.F
       agentThoughts: allThoughts
     });
     
-    // The interviewer agent now includes talking points directly
-    // No need for separate candidate points or narrative agents anymore
+    // The enhanced Interviewer Preparer Agent now consolidates functionality that was previously
+    // spread across multiple agents (question generation, talking points, narrative guidance)
+    // making the architecture more efficient and the results more coherent
     
     // Step 7: Store profile data with memory agent
     interviewPreps.set(prepId, {
