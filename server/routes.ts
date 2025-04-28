@@ -9,6 +9,9 @@ import { getSimpleLinkedInAuthUrl, handleSimpleLinkedInCallback } from "./contro
 import { getFixedLinkedInAuthUrl, handleFixedLinkedInCallback } from "./controllers/fixedAuthLinkedin";
 import { handleManualLinkedInProfile } from "./controllers/manualAuth";
 import { getSimpleAuthUrl, handleSimpleCallback } from "./controllers/simpleAuth";
+import { handleUniversalCallback } from "./controllers/linkedinCallbacks";
+import { generateAuthUrl } from "./controllers/linkedinAuthGenerator";
+import { testLinkedInPermutations, generateLinkedInDiagnosticPage } from "./controllers/linkedinDeepDiagnostics";
 import { 
   testLinkedInConnection, 
   testLinkedInCredentials,
@@ -127,6 +130,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/linkedin/super-simple", (req, res) => {
     res.sendFile('linkedin-super-simple.html', { root: './client/public' });
   });
+  
+  // NEW LINKEDIN DIAGNOSTIC & CALLBACK ROUTES
+  
+  // Deep LinkedIn OAuth diagnostics
+  app.get("/linkedin/deep-diagnostics", generateLinkedInDiagnosticPage);
+  app.get("/api/deep-diagnostics/linkedin", testLinkedInPermutations);
+  
+  // Dynamic auth URL generator
+  app.get("/api/auth/linkedin/generate", generateAuthUrl);
+  
+  // Universal callback handlers at different paths
+  app.get("/callback", handleUniversalCallback);
+  app.get("/api/callback", handleUniversalCallback);
+  app.get("/api/auth/callback", handleUniversalCallback);
+  // Original callback path is already registered
   
   // Direct auth route - no JavaScript intermediary
   app.get("/linkedin/auth", (req, res) => {
