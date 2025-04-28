@@ -10,6 +10,7 @@ import { generateInterviewQuestions } from "../agents/interviewerAgent";
 // We no longer need candidate points and narrative agents in the new architecture
 import { storeUserMemory, storeUserResponse, getUserResponses } from "../agents/memoryAgent";
 import { reviewInterviewPrep } from "../agents/qualityAgent";
+import { gradeResponse, GradingResult } from "../agents/gradingAgent";
 import { storage } from "../storage";
 import { AgentStep, AgentThought, InterviewRound, UserResponse, InterviewPrep } from "../../client/src/types";
 
@@ -455,5 +456,44 @@ export const getUserResponsesForInterview = async (req: Request, res: Response) 
   } catch (error) {
     console.error("Error getting user responses:", error);
     return res.status(500).json({ error: "Failed to retrieve user responses" });
+  }
+};
+
+/**
+ * Grade a user's response to an interview question
+ * Uses the Grading Agent to provide feedback and suggestions
+ */
+export const gradeUserResponse = async (req: Request, res: Response) => {
+  try {
+    const { interviewPrepId, questionId, roundId, responseText, question } = req.body;
+    
+    if (!interviewPrepId || !questionId || !responseText || !question) {
+      return res.status(400).json({ error: "Missing required fields" });
+    }
+    
+    // Check if the interview prep exists
+    const savedPrep = await storage.getInterviewPrep(interviewPrepId);
+    if (!savedPrep) {
+      return res.status(404).json({ error: "Interview preparation not found" });
+    }
+    
+    // Extract the candidate highlights from the saved prep
+    const prepData = typeof savedPrep.data === 'object' ? savedPrep.data : {};
+    const candidateHighlights = prepData.candidateHighlights || {
+      relevantPoints: [],
+      gapAreas: []
+    };
+    
+    // Grade the response using the grading agent
+    const gradingResult = await gradeResponse(question, responseText, candidateHighlights);
+    
+    // Return the grading result
+    return res.status(200).json({ 
+      success: true,
+      result: gradingResult
+    });
+  } catch (error) {
+    console.error("Error grading user response:", error);
+    return res.status(500).json({ error: "Failed to grade user response" });
   }
 };
