@@ -214,7 +214,7 @@ const QuestionResponseForm = ({
     return { situation, action, result };
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!responseText.trim()) {
@@ -229,33 +229,20 @@ const QuestionResponseForm = ({
     // Extract the SAR components from the text
     const { situation, action, result } = extractSARComponents(responseText);
     
-    try {
-      // Save the response
-      await onSave({
-        questionId,
-        roundId,
-        situation,
-        action,
-        result
-      });
-      
-      // Always re-grade the response when saved
-      // This ensures the user gets updated feedback if they change their response
-      handleGradeResponse();
-      
-      // Show success message
-      toast({
-        title: "Response Saved",
-        description: "Your response has been saved successfully.",
-      });
-    } catch (error) {
-      console.error("Error saving response:", error);
-      toast({
-        title: "Save Failed",
-        description: "Failed to save your response. Please try again.",
-        variant: "destructive"
-      });
-    }
+    // Save the response using the provided onSave function
+    onSave({
+      questionId,
+      roundId,
+      situation,
+      action,
+      result
+    });
+    
+    // Since saving is handled by the mutation in parent component,
+    // we can immediately run the grading here
+    handleGradeResponse();
+    
+    // The toast message will be shown by the parent component's onSuccess handler
   };
   
   // Function to grade the response

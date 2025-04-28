@@ -6,6 +6,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import QuestionResponseForm from "./QuestionResponseForm";
 import { useUserResponses } from "@/hooks/useUserResponses";
 import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/hooks/use-toast";
 
 interface ResultsSectionProps {
   data: InterviewPrep;
@@ -13,6 +14,7 @@ interface ResultsSectionProps {
 
 const ResultsSection = ({ data }: ResultsSectionProps) => {
   const [activeTab, setActiveTab] = useState<string>("overview");
+  const { toast } = useToast();
   
   // Check if data structure follows the new format with interviewRounds
   const hasRoundFormat = data.interviewRounds && data.interviewRounds.length > 0;
