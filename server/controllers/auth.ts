@@ -11,10 +11,10 @@ const LINKEDIN_CLIENT_SECRET = process.env.LINKEDIN_CLIENT_SECRET;
 // Define a list of supported redirect URIs for LinkedIn OAuth
 // This handles both development and production environments
 const SUPPORTED_REDIRECT_URIS = [
-  // Local development
-  'http://localhost:5000/api/auth/linkedin/callback',
-  // Replit domain
-  `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co/api/auth/linkedin/callback`,
+  // When running on Replit, use the Replit domain first
+  process.env.REPL_SLUG ? 
+    `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co/api/auth/linkedin/callback` :
+    'http://localhost:5000/api/auth/linkedin/callback',
   // Custom domain if provided
   process.env.REDIRECT_URI,
 ].filter(Boolean); // Remove any undefined/null values
@@ -22,8 +22,9 @@ const SUPPORTED_REDIRECT_URIS = [
 // Log available redirect URIs for debugging
 console.log('Available LinkedIn redirect URIs:', SUPPORTED_REDIRECT_URIS);
 
-// Use the first redirect URI as the default
+// Make sure we have a valid REDIRECT_URI
 const REDIRECT_URI = SUPPORTED_REDIRECT_URIS[0] || 'http://localhost:5000/api/auth/linkedin/callback';
+console.log('Using LinkedIn redirect URI:', REDIRECT_URI);
 
 // LinkedIn API endpoints
 const LINKEDIN_AUTH_URL = "https://www.linkedin.com/oauth/v2/authorization";
