@@ -57,7 +57,7 @@ export const getLinkedInAuthUrl = (req: Request, res: Response) => {
         error: "LinkedIn client ID not configured" 
       });
     }
-    
+
     if (!LINKEDIN_CLIENT_SECRET) {
       console.error("LinkedIn client secret is not configured");
       return res.status(500).json({ 
@@ -67,10 +67,10 @@ export const getLinkedInAuthUrl = (req: Request, res: Response) => {
 
     // Generate a unique state parameter for CSRF protection
     const state = Math.random().toString(36).substring(2, 15);
-    
+
     // Store state in session to prevent CSRF attacks
     req.session.oauthState = state;
-    
+
     // Create basic minimal parameters for OAuth 2.0
     // This creates a more compatible URL with minimal parameters to reduce errors
     const params = new URLSearchParams({
@@ -78,18 +78,18 @@ export const getLinkedInAuthUrl = (req: Request, res: Response) => {
       client_id: LINKEDIN_CLIENT_ID,
       redirect_uri: REDIRECT_URI,
       state: state,
-      scope: 'r_liteprofile r_emailaddress'
+      scope: 'r_liteprofile r_emailaddress w_member_social' // Added w_member_social scope
     });
-    
+
     // Construct the final authorization URL
     const authUrl = `${LINKEDIN_AUTH_URL}?${params.toString()}`;
-    
+
     console.log("LinkedIn Auth URL generated with params:", {
       client_id: LINKEDIN_CLIENT_ID, 
       redirect_uri: REDIRECT_URI,
       state: state
     });
-    
+
     return res.json({ url: authUrl });
   } catch (error) {
     console.error("Error generating LinkedIn auth URL:", error);
@@ -102,7 +102,7 @@ export const getLinkedInAuthUrl = (req: Request, res: Response) => {
  */
 export const handleLinkedInCallback = async (req: Request, res: Response) => {
   console.log("LinkedIn callback received with query params:", req.query);
-  
+
   try {
     // Validate required environment variables
     if (!LINKEDIN_CLIENT_ID || !LINKEDIN_CLIENT_SECRET) {
@@ -112,21 +112,21 @@ export const handleLinkedInCallback = async (req: Request, res: Response) => {
       });
       return res.redirect("/auth/callback?error=missing_credentials");
     }
-    
+
     const { code, state, error, error_description } = req.query;
-    
+
     // Handle LinkedIn-provided errors (user denied access, etc.)
     if (error) {
       console.error("LinkedIn OAuth error:", { error, error_description });
       return res.redirect(`/auth/callback?error=${error}&error_description=${error_description}`);
     }
-    
+
     // Verify that required params are present
     if (!code || !state) {
       console.error("Missing required OAuth parameters:", { hasCode: !!code, hasState: !!state });
       return res.redirect("/auth/callback?error=missing_parameters");
     }
-    
+
     // Verify state to prevent CSRF attacks
     if (state !== req.session.oauthState) {
       console.error("OAuth state mismatch:", { 
@@ -135,9 +135,9 @@ export const handleLinkedInCallback = async (req: Request, res: Response) => {
       });
       return res.redirect("/auth/callback?error=invalid_state");
     }
-    
+
     console.log("LinkedIn OAuth state verified, exchanging code for token...");
-    
+
     // Exchange code for access token
     const tokenResponse = await fetch(LINKEDIN_TOKEN_URL, {
       method: "POST",
@@ -152,7 +152,7 @@ export const handleLinkedInCallback = async (req: Request, res: Response) => {
         client_secret: LINKEDIN_CLIENT_SECRET,
       }),
     });
-    
+
     if (!tokenResponse.ok) {
       const errorText = await tokenResponse.text();
       console.error("LinkedIn token exchange failed:", { 
@@ -162,24 +162,24 @@ export const handleLinkedInCallback = async (req: Request, res: Response) => {
       });
       return res.redirect("/auth/callback?error=token_exchange_failed");
     }
-    
+
     const tokenData = await tokenResponse.json();
-    
+
     if (!tokenData.access_token) {
       console.error("LinkedIn token response missing access_token:", tokenData);
       return res.redirect("/auth/callback?error=invalid_token_response");
     }
-    
+
     console.log("LinkedIn token obtained successfully, fetching profile...");
     const accessToken = tokenData.access_token;
-    
+
     // Get user profile information
     const profileResponse = await fetch(LINKEDIN_PROFILE_URL, {
       headers: {
         Authorization: `Bearer ${accessToken}`,
       },
     });
-    
+
     if (!profileResponse.ok) {
       const errorText = await profileResponse.text();
       console.error("LinkedIn profile fetch failed:", { 
@@ -189,17 +189,17 @@ export const handleLinkedInCallback = async (req: Request, res: Response) => {
       });
       return res.redirect("/auth/callback?error=profile_fetch_failed");
     }
-    
+
     const profileData = await profileResponse.json();
     console.log("LinkedIn profile retrieved successfully");
-    
+
     // Get user email
     const emailResponse = await fetch(LINKEDIN_EMAIL_URL, {
       headers: {
         Authorization: `Bearer ${accessToken}`,
       },
     });
-    
+
     if (!emailResponse.ok) {
       const errorText = await emailResponse.text();
       console.error("LinkedIn email fetch failed:", { 
@@ -209,29 +209,29 @@ export const handleLinkedInCallback = async (req: Request, res: Response) => {
       });
       return res.redirect("/auth/callback?error=email_fetch_failed");
     }
-    
+
     const emailData = await emailResponse.json();
     console.log("LinkedIn email retrieved successfully");
-    
+
     // Extract profile information
     const linkedinId = profileData.id;
     if (!linkedinId) {
       console.error("LinkedIn profile data missing ID:", profileData);
       return res.redirect("/auth/callback?error=missing_profile_id");
     }
-    
+
     const firstName = profileData.localizedFirstName || "";
     const lastName = profileData.localizedLastName || "";
     const email = emailData.elements?.[0]?.["handle~"]?.emailAddress || "";
     const pictureUrl = profileData.profilePicture?.["displayImage~"]?.elements?.[0]?.identifiers?.[0]?.identifier || "";
 
     console.log("Processing user data for LinkedIn ID:", linkedinId);
-    
+
     // Find or create user
     let user = await db.query.users.findFirst({
       where: eq(users.linkedinId, linkedinId),
     });
-    
+
     if (!user) {
       console.log("Creating new user for LinkedIn ID:", linkedinId);
       // Create new user
@@ -245,7 +245,7 @@ export const handleLinkedInCallback = async (req: Request, res: Response) => {
         linkedinProfileUrl: `https://www.linkedin.com/in/${linkedinId}`,
         lastLoginAt: new Date(),
       };
-      
+
       try {
         const validatedData = insertUserSchema.parse(userData);
         const [newUser] = await db.insert(users).values(validatedData).returning();
@@ -276,14 +276,14 @@ export const handleLinkedInCallback = async (req: Request, res: Response) => {
         // Continue with existing user data even if update fails
       }
     }
-    
+
     // Set user session
     req.session.userId = user.id;
     req.session.linkedinId = linkedinId;
     req.session.linkedinProfileUrl = `https://www.linkedin.com/in/${linkedinId}`;
-    
+
     console.log("User session established, redirecting to callback page");
-    
+
     // Redirect to client-side callback page
     return res.redirect("/auth/callback");
   } catch (error) {
@@ -301,15 +301,15 @@ export const getCurrentUser = async (req: Request, res: Response) => {
     if (!req.session.userId) {
       return res.status(401).json({ error: "Not authenticated" });
     }
-    
+
     const user = await db.query.users.findFirst({
       where: eq(users.id, req.session.userId),
     });
-    
+
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
-    
+
     return res.json({
       id: user.id,
       email: user.email,
@@ -334,7 +334,7 @@ export const logout = (req: Request, res: Response) => {
       console.error("Logout error:", err);
       return res.status(500).json({ error: "Failed to logout" });
     }
-    
+
     res.clearCookie("connect.sid");
     return res.json({ success: true });
   });
