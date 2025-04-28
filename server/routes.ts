@@ -110,6 +110,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.sendFile('linkedin-direct.html', { root: './client/public' });
   });
   
+  // Complete bypass mode - no authentication at all
+  app.get("/linkedin/bypass", (req, res) => {
+    res.sendFile('linkedin-bypass.html', { root: './client/public' });
+  });
+  
   // Manual LinkedIn profile submission endpoint
   app.post("/api/auth/manual-linkedin", handleManualLinkedInProfile);
   

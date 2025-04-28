@@ -33,9 +33,9 @@ export const handleManualLinkedInProfile = async (req: Request, res: Response) =
     
     console.log(`MANUAL AUTH: Processing user ${firstName} ${lastName} (${email}) with LinkedIn URL ${linkedinUrl}`);
     
-    // Find or create user
+    // Find or create user by LinkedIn ID (since email field might be missing)
     let user = await db.query.users.findFirst({
-      where: eq(users.email, email)
+      where: eq(users.linkedinId, linkedinId)
     });
     
     if (!user) {
@@ -53,13 +53,33 @@ export const handleManualLinkedInProfile = async (req: Request, res: Response) =
       };
       
       try {
-        const validatedData = insertUserSchema.parse(userData);
+        // Remove email if it's causing problems
+        const cleanedUserData = {
+          linkedinId,
+          firstName,
+          lastName,
+          displayName: fullname.trim(),
+          profilePictureUrl: "",
+          linkedinProfileUrl: linkedinUrl,
+          lastLoginAt: new Date()
+        };
+        
+        const validatedData = insertUserSchema.parse(cleanedUserData);
+        console.log("MANUAL AUTH: Inserting user with data:", JSON.stringify(cleanedUserData));
+        
         const [newUser] = await db.insert(users).values(validatedData).returning();
         user = newUser;
         console.log("MANUAL AUTH: User created successfully", user.id);
       } catch (error) {
         console.error("MANUAL AUTH: Error creating user:", error);
-        return res.status(500).json({ error: "Failed to create user" });
+        
+        // Provide more detailed error message for debugging
+        let errorMessage = "Failed to create user";
+        if (error instanceof Error) {
+          errorMessage = `Failed to create user: ${error.message}`;
+        }
+        
+        return res.status(500).json({ error: errorMessage });
       }
     } else {
       console.log("MANUAL AUTH: Updating existing user", user.id);
@@ -68,14 +88,13 @@ export const handleManualLinkedInProfile = async (req: Request, res: Response) =
         await db
           .update(users)
           .set({
-            linkedinId,
             firstName,
             lastName,
             displayName: fullname.trim(),
             linkedinProfileUrl: linkedinUrl,
             lastLoginAt: new Date()
           })
-          .where(eq(users.email, email));
+          .where(eq(users.linkedinId, linkedinId));
       } catch (error) {
         console.error("MANUAL AUTH: Error updating user:", error);
         // Continue with existing user even if update fails
@@ -91,6 +110,18 @@ export const handleManualLinkedInProfile = async (req: Request, res: Response) =
     return res.status(200).json({ success: true, user: { id: user.id, name: fullname } });
   } catch (error) {
     console.error("MANUAL AUTH: Unhandled error:", error);
-    return res.status(500).json({ error: "Authentication failed" });
+    
+    // Provide more detailed error for debugging
+    let errorMessage = "Authentication failed";
+    if (error instanceof Error) {
+      errorMessage = `Authentication failed: ${error.message}`;
+      
+      // Special handling for database errors
+      if (error.message.includes("column") && error.message.includes("does not exist")) {
+        errorMessage = "Database schema issue - please contact support. We're working on fixing this!";
+      }
+    }
+    
+    return res.status(500).json({ error: errorMessage });
   }
 };

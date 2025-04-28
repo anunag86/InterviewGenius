@@ -216,19 +216,22 @@
     <h1>LinkedIn OAuth Debugger</h1>
     <p class="subtitle">Troubleshoot LinkedIn authentication issues step by step</p>
     
-    <div id="recommended-fix" class="recommendation">
-      <h3>🎉 Try our manual LinkedIn profile entry</h3>
-      <p>Since LinkedIn OAuth is challenging, we've created a direct manual entry option:</p>
-      <a href="/linkedin/direct"><button class="success">Use Manual Profile Entry</button></a>
-      <p><strong>This direct method:</strong></p>
+    <div id="recommended-fix" class="recommendation" style="background-color: #f0f4c3; border-left: 4px solid #afb42b;">
+      <h3>⚡ Use Bypass Mode - No Authentication Required</h3>
+      <p>We've created a completely authentication-free way to use the app:</p>
+      <a href="/linkedin/bypass"><button class="success" style="background-color: #afb42b;">Use Bypass Mode</button></a>
+      <p><strong>This bypass method:</strong></p>
       <ul>
-        <li>Bypasses OAuth completely - no more LinkedIn rejection errors</li>
-        <li>Let's you manually enter your LinkedIn profile URL</li>
-        <li>Creates the same user account for accessing the application</li>
-        <li>Works 100% of the time without any LinkedIn API restrictions</li>
+        <li>Requires NO authentication or database - works 100% of the time</li>
+        <li>Uses a pre-defined sample user profile</li>
+        <li>Let's you start using the application immediately</li>
+        <li>Ideal while we're fixing the database issues</li>
       </ul>
-      <p>You can also still try our OAuth-based method if you prefer:</p>
-      <a href="/linkedin/fixed"><button>Try Fixed LinkedIn Auth</button></a>
+      <p style="font-size: 85%; color: #666; margin-top: 15px;">You can also try these other options, but they may experience database issues:</p>
+      <div style="display: flex; gap: 10px; margin-top: 10px;">
+        <a href="/linkedin/direct"><button>Manual Profile Entry</button></a>
+        <a href="/linkedin/fixed"><button>Fixed LinkedIn Auth</button></a>
+      </div>
     </div>
     
     <div class="test-group">
