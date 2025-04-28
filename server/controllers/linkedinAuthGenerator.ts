@@ -24,9 +24,24 @@ export const generateAuthUrl = (req: Request, res: Response) => {
     req.session.oauthState = state;
     
     // Build the redirect URI using the callback path and current hostname
-    const protocol = req.secure || (req.headers['x-forwarded-proto'] === 'https') ? 'https' : 'http';
-    const host = req.headers.host || "";
-    const redirectUri = `${protocol}://${host}${callbackPath}`;
+    // For Replit, we need to use the environment variables to get the correct domain
+    let redirectUri;
+    
+    if (process.env.REPL_SLUG && process.env.REPL_OWNER) {
+      redirectUri = `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co${callbackPath}`;
+      console.log("AUTH GENERATOR: Using Replit domain for redirect URI");
+    } else {
+      const protocol = req.secure || (req.headers['x-forwarded-proto'] === 'https') ? 'https' : 'http';
+      const host = req.headers.host || "";
+      redirectUri = `${protocol}://${host}${callbackPath}`;
+      console.log("AUTH GENERATOR: Using request headers for redirect URI");
+    }
+    
+    // Special case for Replit Nix environment (dev environment)
+    if (req.headers.host?.includes('picard.replit.dev')) {
+      redirectUri = `https://${req.headers.host}${callbackPath}`;
+      console.log("AUTH GENERATOR: Using picard.replit.dev domain for redirect URI");
+    }
     
     // Build the authorization URL
     const params = new URLSearchParams({
