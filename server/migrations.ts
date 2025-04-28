@@ -12,13 +12,13 @@ export async function migrationCode() {
     await db.execute(sql`
       CREATE TABLE IF NOT EXISTS users (
         id SERIAL PRIMARY KEY,
-        email TEXT,
+        email TEXT NOT NULL DEFAULT '',
         linkedin_id TEXT NOT NULL UNIQUE,
-        first_name TEXT,
-        last_name TEXT,
-        display_name TEXT,
-        profile_picture_url TEXT,
-        linkedin_profile_url TEXT,
+        first_name TEXT NOT NULL DEFAULT '',
+        last_name TEXT NOT NULL DEFAULT '',
+        display_name TEXT NOT NULL DEFAULT '',
+        profile_picture_url TEXT NOT NULL DEFAULT '',
+        linkedin_profile_url TEXT NOT NULL DEFAULT '',
         created_at TIMESTAMP NOT NULL DEFAULT NOW(),
         last_login_at TIMESTAMP NOT NULL DEFAULT NOW()
       );

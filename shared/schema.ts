@@ -5,13 +5,13 @@ import { relations } from "drizzle-orm";
 
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
-  email: text("email"),
+  email: text("email").notNull().default(""), // Make sure email has a default value
   linkedinId: text("linkedin_id").notNull().unique(),
-  firstName: text("first_name"),
-  lastName: text("last_name"),
-  displayName: text("display_name"),
-  profilePictureUrl: text("profile_picture_url"),
-  linkedinProfileUrl: text("linkedin_profile_url"),
+  firstName: text("first_name").notNull().default(""),
+  lastName: text("last_name").notNull().default(""),
+  displayName: text("display_name").notNull().default(""),
+  profilePictureUrl: text("profile_picture_url").notNull().default(""),
+  linkedinProfileUrl: text("linkedin_profile_url").notNull().default(""),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   lastLoginAt: timestamp("last_login_at").defaultNow().notNull(),
 });
