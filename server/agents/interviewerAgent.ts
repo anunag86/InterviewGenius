@@ -18,8 +18,8 @@ export async function generateInterviewQuestions(
   
   thoughts.push({
     timestamp: Date.now(),
-    agent: "Interviewer Agent",
-    thought: `Starting question generation for ${jobDetails.title} at ${jobDetails.company} based on company research and candidate profile.`,
+    agent: "Interviewer Preparer Agent",
+    thought: `Starting question and talking points generation for ${jobDetails.title} at ${jobDetails.company} based on company research and candidate profile.`,
     sourcesConsulted: []
   });
   
@@ -29,7 +29,7 @@ export async function generateInterviewQuestions(
     
     thoughts.push({
       timestamp: Date.now(),
-      agent: "Interviewer Agent",
+      agent: "Interviewer Preparer Agent",
       thought: `Identified ${interviewRounds.length} interview rounds from company research.`,
       sourcesConsulted: ["Interview Patterns Research"]
     });
@@ -40,7 +40,7 @@ export async function generateInterviewQuestions(
     
     thoughts.push({
       timestamp: Date.now(),
-      agent: "Interviewer Agent",
+      agent: "Interviewer Preparer Agent",
       thought: `Analyzing company values and culture to align questions with ${jobDetails.company}'s focus areas.`,
       sourcesConsulted: ["Company Research"]
     });
@@ -51,8 +51,8 @@ export async function generateInterviewQuestions(
     
     thoughts.push({
       timestamp: Date.now(),
-      agent: "Interviewer Agent",
-      thought: `Analyzing candidate's ${strengths.length} strengths and ${gaps.length} areas for development to tailor questions.`,
+      agent: "Interviewer Preparer Agent",
+      thought: `Analyzing candidate's ${strengths.length} strengths and ${gaps.length} areas for development to tailor questions and talking points.`,
       sourcesConsulted: ["Candidate Profile", "Resume Analysis"]
     });
     
@@ -86,8 +86,8 @@ export async function generateInterviewQuestions(
     for (const round of roundsToProcess) {
       thoughts.push({
         timestamp: Date.now(),
-        agent: "Interviewer Agent",
-        thought: `Generating questions for "${round.roundName}" which focuses on ${round.focus}.`,
+        agent: "Interviewer Preparer Agent",
+        thought: `Generating questions and talking points for "${round.roundName}" which focuses on ${round.focus}.`,
         sourcesConsulted: ["Interview Pattern Research"]
       });
       
@@ -148,8 +148,8 @@ export async function generateInterviewQuestions(
       
       thoughts.push({
         timestamp: Date.now(),
-        agent: "Interviewer Agent",
-        thought: `Generated ${questions.length} tailored questions for the ${round.roundName} round.`,
+        agent: "Interviewer Preparer Agent",
+        thought: `Generated ${questions.length} tailored questions with talking points for the ${round.roundName} round.`,
         sourcesConsulted: []
       });
       
@@ -164,8 +164,8 @@ export async function generateInterviewQuestions(
     
     thoughts.push({
       timestamp: Date.now(),
-      agent: "Interviewer Agent",
-      thought: `Successfully generated tailored questions for ${enhancedRounds.length} interview rounds.`,
+      agent: "Interviewer Preparer Agent",
+      thought: `Successfully generated tailored questions with specific talking points for ${enhancedRounds.length} interview rounds.`,
       sourcesConsulted: []
     });
     
