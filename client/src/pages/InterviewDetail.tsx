@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams, useLocation } from "wouter";
+import { useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -11,19 +11,20 @@ import { InterviewPrep } from "@/types";
 import { checkInterviewPrepStatus } from "@/lib/openai";
 import { ChevronLeftIcon } from "lucide-react";
 
-const InterviewDetail = () => {
+interface InterviewDetailProps {
+  id: string;
+}
+
+const InterviewDetail = ({ id }: InterviewDetailProps) => {
   const { toast } = useToast();
-  const params = useParams();
   const [, setLocation] = useLocation();
   const [isLoading, setIsLoading] = useState(true);
   const [interviewPrep, setInterviewPrep] = useState<InterviewPrep | null>(null);
   const [error, setError] = useState<{title: string; message: string} | null>(null);
   
-  const interviewId = params.id;
-  
   useEffect(() => {
     const fetchInterviewDetails = async () => {
-      if (!interviewId) {
+      if (!id) {
         setError({
           title: "Invalid Request",
           message: "No interview ID was provided"
@@ -34,7 +35,7 @@ const InterviewDetail = () => {
       
       try {
         setIsLoading(true);
-        const result = await checkInterviewPrepStatus(interviewId);
+        const result = await checkInterviewPrepStatus(id);
         
         if (result.status === "completed" && result.result) {
           setInterviewPrep(result.result);
