@@ -9,7 +9,7 @@ import { researchInterviewPatterns } from "../agents/interviewPatternResearcher"
 import { generateInterviewQuestions } from "../agents/interviewerAgent";
 // We no longer need candidate points and narrative agents in the new architecture
 import { storeUserMemory, storeUserResponse, getUserResponses } from "../agents/memoryAgent";
-import { validateInterviewPrep } from "../agents/qualityAgent";
+import { reviewInterviewPrep } from "../agents/qualityAgent";
 import { storage } from "../storage";
 import { AgentStep, AgentThought, InterviewRound, UserResponse, InterviewPrep } from "../../client/src/types";
 
@@ -304,7 +304,7 @@ async function processInterviewPrep(prepId: string, resumeFile: Express.Multer.F
       candidateHighlights
     );
     
-    const interviewRounds = interviewerResult.rounds;
+    const interviewRounds = interviewerResult.analysis.interviewRounds;
     allThoughts = [...allThoughts, ...interviewerResult.thoughts];
     
     // Update in-memory storage with agent thoughts
@@ -343,14 +343,7 @@ async function processInterviewPrep(prepId: string, resumeFile: Express.Multer.F
     });
     
     // Validate the interview prep data with the quality agent
-    const qualityCheckResult = await validateInterviewPrep(
-      jobUrl,
-      jobDetails,
-      companyInfo.companyInfo,
-      candidateHighlights,
-      interviewRounds,
-      allThoughts
-    );
+    const qualityCheckResult = await reviewInterviewPrep(interviewPrepData);
     
     const validatedPrep = qualityCheckResult.analysis;
     allThoughts = [...allThoughts, ...qualityCheckResult.thoughts];
