@@ -10,6 +10,7 @@ import { getFixedLinkedInAuthUrl, handleFixedLinkedInCallback } from "./controll
 import { registerUser, loginUser } from "./controllers/manualAuth";
 import { getSimpleAuthUrl, handleSimpleCallback } from "./controllers/simpleAuth";
 import { getDirectLinkedInAuthUrl, handleDirectLinkedInCallback } from "./controllers/directLinkedinAuth";
+import { getMinimalAuthUrl, handleMinimalCallback as handleSuperMinimalCallback } from "./controllers/minimalLinkedInAuth";
 import { handleUniversalCallback } from "./controllers/linkedinCallbacks";
 import { generateAuthUrl } from "./controllers/linkedinAuthGenerator";
 import { checkLinkedInCredentials } from "./controllers/credentials-check";
@@ -218,8 +219,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/auth/callback", handleUniversalCallback);
   // Original callback path is already registered
   
-  // Minimal test callback handler
-  app.get("/api/auth/linkedin/minimal-callback", handleMinimalCallback);
+  // New minimal LinkedIn authentication routes
+  app.get("/api/auth/linkedin/minimal-url", getMinimalAuthUrl);
+  app.get("/minimal-callback", handleSuperMinimalCallback);
+  
+  // Minimal LinkedIn test page
+  app.get("/linkedin/minimal-test", (req, res) => {
+    res.sendFile('minimal-linkedin-test.html', { root: './client/public' });
+  });
   
   // Auto-detect route for LinkedIn OAuth
   app.get("/api/auth/linkedin/auto-detect", generateAutoDetectAuthUrl);

@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Minimal LinkedIn Test</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f3f2ef;
+      color: #333;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+    
+    .container {
+      max-width: 480px;
+      width: 100%;
+      padding: 30px;
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+    
+    h1 {
+      margin-top: 0;
+      color: #0077b5;
+      font-size: 24px;
+      font-weight: 600;
+      margin-bottom: 24px;
+    }
+    
+    .description {
+      margin-bottom: 24px;
+      color: #666;
+      line-height: 1.6;
+    }
+    
+    .linkedin-button {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: #0077b5;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      padding: 12px 20px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      width: 100%;
+      transition: background-color 0.2s;
+    }
+    
+    .linkedin-button:hover {
+      background-color: #006097;
+    }
+    
+    .linkedin-icon {
+      width: 20px;
+      height: 20px;
+      margin-right: 10px;
+    }
+    
+    .result-container {
+      margin-top: 20px;
+      padding: 15px;
+      background-color: #f5f5f5;
+      border-radius: 4px;
+      display: none;
+    }
+    
+    .error-message {
+      color: #d73a49;
+      background-color: #fff5f5;
+      border-left: 4px solid #d73a49;
+      padding: 12px;
+      margin-bottom: 20px;
+      display: none;
+    }
+    
+    .loading {
+      display: none;
+      align-items: center;
+      justify-content: center;
+      margin: 20px 0;
+    }
+    
+    .loading-spinner {
+      width: 30px;
+      height: 30px;
+      border: 3px solid #f3f3f3;
+      border-top: 3px solid #0077b5;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    pre {
+      background-color: #f6f8fa;
+      padding: 12px;
+      border-radius: 4px;
+      overflow-x: auto;
+      font-size: 13px;
+    }
+    
+    .success-message {
+      background-color: #f0fff4;
+      border-left: 4px solid #38a169;
+      padding: 12px;
+      margin-bottom: 20px;
+    }
+    
+    h3 {
+      margin-top: 0;
+      margin-bottom: 12px;
+    }
+    
+    .debug-info {
+      margin-top: 30px;
+      border-top: 1px solid #eee;
+      padding-top: 15px;
+    }
+    
+    .debug-info details {
+      margin-top: 10px;
+    }
+    
+    .debug-info summary {
+      color: #0077b5;
+      cursor: pointer;
+      padding: 5px 0;
+      user-select: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Minimal LinkedIn Authentication Test</h1>
+    <p class="description">This is a minimal test of LinkedIn OAuth integration using a simplified authentication flow with direct domain handling and callback paths that work with LinkedIn's requirements.</p>
+    
+    <div id="error-message" class="error-message"></div>
+    
+    <button id="linkedin-button" class="linkedin-button">
+      <svg class="linkedin-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" />
+      </svg>
+      Sign in with LinkedIn
+    </button>
+    
+    <div id="loading" class="loading">
+      <div class="loading-spinner"></div>
+    </div>
+    
+    <div id="result-container" class="result-container">
+      <h3 id="result-heading"></h3>
+      <div id="result-content"></div>
+    </div>
+    
+    <div class="debug-info">
+      <details>
+        <summary>Debugging Information</summary>
+        <div id="debug-info">
+          <p>Click the LinkedIn button to start the test.</p>
+        </div>
+      </details>
+    </div>
+  </div>
+  
+  <script>
+    // Handle URL parameters on page load
+    document.addEventListener('DOMContentLoaded', function() {
+      // Parse URL query parameters
+      const urlParams = new URLSearchParams(window.location.search);
+      const error = urlParams.get('error');
+      const message = urlParams.get('message');
+      const code = urlParams.get('code');
+      const state = urlParams.get('state');
+      
+      // Debug information
+      const debugInfo = document.getElementById('debug-info');
+      debugInfo.innerHTML = `
+        <p><strong>URL Parameters:</strong></p>
+        <pre>${JSON.stringify({
+          error,
+          message,
+          code: code ? code.substring(0, 5) + '...' : null,
+          state
+        }, null, 2)}</pre>
+      `;
+      
+      // Handle error messages
+      if (error) {
+        showError(message || `Authentication error: ${error}`);
+      }
+      
+      // If we have a code and state, show success
+      if (code && state) {
+        document.getElementById('result-container').style.display = 'block';
+        document.getElementById('result-heading').textContent = 'Authentication in Progress';
+        document.getElementById('result-heading').style.color = '#0077b5';
+        document.getElementById('result-content').innerHTML = `
+          <p>LinkedIn authorization code received. The server is processing your authentication.</p>
+          <p>You should be redirected shortly...</p>
+        `;
+      }
+    });
+    
+    // LinkedIn authentication
+    document.getElementById('linkedin-button').addEventListener('click', function() {
+      // Show loading state
+      const loadingEl = document.getElementById('loading');
+      const buttonEl = document.getElementById('linkedin-button');
+      const resultEl = document.getElementById('result-container');
+      
+      loadingEl.style.display = 'flex';
+      buttonEl.disabled = true;
+      resultEl.style.display = 'none';
+      
+      // Hide any previous error
+      document.getElementById('error-message').style.display = 'none';
+      
+      // Get the authorization URL from our minimal endpoint
+      fetch('/api/auth/linkedin/minimal-url')
+        .then(response => response.json())
+        .then(data => {
+          // Update debug info
+          document.getElementById('debug-info').innerHTML = `
+            <p><strong>Authorization Response:</strong></p>
+            <pre>${JSON.stringify(data, null, 2)}</pre>
+          `;
+          
+          if (data.url) {
+            // Show the URL 
+            resultEl.style.display = 'block';
+            document.getElementById('result-heading').textContent = 'LinkedIn Authorization Ready';
+            document.getElementById('result-heading').style.color = '#0077b5';
+            document.getElementById('result-content').innerHTML = `
+              <p>Ready to authenticate with LinkedIn. Click below to continue:</p>
+              <button onclick="window.location.href='${data.url}'" class="linkedin-button" style="margin-top: 10px;">
+                Continue to LinkedIn
+              </button>
+            `;
+            
+            // Re-enable the button
+            buttonEl.disabled = false;
+          } else {
+            showError(data.error || 'Failed to generate LinkedIn authorization URL');
+            buttonEl.disabled = false;
+          }
+          
+          // Hide loading
+          loadingEl.style.display = 'none';
+        })
+        .catch(error => {
+          console.error('Error generating LinkedIn auth URL:', error);
+          showError('Network error. Please try again.');
+          loadingEl.style.display = 'none';
+          buttonEl.disabled = false;
+        });
+    });
+    
+    // Helper to show error message
+    function showError(message) {
+      const errorEl = document.getElementById('error-message');
+      errorEl.textContent = message;
+      errorEl.style.display = 'block';
+    }
+  </script>
+</body>
+</html>
