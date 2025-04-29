@@ -36,6 +36,8 @@ async function fetchLinkedInUserProfile(accessToken: string): Promise<LinkedInPr
     }
     
     console.log('Fetching LinkedIn profile from userinfo endpoint...');
+    // Use the exact URL format from the debugging guide
+    console.log('Making request to LinkedIn userinfo endpoint...');
     const response = await fetch('https://api.linkedin.com/v2/userinfo', {
       method: 'GET',
       headers: {

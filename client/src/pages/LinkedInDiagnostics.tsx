@@ -1,279 +1,259 @@
-import { useState, useEffect } from 'react';
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardFooter, 
-  CardHeader, 
-  CardTitle 
-} from "@/components/ui/card";
+import React, { useEffect, useState } from 'react';
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { 
-  Table, 
-  TableBody, 
-  TableCaption, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
-} from "@/components/ui/table";
-import { Separator } from "@/components/ui/separator";
-import { Badge } from "@/components/ui/badge";
-import { AlertCircle, CheckCircle2, XCircle } from "lucide-react";
+import { AlertCircle, CheckCircle, Info } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+
+// Define the types for our diagnostics check results
+interface DiagnosticResult {
+  name: string;
+  status: 'success' | 'error' | 'warning' | 'info';
+  message: string;
+  details?: string;
+}
+
+// Define the response from our diagnostics API
+interface DiagnosticsResponse {
+  callbackUrl: string;
+  linkedinClientConfigured: boolean;
+  sessionConfigured: boolean;
+  passportInitialized: boolean;
+  authEndpoints: {
+    login: string;
+    callback: string;
+  };
+  serverDetails: {
+    host: string;
+    protocol: string;
+    nodeEnv: string;
+  };
+}
 
 export default function LinkedInDiagnostics() {
-  const [diagnosticData, setDiagnosticData] = useState<any>(null);
-  const [callbackURL, setCallbackURL] = useState<string>('');
+  const [results, setResults] = useState<DiagnosticResult[]>([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
-  
-  // Get callback URL on component mount
-  useEffect(() => {
-    fetchCallbackURL();
-  }, []);
-  
-  // Function to fetch the callback URL
-  const fetchCallbackURL = async () => {
-    try {
-      const response = await fetch('/api/linkedin-callback-url');
-      const data = await response.json();
-      setCallbackURL(data.callbackURL);
-    } catch (err) {
-      console.error('Error fetching callback URL:', err);
-      setError('Failed to retrieve callback URL');
-    }
-  };
-  
-  // Function to run diagnostics
+  const [connectionInfo, setConnectionInfo] = useState<DiagnosticsResponse | null>(null);
+  const { toast } = useToast();
+
+  // Run the diagnostics when requested
   const runDiagnostics = async () => {
     setLoading(true);
-    setError(null);
-    
+    setResults([
+      {
+        name: 'Starting diagnostics...',
+        status: 'info',
+        message: 'Checking LinkedIn authentication configuration'
+      }
+    ]);
+
     try {
-      const response = await fetch('/api/linkedin-diagnostic');
-      const data = await response.json();
+      // Fetch diagnostics from the server
+      const response = await fetch('/api/auth/linkedin/diagnostics');
       
-      if (data.status === 'error') {
-        throw new Error(data.message);
+      if (!response.ok) {
+        throw new Error(`Failed to run diagnostics: ${response.status} ${response.statusText}`);
       }
       
-      setDiagnosticData(data.data);
-    } catch (err) {
-      console.error('Error running diagnostics:', err);
-      setError('Failed to run diagnostics: ' + (err instanceof Error ? err.message : String(err)));
+      const data = await response.json() as DiagnosticsResponse;
+      setConnectionInfo(data);
+      
+      // Process the results
+      const diagnosticResults: DiagnosticResult[] = [];
+      
+      // Check callback URL
+      diagnosticResults.push({
+        name: 'Callback URL',
+        status: data.callbackUrl ? 'success' : 'error',
+        message: data.callbackUrl ? `Callback URL is set to: ${data.callbackUrl}` : 'Callback URL is not set',
+        details: 'The callback URL must match exactly what is configured in the LinkedIn Developer Console'
+      });
+      
+      // Check LinkedIn client credentials
+      diagnosticResults.push({
+        name: 'LinkedIn Credentials',
+        status: data.linkedinClientConfigured ? 'success' : 'error',
+        message: data.linkedinClientConfigured ? 
+          'LinkedIn client ID and secret are configured' : 
+          'LinkedIn client ID and/or secret are missing',
+        details: 'These must be set in environment variables LINKEDIN_CLIENT_ID and LINKEDIN_CLIENT_SECRET'
+      });
+      
+      // Check session configuration
+      diagnosticResults.push({
+        name: 'Session Configuration',
+        status: data.sessionConfigured ? 'success' : 'error',
+        message: data.sessionConfigured ? 
+          'Session middleware is properly configured' : 
+          'Session middleware is not configured correctly',
+        details: 'Sessions are required for authentication state management'
+      });
+      
+      // Check passport initialization
+      diagnosticResults.push({
+        name: 'Passport Initialization',
+        status: data.passportInitialized ? 'success' : 'error',
+        message: data.passportInitialized ? 
+          'Passport is properly initialized' : 
+          'Passport is not initialized correctly',
+      });
+      
+      // Check authentication endpoints
+      diagnosticResults.push({
+        name: 'Auth Endpoints',
+        status: 'info',
+        message: `Login: ${data.authEndpoints.login}, Callback: ${data.authEndpoints.callback}`,
+        details: 'These endpoints should be registered and accessible'
+      });
+      
+      // Add server details
+      diagnosticResults.push({
+        name: 'Server Details',
+        status: 'info',
+        message: `Host: ${data.serverDetails.host}, Protocol: ${data.serverDetails.protocol}`,
+        details: `Environment: ${data.serverDetails.nodeEnv}`
+      });
+      
+      setResults(diagnosticResults);
+      
+      toast({
+        title: "Diagnostics Complete",
+        description: "LinkedIn authentication configuration check is complete."
+      });
+    } catch (error) {
+      console.error('Diagnostics error:', error);
+      setResults([
+        {
+          name: 'Diagnostics Error',
+          status: 'error',
+          message: error instanceof Error ? error.message : 'Unknown error running diagnostics',
+        }
+      ]);
+      
+      toast({
+        title: "Diagnostics Failed",
+        description: "There was an error running the LinkedIn diagnostics.",
+        variant: "destructive"
+      });
     } finally {
       setLoading(false);
     }
   };
-  
-  // Function to get status badge
-  const getStatusBadge = (status: boolean | string) => {
-    if (status === true || status === 'present' || status === 'yes') {
-      return <Badge className="bg-green-500"><CheckCircle2 className="mr-1 h-3 w-3" /> OK</Badge>;
-    } else if (status === false || status === 'missing' || status === 'no') {
-      return <Badge className="bg-red-500"><XCircle className="mr-1 h-3 w-3" /> Missing</Badge>;
-    } else {
-      return <Badge className="bg-yellow-500"><AlertCircle className="mr-1 h-3 w-3" /> Unknown</Badge>;
+
+  // Check authentication status
+  const checkAuthStatus = async () => {
+    try {
+      const response = await fetch('/api/auth/status');
+      const data = await response.json();
+      
+      toast({
+        title: data.isAuthenticated ? "Authenticated" : "Not Authenticated",
+        description: data.isAuthenticated 
+          ? `Logged in as: ${data.user?.displayName}` 
+          : "You are not currently logged in with LinkedIn",
+        variant: data.isAuthenticated ? "default" : "destructive"
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to check authentication status",
+        variant: "destructive"
+      });
     }
   };
-  
+
+  // Attempt to trigger the LinkedIn login flow
+  const triggerLinkedInLogin = () => {
+    window.location.href = '/auth/linkedin';
+  };
+
   return (
-    <div className="container mx-auto p-4 max-w-4xl">
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-2xl font-bold">LinkedIn Authentication Diagnostics</CardTitle>
-          <CardDescription>
-            Troubleshoot LinkedIn authentication issues and verify configuration.
-          </CardDescription>
-        </CardHeader>
-        
-        <CardContent>
-          {error && (
-            <Alert variant="destructive" className="mb-4">
-              <AlertCircle className="h-4 w-4" />
-              <AlertTitle>Error</AlertTitle>
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
-          
-          <div className="mb-6">
-            <h3 className="text-lg font-medium mb-2">Callback URL Configuration</h3>
-            <p className="mb-2 text-sm text-muted-foreground">
-              This URL must be exactly registered in your LinkedIn Developer Portal.
-            </p>
-            
-            <div className="bg-muted p-3 rounded-md flex justify-between items-center">
-              <code className="text-sm">{callbackURL || 'Loading...'}</code>
+    <div className="container max-w-4xl py-10">
+      <h1 className="text-3xl font-bold mb-8">LinkedIn Authentication Diagnostics</h1>
+      
+      <div className="grid gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Authentication Tools</CardTitle>
+            <CardDescription>
+              Use these tools to troubleshoot LinkedIn authentication issues
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex flex-col md:flex-row gap-4">
               <Button 
-                variant={copied ? "default" : "outline"}
-                size="sm"
-                onClick={() => {
-                  if (callbackURL) {
-                    navigator.clipboard.writeText(callbackURL);
-                    setCopied(true);
-                    setTimeout(() => setCopied(false), 2000);
-                  }
-                }}
-                disabled={!callbackURL}
-              >
-                {copied ? (
-                  <>
-                    <CheckCircle2 className="h-3 w-3 mr-2" />
-                    Copied
-                  </>
-                ) : (
-                  "Copy"
-                )}
+                onClick={runDiagnostics} 
+                disabled={loading}
+                className="flex-1">
+                {loading ? "Running Diagnostics..." : "Run Connection Diagnostics"}
+              </Button>
+              
+              <Button 
+                onClick={checkAuthStatus} 
+                variant="outline"
+                className="flex-1">
+                Check Current Auth Status
+              </Button>
+              
+              <Button 
+                onClick={triggerLinkedInLogin} 
+                variant="secondary"
+                className="flex-1">
+                Test LinkedIn Login
               </Button>
             </div>
-          </div>
-          
-          <Button 
-            onClick={runDiagnostics} 
-            disabled={loading}
-            className="w-full mb-6"
-          >
-            {loading ? 'Running Diagnostics...' : 'Run Diagnostics'}
-          </Button>
-          
-          {diagnosticData && (
-            <Tabs defaultValue="credentials">
-              <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="credentials">Credentials</TabsTrigger>
-                <TabsTrigger value="callback">Callback URL</TabsTrigger>
-                <TabsTrigger value="validation">Validation</TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="credentials" className="mt-4">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Item</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Details</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    <TableRow>
-                      <TableCell>Client ID</TableCell>
-                      <TableCell>{getStatusBadge(diagnosticData.clientIdStatus)}</TableCell>
-                      <TableCell>
-                        Length: {diagnosticData.clientIdLength || 'N/A'}<br />
-                        Format: {diagnosticData.clientIdPartial || 'N/A'}
-                      </TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell>Client Secret</TableCell>
-                      <TableCell>{getStatusBadge(diagnosticData.clientSecretStatus)}</TableCell>
-                      <TableCell>
-                        Length: {diagnosticData.clientSecretLength || 'N/A'}
-                      </TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell>Strategy Config</TableCell>
-                      <TableCell>{getStatusBadge(diagnosticData.strategyConfigured)}</TableCell>
-                      <TableCell>
-                        Passport strategy properly configured: {diagnosticData.strategyConfigured ? 'Yes' : 'No'}
-                      </TableCell>
-                    </TableRow>
-                  </TableBody>
-                </Table>
-              </TabsContent>
-              
-              <TabsContent value="callback" className="mt-4">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Item</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Value</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    <TableRow>
-                      <TableCell>Current Callback</TableCell>
-                      <TableCell>{getStatusBadge(diagnosticData.callbackConfigured)}</TableCell>
-                      <TableCell className="break-all">{diagnosticData.callbackURL}</TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell>Expected Callback</TableCell>
-                      <TableCell>{getStatusBadge(true)}</TableCell>
-                      <TableCell className="break-all">{diagnosticData.expectedCallbackURL}</TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell>Host Detection</TableCell>
-                      <TableCell>{getStatusBadge(diagnosticData.detectedHost !== 'none')}</TableCell>
-                      <TableCell>{diagnosticData.detectedHost}</TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell>Match</TableCell>
-                      <TableCell>{getStatusBadge(diagnosticData.callbackURL === diagnosticData.expectedCallbackURL)}</TableCell>
-                      <TableCell>
-                        {diagnosticData.callbackURL === diagnosticData.expectedCallbackURL 
-                          ? 'Callback URLs match exactly' 
-                          : 'CRITICAL: Callback URLs do not match!'}
-                      </TableCell>
-                    </TableRow>
-                  </TableBody>
-                </Table>
-              </TabsContent>
-              
-              <TabsContent value="validation" className="mt-4">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Test</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Details</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    <TableRow>
-                      <TableCell>Credentials Valid</TableCell>
-                      <TableCell>
-                        {getStatusBadge(diagnosticData.linkedInTest.credentialsValid)}
-                      </TableCell>
-                      <TableCell>
-                        Status Code: {diagnosticData.linkedInTest.statusCode}<br />
-                        URL Tested: {diagnosticData.linkedInTest.urlTested}
-                      </TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell>Authorization URL</TableCell>
-                      <TableCell>{getStatusBadge(diagnosticData.linkedInTest.authUrlFormat ? 'yes' : 'no')}</TableCell>
-                      <TableCell className="break-all">
-                        {diagnosticData.linkedInTest.authUrlFormat}...
-                      </TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell>State Handling</TableCell>
-                      <TableCell>
-                        {getStatusBadge(diagnosticData.stateHandling?.enabled ?? 'unknown')}
-                      </TableCell>
-                      <TableCell>
-                        Session Support: {diagnosticData.stateHandling?.sessionSupport ? 'Yes' : 'No'}<br />
-                        Storage Method: {diagnosticData.stateHandling?.storageMethod || 'Unknown'}
-                      </TableCell>
-                    </TableRow>
-                  </TableBody>
-                </Table>
-              </TabsContent>
-            </Tabs>
-          )}
-        </CardContent>
+            
+            {connectionInfo && (
+              <div className="bg-slate-100 dark:bg-slate-800 p-4 rounded-md text-sm mt-4">
+                <h3 className="font-medium mb-2">Connection Details:</h3>
+                <pre className="whitespace-pre-wrap overflow-auto max-h-60">
+                  {JSON.stringify(connectionInfo, null, 2)}
+                </pre>
+              </div>
+            )}
+          </CardContent>
+        </Card>
         
-        <CardFooter className="flex justify-between">
-          <Button variant="outline" onClick={() => window.history.back()}>
-            Back
-          </Button>
-          <Button onClick={runDiagnostics} disabled={loading}>
-            Refresh
-          </Button>
-        </CardFooter>
-      </Card>
+        {results.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Diagnostic Results</CardTitle>
+              <CardDescription>
+                Results of LinkedIn authentication configuration check
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {results.map((result, index) => (
+                  <Alert key={index} variant={result.status === 'error' ? 'destructive' : 'default'}>
+                    <div className="flex items-start">
+                      {result.status === 'success' ? (
+                        <CheckCircle className="h-4 w-4 mr-2 mt-1" />
+                      ) : result.status === 'error' ? (
+                        <AlertCircle className="h-4 w-4 mr-2 mt-1" />
+                      ) : (
+                        <Info className="h-4 w-4 mr-2 mt-1" />
+                      )}
+                      <div>
+                        <AlertTitle>{result.name}</AlertTitle>
+                        <AlertDescription className="mt-1">
+                          {result.message}
+                          {result.details && (
+                            <p className="text-sm opacity-80 mt-1">{result.details}</p>
+                          )}
+                        </AlertDescription>
+                      </div>
+                    </div>
+                  </Alert>
+                ))}
+              </div>
+            </CardContent>
+            <CardFooter className="flex justify-between text-sm text-muted-foreground">
+              <p>Diagnostics completed at: {new Date().toLocaleTimeString()}</p>
+            </CardFooter>
+          </Card>
+        )}
+      </div>
     </div>
   );
 }

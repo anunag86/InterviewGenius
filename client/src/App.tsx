@@ -21,7 +21,7 @@ const ProtectedRoute = ({ component: Component, ...rest }: any) => {
     const checkAuth = async () => {
       try {
         console.log('ProtectedRoute: Checking authentication status...');
-        const response = await fetch('/api/me');
+        const response = await fetch('/api/auth/status');
         
         if (!response.ok) {
           throw new Error(`API returned ${response.status}: ${response.statusText}`);
