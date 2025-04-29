@@ -31,28 +31,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Set up LinkedIn OAuth2 authentication
   console.log('Setting up LinkedIn OAuth2 authentication routes...');
   
-  // IMPORTANT: This must be a fixed, hardcoded URL that exactly matches what's registered in LinkedIn's Developer Portal
-  // DO NOT use a dynamic URL that changes with each deployment or you'll get "redirect_uri_mismatch" errors
-  // The callback URL must be registered in LinkedIn's Developer Portal configuration
+  // HARDCODED: The exact callback URL that's registered in LinkedIn Developer Portal
+  // This must match EXACTLY what's in LinkedIn's Developer Portal - no dynamic detection
+  const callbackURL = 'https://workspace.repl.co/auth/linkedin/callback';
   
-  // First check if there's a fixed callback URL from environment variables (ideal for production)
-  let callbackURL = process.env.LINKEDIN_CALLBACK_URL;
-  
-  // If no fixed URL is provided, create a static one that will be consistent for this deployment
-  if (!callbackURL) {
-    // Use Replit's domain if available
-    const host = process.env.REPLIT_SLUG ? 
-      `${process.env.REPLIT_SLUG}.replit.dev` : 
-      process.env.REPL_SLUG ?
-      `${process.env.REPL_SLUG}.repl.co` :
-      'localhost:5000';
-    const protocol = host.includes('localhost') ? 'http' : 'https';
-    callbackURL = `${protocol}://${host}/auth/linkedin/callback`;
-  }
-  
-  // This is the callback URL that will be used throughout the entire authentication flow
-  // Store it in environment for other parts of the application
+  // Store this fixed URL in multiple environment variables to ensure consistency
   process.env.FIXED_LINKEDIN_CALLBACK_URL = callbackURL;
+  process.env.LINKEDIN_CALLBACK_URL = callbackURL;
+  process.env.LINKEDIN_REDIRECT_URI = callbackURL;
+  
+  console.log('👉 FIXED LinkedIn callback URL (hardcoded):', callbackURL);
   
   // Initialize LinkedIn authentication
   console.log('Initializing LinkedIn OAuth2 with callback URL:', callbackURL);
@@ -80,37 +68,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
   
-  // Simple endpoint for callback URL - redirect to detailed version
+  // Simple endpoint for callback URL - always returns the fixed hardcoded URL
   app.get('/api/linkedin-callback-url', (req, res) => {
+    // Return ONLY the hardcoded URL that's consistent with our LinkedIn registration
+    // This must be the same URL used in LinkedIn Developer Portal
     res.json({
-      callbackURL: process.env.DETECTED_CALLBACK_URL || 
-        `https://${req.headers.host}/auth/linkedin/callback`
+      callbackURL: 'https://workspace.repl.co/auth/linkedin/callback'
     });
   });
   
   // LinkedIn diagnostic endpoint for the client UI
   app.get('/api/linkedin-diagnostic', getLinkedInDiagnostic);
   
-  // Endpoint to get the current callback URL that needs to be registered in LinkedIn
+  // Endpoint to get the FIXED callback URL that needs to be registered in LinkedIn
   app.get('/api/auth/linkedin/callback-url', (req, res) => {
-    // Detect the host from the request
-    const host = req.headers.host || process.env.REPLIT_CLUSTER ? 
-      `${process.env.REPLIT_CLUSTER}.replit.dev` : 'localhost:5000';
+    // HARDCODED URL - this is the ONLY one that will work
+    const hardcodedCallbackURL = 'https://workspace.repl.co/auth/linkedin/callback';
+    
+    // For display purposes only, detect the current host (NOT USED for authentication)
+    const host = req.headers.host || 'unknown-host';
     const protocol = host.includes('localhost') ? 'http' : 'https';
+    const detectedCallbackURL = `${protocol}://${host}/auth/linkedin/callback`;
     
-    // Generate the callback URL
-    const callbackURL = `${protocol}://${host}/auth/linkedin/callback`;
+    console.log('LinkedIn callback URL page requested');
+    console.log('- HARDCODED URL (the one to use):', hardcodedCallbackURL);
+    console.log('- Detected host URL (NOT used):', detectedCallbackURL);
     
-    // Store it in environment variable for other parts of the app
-    process.env.DETECTED_CALLBACK_URL = callbackURL;
-    
-    // Generate alternative formats
-    const alternativeUrls = [
-      callbackURL,
-      callbackURL.endsWith('/') ? callbackURL.slice(0, -1) : `${callbackURL}/`,
-      callbackURL.replace('://', '://www.'),
-      callbackURL.replace(/^https?:\/\/[^.]+\./, `${protocol}://`)
-    ];
+    // Do not generate alternatives - there is only ONE valid callback URL
     
     // HTML response with easy copy-paste for the callback URL
     const html = `
@@ -130,48 +114,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
           .instructions ol { padding-left: 20px; }
           pre { background: #f0f0f0; padding: 10px; border-radius: 4px; overflow-x: auto; }
           .alert { background: #feeceb; color: #e53935; padding: 15px; border-radius: 4px; margin: 20px 0; }
-          .alternatives { margin-top: 30px; }
-          .alternative { background: #f9f9f9; padding: 10px; border-radius: 4px; margin: 10px 0; }
+          .highlight-box { background: #ebfaeb; border: 2px solid #4CAF50; border-radius: 4px; padding: 15px; margin: 15px 0; position: relative; word-break: break-all; }
+          .your-url { background: #f0f0f0; padding: 10px; color: #999; border-radius: 4px; margin: 10px 0; text-decoration: line-through; }
         </style>
       </head>
       <body>
         <h1>LinkedIn Callback URL Configuration</h1>
         
+        <div class="alert">
+          <strong>CRITICAL INFORMATION:</strong> LinkedIn authentication now REQUIRES a fixed callback URL.
+          Dynamic URLs based on your current Replit domain will NOT work with LinkedIn's OAuth implementation.
+        </div>
+        
         <div class="instructions">
           <h2>Instructions</h2>
           <ol>
-            <li>Copy the exact callback URL shown below</li>
+            <li>Copy the <strong>exact</strong> hardcoded callback URL shown below</li>
             <li>Go to the <a href="https://www.linkedin.com/developers/apps/" target="_blank">LinkedIn Developer Portal</a></li>
             <li>Select your application and go to the "Auth" tab</li>
-            <li>Add this URL as a Redirect URL (must be exact, character-for-character)</li>
+            <li>Delete any existing Redirect URLs and add ONLY the one below</li>
+            <li>Make sure your app has the "Sign In with LinkedIn using OpenID Connect" product enabled</li>
+            <li>Ensure your OAuth 2.0 scopes include exactly: "openid profile email"</li>
             <li>Click "Save" and try authenticating again</li>
           </ol>
         </div>
         
-        <h2>Primary Callback URL</h2>
-        <p>This is the URL you should register in your LinkedIn application:</p>
+        <h2>Required Callback URL</h2>
+        <p>You <strong>MUST</strong> use this exact URL in your LinkedIn application:</p>
         
-        <div class="url-box" id="callback-url">
-          ${callbackURL}
-          <button class="copy-btn" onclick="copyToClipboard('callback-url')">Copy</button>
+        <div class="highlight-box" id="hardcoded-url">
+          ${hardcodedCallbackURL}
+          <button class="copy-btn" onclick="copyToClipboard('hardcoded-url')">Copy</button>
         </div>
         
         <div class="alert">
-          <strong>Important:</strong> The callback URL must match exactly what's registered in LinkedIn. 
-          If you see "redirect_uri_mismatch" errors, it means the URLs don't match character-for-character.
+          <strong>Important:</strong> Do NOT use any other URL variations or the dynamic URL shown below.
+          The callback URL must match exactly, character-for-character.
         </div>
         
-        <div class="alternatives">
-          <h3>Alternative URLs to Try</h3>
-          <p>If the primary URL doesn't work, try registering these alternatives:</p>
-          
-          ${alternativeUrls.map((url, i) => `
-            <div class="alternative" id="alt-${i}">
-              ${url}
-              <button class="copy-btn" onclick="copyToClipboard('alt-${i}')">Copy</button>
-            </div>
-          `).join('')}
+        <h3>Your Current Host URL (DO NOT USE)</h3>
+        <p>This is your current Replit URL, but it will NOT work with LinkedIn:</p>
+        
+        <div class="your-url">
+          ${detectedCallbackURL}
         </div>
+        
+        <p><strong>Why?</strong> LinkedIn requires the callback URL to be registered in advance and remain consistent.
+        Replit's dynamic URLs change with each deployment. We've hardcoded a fixed URL that will work consistently.</p>
         
         <script>
           function copyToClipboard(elementId) {
