@@ -14,13 +14,21 @@ const Login = () => {
   const getErrorMessage = () => {
     const urlParams = new URLSearchParams(window.location.search);
     const errorParam = urlParams.get('error');
+    const messageParam = urlParams.get('message');
+    const descriptionParam = urlParams.get('description');
     
-    if (errorParam === 'auth_error') {
-      return 'Authentication error occurred. Please try again.';
+    if (errorParam === 'missing_credentials') {
+      return 'LinkedIn API credentials are missing. Please contact support.';
+    } else if (errorParam === 'auth_error') {
+      return `Authentication error: ${messageParam || 'Unknown error. Please try again.'}`;
     } else if (errorParam === 'auth_failed') {
-      return 'LinkedIn authentication failed. Please try again.';
+      return `LinkedIn authentication failed: ${messageParam || 'Please try again.'}`;
     } else if (errorParam === 'login_error') {
-      return 'Error during login process. Please try again.';
+      return `Error during login process: ${messageParam || 'Please try again.'}`;
+    } else if (errorParam === 'linkedin_error') {
+      return `LinkedIn rejected the request: ${descriptionParam || 'Please ensure the callback URL is registered in LinkedIn.'}`;
+    } else if (errorParam === 'missing_code') {
+      return 'LinkedIn did not provide an authorization code. Please try again.';
     }
     
     return null;

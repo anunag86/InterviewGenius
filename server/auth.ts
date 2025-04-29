@@ -74,16 +74,24 @@ export function configureAuth(app: Express) {
   console.log('- Client Secret:', process.env.LINKEDIN_CLIENT_SECRET ? '✓ Present' : '✗ Missing');
   console.log('- Callback URL:', callbackURL);
   
-  // Configure LinkedIn strategy with proper callback URL
+  // Configure LinkedIn strategy with proper callback URL and more robust error handling
   passport.use(new LinkedInStrategy({
     clientID: process.env.LINKEDIN_CLIENT_ID || '',
     clientSecret: process.env.LINKEDIN_CLIENT_SECRET || '',
     callbackURL: callbackURL,
     scope: ['r_emailaddress', 'r_liteprofile'],
-    // Set state parameter for CSRF protection and allow proxies for Replit deployment
+    // Explicitly setting auth type and response type
+    authType: 'reauthenticate',
     state: true,
     proxy: true
   } as any, async (accessToken: string, refreshToken: string, profile: LinkedInProfile, done: (error: any, user?: any) => void) => {
+    // Log the profile data for debugging
+    console.log('LinkedIn profile received:', {
+      id: profile.id,
+      displayName: profile.displayName,
+      hasEmails: !!profile.emails?.length,
+      hasPhotos: !!profile.photos?.length
+    });
     try {
       // Find existing user based on LinkedIn ID
       const existingUsers = await db.select().from(users).where(eq(users.linkedinId, profile.id));
@@ -141,20 +149,55 @@ export function configureAuth(app: Express) {
 
   // LinkedIn auth routes with detailed logging
   app.get('/auth/linkedin', (req, res, next) => {
-    console.log('LinkedIn auth route accessed');
-    passport.authenticate('linkedin')(req, res, next);
+    console.log('LinkedIn auth route accessed with following details:');
+    console.log('- Host:', req.headers.host);
+    console.log('- Referrer:', req.headers.referer || 'none');
+    console.log('- User-Agent:', req.headers['user-agent']);
+    
+    // Log any query parameters
+    if (Object.keys(req.query).length > 0) {
+      console.log('- Query params:', req.query);
+    }
+    
+    // Test the LinkedIn credentials before authenticating
+    if (!process.env.LINKEDIN_CLIENT_ID || !process.env.LINKEDIN_CLIENT_SECRET) {
+      console.error('LinkedIn credentials missing or invalid');
+      return res.redirect('/login?error=missing_credentials');
+    }
+    
+    // Custom auth options to force new auth
+    const authOptions = { 
+      scope: ['r_emailaddress', 'r_liteprofile'],
+      state: Math.random().toString(36).substring(2),
+    };
+    
+    passport.authenticate('linkedin', authOptions)(req, res, next);
   });
 
   app.get(
     '/auth/linkedin/callback',
     (req, res, next) => {
-      console.log('LinkedIn callback route accessed', {
-        query: req.query,
-        params: req.params,
-        headers: req.headers['host']
-      });
+      console.log('LinkedIn callback route accessed with details:');
+      console.log('- Host:', req.headers.host);
+      console.log('- Query params:', req.query);
+      console.log('- Error in query:', req.query.error || 'none');
+      console.log('- Code in query:', req.query.code ? 'Present' : 'Missing');
       
-      passport.authenticate('linkedin', (err: Error | null, user: any, info: { message: string } | undefined) => {
+      // Check for error in the query parameters (from LinkedIn)
+      if (req.query.error) {
+        console.error(`LinkedIn returned error: ${req.query.error}`);
+        console.error(`Error description: ${req.query.error_description || 'No description'}`);
+        return res.redirect(`/login?error=linkedin_error&description=${encodeURIComponent(req.query.error_description as string || '')}`);
+      }
+      
+      // Check that we have an auth code from LinkedIn
+      if (!req.query.code) {
+        console.error('LinkedIn callback missing authorization code');
+        return res.redirect('/login?error=missing_code');
+      }
+      
+      // Handle authentication
+      passport.authenticate('linkedin', { failureRedirect: '/login?error=auth_failed' }, (err: Error | null, user: any, info: { message: string } | undefined) => {
         console.log('LinkedIn authentication result:', { 
           error: err ? 'Yes' : 'No', 
           user: user ? 'Found' : 'Not found', 
@@ -163,18 +206,18 @@ export function configureAuth(app: Express) {
         
         if (err) {
           console.error('LinkedIn auth error:', err);
-          return res.redirect('/login?error=auth_error');
+          return res.redirect(`/login?error=auth_error&message=${encodeURIComponent(err.message)}`);
         }
         
         if (!user) {
           console.error('LinkedIn auth failed:', info);
-          return res.redirect('/login?error=auth_failed');
+          return res.redirect(`/login?error=auth_failed&message=${encodeURIComponent(info?.message || 'Unknown error')}`);
         }
         
         req.logIn(user, (err) => {
           if (err) {
             console.error('Login error:', err);
-            return res.redirect('/login?error=login_error');
+            return res.redirect(`/login?error=login_error&message=${encodeURIComponent(err.message)}`);
           }
           
           console.log('User successfully authenticated and logged in');
