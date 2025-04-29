@@ -2,14 +2,38 @@ import { useEffect, useState } from "react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Badge } from "@/components/ui/badge";
 import { FaLinkedin } from "react-icons/fa";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
+
+interface LinkedInDiagnosticData {
+  clientIdStatus: string;
+  clientIdLength: number;
+  clientIdPartial: string;
+  clientSecretStatus: string;
+  clientSecretLength: number;
+  strategyConfigured: boolean;
+  callbackConfigured: boolean;
+  callbackURL: string;
+  expectedCallbackURL: string;
+  detectedHost: string;
+  linkedInTest?: {
+    urlTested: string;
+    credentialsValid: boolean;
+    statusCode: number;
+    authUrlFormat: string;
+  };
+}
 
 const Login = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [callbackUrl, setCallbackUrl] = useState<string | null>(null);
+  const [diagnosticData, setDiagnosticData] = useState<LinkedInDiagnosticData | null>(null);
+  const [isDiagnosticLoading, setIsDiagnosticLoading] = useState(false);
   
   // Parse URL parameters to check for error messages
   const getErrorMessage = () => {
@@ -92,6 +116,30 @@ const Login = () => {
 
   const handleLinkedInLogin = () => {
     window.location.href = '/auth/linkedin';
+  };
+  
+  const runLinkedInDiagnostic = async () => {
+    setIsDiagnosticLoading(true);
+    try {
+      const response = await fetch('/api/linkedin-diagnostic');
+      if (response.ok) {
+        const result = await response.json();
+        if (result.status === 'success' && result.data) {
+          setDiagnosticData(result.data);
+        } else {
+          console.error('LinkedIn diagnostic returned error:', result);
+          setError('Failed to run LinkedIn diagnostic. Please try again.');
+        }
+      } else {
+        console.error(`Diagnostic API returned ${response.status}: ${response.statusText}`);
+        setError('Failed to access LinkedIn diagnostic endpoint. Please try again.');
+      }
+    } catch (err) {
+      console.error('LinkedIn diagnostic error:', err);
+      setError('Error connecting to diagnostic service. Please try again.');
+    } finally {
+      setIsDiagnosticLoading(false);
+    }
   };
 
   if (isLoading) {
@@ -196,6 +244,127 @@ const Login = () => {
                   </li>
                 </ul>
               </div>
+              
+              {/* LinkedIn Diagnostic Tool */}
+              <Accordion type="single" collapsible className="w-full">
+                <AccordionItem value="linkedin-diagnostics">
+                  <AccordionTrigger className="text-sm font-medium">
+                    <div className="flex items-center">
+                      <span>LinkedIn Authentication Diagnostics</span>
+                      {isDiagnosticLoading && (
+                        <div className="ml-2 h-3 w-3 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
+                      )}
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    <div className="space-y-3 text-sm">
+                      <p>Use this tool to diagnose LinkedIn authentication issues.</p>
+                      
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="w-full"
+                        onClick={runLinkedInDiagnostic}
+                        disabled={isDiagnosticLoading}
+                      >
+                        {isDiagnosticLoading ? 'Running Diagnostic...' : 'Run Diagnostic'}
+                      </Button>
+                      
+                      {/* Diagnostic Results */}
+                      {diagnosticData && (
+                        <div className="mt-4 space-y-3 border border-border rounded-md p-3 text-xs">
+                          <div>
+                            <h4 className="font-medium mb-1">Credentials</h4>
+                            <div className="grid grid-cols-2 gap-1">
+                              <div>Client ID:</div>
+                              <div>
+                                <Badge variant={diagnosticData.clientIdStatus === 'present' ? 'default' : 'destructive'}>
+                                  {diagnosticData.clientIdStatus === 'present' ? 'Present' : 'Missing'}
+                                </Badge>
+                                {diagnosticData.clientIdStatus === 'present' && (
+                                  <span className="ml-2 text-muted-foreground">
+                                    Length: {diagnosticData.clientIdLength}
+                                  </span>
+                                )}
+                              </div>
+                              
+                              <div>Client Secret:</div>
+                              <div>
+                                <Badge variant={diagnosticData.clientSecretStatus === 'present' ? 'default' : 'destructive'}>
+                                  {diagnosticData.clientSecretStatus === 'present' ? 'Present' : 'Missing'}
+                                </Badge>
+                                {diagnosticData.clientSecretStatus === 'present' && (
+                                  <span className="ml-2 text-muted-foreground">
+                                    Length: {diagnosticData.clientSecretLength}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <div>
+                            <h4 className="font-medium mb-1">Callback URL</h4>
+                            <div className="grid grid-cols-1 gap-1">
+                              <div>
+                                <span className="font-medium">Expected: </span>
+                                <code className="bg-muted p-1 rounded text-[10px] break-all">{diagnosticData.expectedCallbackURL}</code>
+                              </div>
+                              <div>
+                                <span className="font-medium">Configured: </span>
+                                <code className="bg-muted p-1 rounded text-[10px] break-all">{diagnosticData.callbackURL}</code>
+                              </div>
+                              <div>
+                                <span className="font-medium">Detected Host: </span>
+                                <code className="bg-muted p-1 rounded text-[10px]">{diagnosticData.detectedHost}</code>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          {diagnosticData.linkedInTest && (
+                            <div>
+                              <h4 className="font-medium mb-1">LinkedIn API Test</h4>
+                              <div className="grid grid-cols-2 gap-1">
+                                <div>Credentials Valid:</div>
+                                <div>
+                                  <Badge variant={diagnosticData.linkedInTest.credentialsValid ? 'default' : 'destructive'}>
+                                    {diagnosticData.linkedInTest.credentialsValid ? 'Yes' : 'No'}
+                                  </Badge>
+                                </div>
+                                
+                                <div>Status Code:</div>
+                                <div>{diagnosticData.linkedInTest.statusCode}</div>
+                                
+                                <div>Auth URL:</div>
+                                <div className="text-[10px] break-all">
+                                  {diagnosticData.linkedInTest.authUrlFormat}
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                          
+                          <Alert className="mt-2">
+                            <AlertTitle>Potential Issues</AlertTitle>
+                            <AlertDescription className="text-[10px] space-y-1">
+                              {!diagnosticData.strategyConfigured && (
+                                <p>- LinkedIn strategy not properly configured</p>
+                              )}
+                              {!diagnosticData.callbackConfigured && (
+                                <p>- Callback URL not properly configured in Passport strategy</p>
+                              )}
+                              {diagnosticData.callbackURL !== diagnosticData.expectedCallbackURL && (
+                                <p>- Callback URL mismatch. Make sure the URL is registered in LinkedIn Developer Console.</p>
+                              )}
+                              {diagnosticData.linkedInTest && !diagnosticData.linkedInTest.credentialsValid && (
+                                <p>- LinkedIn API rejected the credentials. Please check your Client ID and Secret.</p>
+                              )}
+                            </AlertDescription>
+                          </Alert>
+                        </div>
+                      )}
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
             </div>
           </div>
         </div>

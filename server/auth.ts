@@ -430,6 +430,12 @@ export function configureAuth(app: Express) {
         callbackURL: callbackURL || 'not available',
         expectedCallbackURL,
         detectedHost: detectedHost || 'none',
+        linkedInTest: {
+          urlTested: linkedinAuthUrl ? 'yes' : 'no',
+          credentialsValid,
+          statusCode: linkedinStatusCode,
+          authUrlFormat: linkedinAuthUrl ? linkedinAuthUrl.substring(0, 60) + '...' : 'not tested',
+        }
       };
       
       // Return diagnostic info
