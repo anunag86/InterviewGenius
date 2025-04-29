@@ -253,9 +253,14 @@ const Login = () => {
                   </li>
                   
                   <li>
-                    <p className="font-medium">2. Configure the correct OAuth 2.0 scopes:</p>
-                    <p className="mt-1">Our application now only requires the <code className="bg-amber-50 px-1 rounded">r_liteprofile</code> scope.</p>
-                    <p className="text-xs mt-1">The <code className="bg-amber-50 px-1 rounded">r_emailaddress</code> scope is not required and will cause authentication errors if enabled without special LinkedIn verification.</p>
+                    <p className="font-medium">2. Configure the correct OAuth 2.0 scopes in your LinkedIn application:</p>
+                    <p className="mt-1">Based on the error message, we need to make sure your LinkedIn app has the correct scopes enabled:</p>
+                    <ul className="list-disc list-inside mt-1 space-y-1">
+                      <li>Check that <code className="bg-amber-50 px-1 rounded">r_liteprofile</code> is enabled</li>
+                      <li>You might need just <code className="bg-amber-50 px-1 rounded">r_liteprofile</code> or both <code className="bg-amber-50 px-1 rounded">r_emailaddress</code> and <code className="bg-amber-50 px-1 rounded">r_liteprofile</code></li>
+                      <li>LinkedIn might require <code className="bg-amber-50 px-1 rounded">r_emailaddress</code> to be verified before using</li>
+                    </ul>
+                    <p className="text-xs mt-2">For which scopes are enabled in your LinkedIn application, please check the "Auth" tab in your LinkedIn Developer Portal.</p>
                   </li>
                 </ul>
               </div>

@@ -119,7 +119,8 @@ export function configureAuth(app: Express) {
     clientID: process.env.LINKEDIN_CLIENT_ID || '',
     clientSecret: process.env.LINKEDIN_CLIENT_SECRET || '',
     callbackURL: initialCallbackURL, // Start with better default, will still be updated on first request
-    scope: ['r_liteprofile'],
+    // Only use the scopes that are approved in your LinkedIn app
+    scope: [], // Empty array means use LinkedIn's default approved scopes
     profileFields: ['id', 'first-name', 'last-name', 'profile-picture'],
     state: true,
     proxy: true
@@ -236,7 +237,7 @@ export function configureAuth(app: Express) {
           clientID: process.env.LINKEDIN_CLIENT_ID || '',
           clientSecret: process.env.LINKEDIN_CLIENT_SECRET || '',
           callbackURL: newCallbackURL,
-          scope: ['r_liteprofile'],
+          scope: [], // Empty array uses LinkedIn's default approved scopes
           profileFields: ['id', 'first-name', 'last-name', 'profile-picture'],
           state: true,
           proxy: true
