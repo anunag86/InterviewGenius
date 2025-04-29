@@ -24,6 +24,39 @@ interface LinkedInProfile {
   profileUrl?: string;
 }
 
+// Function to fetch the user profile from the OpenID Connect userinfo endpoint
+async function fetchLinkedInUserProfile(accessToken: string): Promise<LinkedInProfile> {
+  try {
+    console.log('Fetching LinkedIn profile from userinfo endpoint...');
+    const response = await fetch('https://api.linkedin.com/v2/userinfo', {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+      },
+    });
+    
+    if (!response.ok) {
+      console.error(`LinkedIn userinfo API error: ${response.status}`, await response.text());
+      throw new Error(`LinkedIn userinfo API error: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    console.log('LinkedIn userinfo response:', JSON.stringify(data, null, 2));
+    
+    // Convert OIDC format to passport profile format
+    return {
+      id: data.sub,
+      displayName: data.name || `${data.given_name || ''} ${data.family_name || ''}`.trim(),
+      emails: data.email ? [{ value: data.email }] : undefined,
+      photos: data.picture ? [{ value: data.picture }] : undefined,
+      profileUrl: data.profile || undefined
+    };
+  } catch (error) {
+    console.error('Error fetching LinkedIn profile:', error);
+    throw error;
+  }
+}
+
 // Configure passport with LinkedIn strategy
 export function configureAuth(app: Express) {
   // Session middleware is now initialized in server/index.ts before this function is called
@@ -125,20 +158,24 @@ export function configureAuth(app: Express) {
     clientID: process.env.LINKEDIN_CLIENT_ID || '',
     clientSecret: process.env.LINKEDIN_CLIENT_SECRET || '',
     callbackURL: initialCallbackURL, // Start with better default, will still be updated on first request
-    // Use only the basic profile scope as that's all we have authorized
-    scope: ["r_liteprofile"],
+    // Use the OpenID Connect scopes as approved by LinkedIn
+    scope: ["openid", "profile", "email"],
     profileFields: ['id', 'first-name', 'last-name', 'profile-picture'],
     state: false, // Disable state verification to fix 'Unable to verify authorization request state' error
     proxy: true
-  } as any, async (accessToken: string, refreshToken: string, profile: LinkedInProfile, done: (error: any, user?: any) => void) => {
-    // Log the profile data for debugging
-    console.log('LinkedIn profile received:', {
-      id: profile.id,
-      displayName: profile.displayName,
-      hasEmails: !!profile.emails?.length,
-      hasPhotos: !!profile.photos?.length
-    });
+  } as any, async (accessToken: string, refreshToken: string, _profile: LinkedInProfile, done: (error: any, user?: any) => void) => {
     try {
+      // Instead of using the profile from LinkedIn's API, fetch it from the OpenID Connect endpoint
+      const profile = await fetchLinkedInUserProfile(accessToken);
+      
+      // Log the profile data for debugging
+      console.log('LinkedIn profile received from OpenID Connect endpoint:', {
+        id: profile.id,
+        displayName: profile.displayName,
+        hasEmails: !!profile.emails?.length,
+        hasPhotos: !!profile.photos?.length
+      });
+      
       // Find existing user based on LinkedIn ID
       const existingUsers = await db.select().from(users).where(eq(users.linkedinId, profile.id));
       const existingUser = existingUsers.length > 0 ? existingUsers[0] : null;
@@ -243,7 +280,7 @@ export function configureAuth(app: Express) {
           clientID: process.env.LINKEDIN_CLIENT_ID || '',
           clientSecret: process.env.LINKEDIN_CLIENT_SECRET || '',
           callbackURL: newCallbackURL,
-          scope: ["r_liteprofile"],
+          scope: ["openid", "profile", "email"],
           profileFields: ['id', 'first-name', 'last-name', 'profile-picture'],
           state: false, // Disable state verification to fix 'Unable to verify authorization request state' error
           proxy: true
@@ -278,15 +315,19 @@ export function configureAuth(app: Express) {
         profileFields: ['id', 'first-name', 'last-name', 'profile-picture'],
         state: false, // Disable state verification to fix 'Unable to verify authorization request state' error
         proxy: true
-      } as any, async (accessToken: string, refreshToken: string, profile: LinkedInProfile, done: (error: any, user?: any) => void) => {
-        // Log the profile data for debugging
-        console.log('LinkedIn profile received:', {
-          id: profile.id,
-          displayName: profile.displayName,
-          hasEmails: !!profile.emails?.length,
-          hasPhotos: !!profile.photos?.length
-        });
+      } as any, async (accessToken: string, refreshToken: string, _profile: LinkedInProfile, done: (error: any, user?: any) => void) => {
         try {
+          // Fetch profile from OpenID Connect endpoint
+          const profile = await fetchLinkedInUserProfile(accessToken);
+          
+          // Log the profile data for debugging
+          console.log('LinkedIn profile received from OpenID Connect endpoint:', {
+            id: profile.id,
+            displayName: profile.displayName,
+            hasEmails: !!profile.emails?.length,
+            hasPhotos: !!profile.photos?.length
+          });
+          
           // Find existing user based on LinkedIn ID
           const existingUsers = await db.select().from(users).where(eq(users.linkedinId, profile.id));
           const existingUser = existingUsers.length > 0 ? existingUsers[0] : null;
@@ -380,8 +421,19 @@ export function configureAuth(app: Express) {
           profileFields: ['id', 'first-name', 'last-name', 'profile-picture'],
           state: false, // Critically important: disable state verification
           proxy: true
-        } as any, async (accessToken: string, refreshToken: string, profile: LinkedInProfile, done: (error: any, user?: any) => void) => {
+        } as any, async (accessToken: string, refreshToken: string, _profile: LinkedInProfile, done: (error: any, user?: any) => void) => {
           try {
+            // Fetch profile from OpenID Connect endpoint
+            const profile = await fetchLinkedInUserProfile(accessToken);
+            
+            // Log the profile data for debugging
+            console.log('LinkedIn profile received from OpenID Connect endpoint (stateless strategy):', {
+              id: profile.id,
+              displayName: profile.displayName,
+              hasEmails: !!profile.emails?.length,
+              hasPhotos: !!profile.photos?.length
+            });
+            
             // Find existing user based on LinkedIn ID
             const existingUsers = await db.select().from(users).where(eq(users.linkedinId, profile.id));
             const existingUser = existingUsers.length > 0 ? existingUsers[0] : null;
