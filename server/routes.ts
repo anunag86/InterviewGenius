@@ -162,17 +162,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
     
+    // Make sure token is a string (not a JSON object)
+    let tokenStr = lastToken.token;
+    
+    // If token accidentally stored as JSON string, extract the actual token
+    if (typeof tokenStr === 'string' && (tokenStr.startsWith('{') || tokenStr.startsWith('['))) {
+      try {
+        // Try to parse it as JSON
+        const tokenObj = JSON.parse(tokenStr);
+        // Look for common token field names
+        if (tokenObj.access_token) {
+          tokenStr = tokenObj.access_token;
+          console.log('Extracted access_token from JSON token');
+        } else if (tokenObj.token) {
+          tokenStr = tokenObj.token;
+          console.log('Extracted token from JSON token');
+        } else {
+          console.log('Token is in JSON format but could not find a valid token field');
+        }
+      } catch (e) {
+        console.log('Token appears to be JSON but failed to parse', e);
+      }
+    }
+    
     // Return the token with masked values for security
     return res.json({
       success: true,
       token: {
-        masked: lastToken.token ? `${lastToken.token.substring(0, 5)}...${lastToken.token.substring(lastToken.token.length - 5)}` : null,
+        masked: tokenStr ? `${tokenStr.substring(0, 5)}...${tokenStr.substring(tokenStr.length - 5)}` : null,
         tokenType: lastToken.tokenType,
-        length: lastToken.token ? lastToken.token.length : 0,
-        receivedAt: lastToken.timestamp
+        length: tokenStr ? tokenStr.length : 0,
+        receivedAt: lastToken.timestamp,
+        format: typeof tokenStr
       },
       // Include a direct link to test this token
-      testLink: `/api/auth/linkedin/test-token?token=${encodeURIComponent(lastToken.token)}`,
+      testLink: `/api/auth/linkedin/test-token?token=${encodeURIComponent(tokenStr)}`,
       message: 'Use the test link to check if this token works with the userinfo endpoint.'
     });
   });
@@ -180,13 +204,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Test endpoint to manually validate a LinkedIn access token
   app.get('/api/auth/linkedin/test-token', async (req, res) => {
     // Check if token is provided in query parameter
-    const accessToken = req.query.token as string;
+    let accessToken = req.query.token as string;
     
     if (!accessToken) {
       return res.status(400).json({
         success: false,
         message: 'No token provided. Add ?token=your_access_token to test.'
       });
+    }
+    
+    // Parse JSON token if needed
+    if (accessToken.startsWith('{') || accessToken.startsWith('[')) {
+      try {
+        const tokenObj = JSON.parse(accessToken);
+        // Look for common token field names
+        if (tokenObj.access_token) {
+          accessToken = tokenObj.access_token;
+          console.log('Extracted access_token from JSON token object');
+        } else if (tokenObj.token) {
+          accessToken = tokenObj.token;
+          console.log('Extracted token from JSON token object');
+        } else if (tokenObj.masked && tokenObj.length) {
+          // This is our token format, not the actual token
+          return res.status(400).json({
+            success: false,
+            message: 'You provided a token metadata object instead of the actual token. Get the actual token from /api/auth/linkedin/callback.'
+          });
+        }
+      } catch (e) {
+        console.log('Token appears to be JSON but failed to parse', e);
+      }
     }
     
     console.log('Testing LinkedIn token manually...');

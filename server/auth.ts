@@ -510,12 +510,34 @@ export function configureAuth(app: Express) {
               
               // Store the token info in the global variable
               if (accessToken) {
+                // Make sure we're storing the actual token string, not a JSON object
+                let tokenToStore = accessToken;
+                
+                // If token is already a string containing JSON, extract the token string
+                if (typeof tokenToStore === 'string' && (tokenToStore.startsWith('{') || tokenToStore.startsWith('['))) {
+                  try {
+                    const parsed = JSON.parse(tokenToStore);
+                    if (parsed.access_token) {
+                      tokenToStore = parsed.access_token;
+                      console.log('✅ Extracted access_token from JSON token string');
+                    } else if (parsed.token) {
+                      tokenToStore = parsed.token;
+                      console.log('✅ Extracted token from JSON token string');
+                    }
+                  } catch (e) {
+                    // If parsing fails, keep the original token
+                    console.log('⚠️ Token looks like JSON but failed to parse');
+                  }
+                }
+                
                 global.linkedInLastToken = {
-                  token: accessToken,
+                  token: tokenToStore,
                   tokenType: results?.token_type || null,
                   params: results,
                   timestamp: new Date().toISOString()
                 };
+                
+                console.log('✅ Token stored for testing. Length:', tokenToStore.length);
               }
               
               // Call the original callback
@@ -650,12 +672,34 @@ export function configureAuth(app: Express) {
                 
                 // Store the token info in the global variable
                 if (accessToken) {
+                  // Make sure we're storing the actual token string, not a JSON object
+                  let tokenToStore = accessToken;
+                  
+                  // If token is already a string containing JSON, extract the token string
+                  if (typeof tokenToStore === 'string' && (tokenToStore.startsWith('{') || tokenToStore.startsWith('['))) {
+                    try {
+                      const parsed = JSON.parse(tokenToStore);
+                      if (parsed.access_token) {
+                        tokenToStore = parsed.access_token;
+                        console.log('✅ Extracted access_token from JSON token string (stateless)');
+                      } else if (parsed.token) {
+                        tokenToStore = parsed.token;
+                        console.log('✅ Extracted token from JSON token string (stateless)');
+                      }
+                    } catch (e) {
+                      // If parsing fails, keep the original token
+                      console.log('⚠️ Token looks like JSON but failed to parse (stateless)');
+                    }
+                  }
+                  
                   global.linkedInLastToken = {
-                    token: accessToken,
+                    token: tokenToStore,
                     tokenType: results?.token_type || null,
                     params: results,
                     timestamp: new Date().toISOString()
                   };
+                  
+                  console.log('✅ Token stored for testing (stateless). Length:', tokenToStore.length);
                 }
                 
                 // Call the original callback
