@@ -243,8 +243,8 @@ export function configureAuth(app: Express) {
           clientID: process.env.LINKEDIN_CLIENT_ID || '',
           clientSecret: process.env.LINKEDIN_CLIENT_SECRET || '',
           callbackURL: newCallbackURL,
-          scope: ["r_liteprofile", "r_emailaddress"],
-          profileFields: ['id', 'first-name', 'last-name', 'email-address', 'profile-picture'],
+          scope: ["r_liteprofile"],
+          profileFields: ['id', 'first-name', 'last-name', 'profile-picture'],
           state: false, // Disable state verification to fix 'Unable to verify authorization request state' error
           proxy: true
         } as any, linkedinStrategy._verify));
@@ -593,8 +593,8 @@ export function configureAuth(app: Express) {
             clientID: process.env.LINKEDIN_CLIENT_ID || '',
             clientSecret: process.env.LINKEDIN_CLIENT_SECRET || '',
             callbackURL: expectedCallbackURL,
-            scope: ["r_liteprofile", "r_emailaddress"], 
-            profileFields: ['id', 'first-name', 'last-name', 'email-address', 'profile-picture'],
+            scope: ["r_liteprofile"],
+            profileFields: ['id', 'first-name', 'last-name', 'profile-picture'],
             state: true,
             proxy: true
           } as any, linkedinStrategy._verify));
