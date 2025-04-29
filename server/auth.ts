@@ -55,14 +55,23 @@ export function configureAuth(app: Express) {
 
   // Use dynamic host detection for callback URL to handle Replit's changing domains
   
-  // Store detected host from first request
+  // Store detected host from first request - initialize with current Replit domain if available
   let detectedHost: string | null = null;
+  
+  // Try to detect the host from environment variables first
+  if (process.env.REPLIT_CLUSTER) {
+    // This is a Replit environment
+    const replitDomain = `${process.env.REPLIT_CLUSTER}.replit.dev`;
+    detectedHost = replitDomain;
+    console.log('🔔 Host pre-detected from Replit environment:', detectedHost);
+  }
   
   // Middleware to capture the actual host on first request
   app.use((req, res, next) => {
-    if (!detectedHost && req.headers.host) {
+    if (req.headers.host) {
+      // Always update the host with the most current value
       detectedHost = req.headers.host;
-      console.log('🔔 Host dynamically detected:', detectedHost);
+      console.log('🔔 Host dynamically detected from request:', detectedHost);
     }
     next();
   });
@@ -120,7 +129,7 @@ export function configureAuth(app: Express) {
     clientSecret: process.env.LINKEDIN_CLIENT_SECRET || '',
     callbackURL: initialCallbackURL, // Start with better default, will still be updated on first request
     // Only use the scopes that are approved in your LinkedIn app
-    scope: [], // Empty array means use LinkedIn's default approved scopes
+    scope: ["openid", "profile", "email"], // Using LinkedIn standard scopes
     profileFields: ['id', 'first-name', 'last-name', 'profile-picture'],
     state: true,
     proxy: true
@@ -524,7 +533,7 @@ export function configureAuth(app: Express) {
             clientID: process.env.LINKEDIN_CLIENT_ID || '',
             clientSecret: process.env.LINKEDIN_CLIENT_SECRET || '',
             callbackURL: expectedCallbackURL,
-            scope: ["profile"], // Must specify scope's default scopes
+            scope: ["openid", "profile", "email"], // Using LinkedIn standard scopes
             profileFields: ['id', 'first-name', 'last-name', 'profile-picture'],
             state: true,
             proxy: true
