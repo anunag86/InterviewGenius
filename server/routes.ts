@@ -145,6 +145,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // LinkedIn authentication diagnostics endpoint
+  // Get the most recent LinkedIn token (for debugging only)
+  app.get('/api/auth/linkedin/latest-token', async (req, res) => {
+    // Check if we have global token storage
+    const lastToken = global.linkedInLastToken || { 
+      token: null, 
+      tokenType: null, 
+      params: null, 
+      timestamp: null 
+    };
+    
+    if (!lastToken.token) {
+      return res.json({
+        success: false,
+        message: 'No LinkedIn token has been recorded yet. Try logging in first.'
+      });
+    }
+    
+    // Return the token with masked values for security
+    return res.json({
+      success: true,
+      token: {
+        masked: lastToken.token ? `${lastToken.token.substring(0, 5)}...${lastToken.token.substring(lastToken.token.length - 5)}` : null,
+        tokenType: lastToken.tokenType,
+        length: lastToken.token ? lastToken.token.length : 0,
+        receivedAt: lastToken.timestamp
+      },
+      // Include a direct link to test this token
+      testLink: `/api/auth/linkedin/test-token?token=${encodeURIComponent(lastToken.token)}`,
+      message: 'Use the test link to check if this token works with the userinfo endpoint.'
+    });
+  });
+
   // Test endpoint to manually validate a LinkedIn access token
   app.get('/api/auth/linkedin/test-token', async (req, res) => {
     // Check if token is provided in query parameter

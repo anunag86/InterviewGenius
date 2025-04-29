@@ -257,17 +257,27 @@ export function configureAuth(app: Express) {
       Authorization: `Basic ${Buffer.from(`${process.env.LINKEDIN_CLIENT_ID}:${process.env.LINKEDIN_CLIENT_SECRET}`).toString('base64')}`
     }
   } as any, async (req: any, accessToken: string, refreshToken: string, params: any, _profile: LinkedInProfile, done: (error: any, user?: any) => void) => {
+    // Create a global variable to store the latest token for debugging
+    global.linkedInLastToken = {
+      token: accessToken,
+      tokenType: params?.token_type || null,
+      params: params,
+      timestamp: new Date().toISOString()
+    };
+    
     // Log the complete token exchange for debugging
-    console.log('========== LINKEDIN TOKEN EXCHANGE DETAILS ==========');
-    console.log('1. Received code from LinkedIn authorization');
-    console.log('2. Exchanged code for token - SUCCESS');
-    console.log('   Time:', new Date().toISOString());
-    console.log('   Access Token (masked):', accessToken ? `${accessToken.substring(0, 5)}...${accessToken.substring(accessToken.length - 5)}` : 'MISSING');
-    console.log('   Token Length:', accessToken ? accessToken.length : 0);
-    console.log('   Response Params:', JSON.stringify(params, null, 2));
-    console.log('   Token Type:', params?.token_type || 'not specified');
-    console.log('   Expires In:', params?.expires_in || 'not specified');
-    console.log('======================================================');
+    console.log('\n\n██████████████████████████████████████████████████████████████');
+    console.log('█▓▒░ LINKEDIN OAUTH TOKEN RECEIVED ░▒▓█');
+    console.log('██████████████████████████████████████████████████████████████\n');
+    console.log('✅ Time:', new Date().toISOString());
+    console.log('✅ Access Token (masked):', accessToken ? `${accessToken.substring(0, 5)}...${accessToken.substring(accessToken.length - 5)}` : 'MISSING');
+    console.log('✅ Token Length:', accessToken ? accessToken.length : 0);
+    console.log('✅ Response Params:', JSON.stringify(params, null, 2));
+    console.log('✅ Token Type:', params?.token_type || 'not specified');
+    console.log('✅ Expires In:', params?.expires_in || 'not specified');
+    console.log('\n✨ To test this token, go to /linkedin-token-test on frontend');
+    console.log('✨ Or visit: /api/auth/linkedin/latest-token');
+    console.log('██████████████████████████████████████████████████████████████\n\n');
     try {
       // Instead of using the profile from LinkedIn's API, fetch it from the OpenID Connect endpoint
       const profile = await fetchLinkedInUserProfile(accessToken);
