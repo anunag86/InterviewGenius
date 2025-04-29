@@ -249,8 +249,25 @@ export function configureAuth(app: Express) {
     scope: ["openid", "profile", "email"],
     profileFields: ['id', 'first-name', 'last-name', 'profile-picture'],
     state: false, // Disable state verification to fix 'Unable to verify authorization request state' error
-    proxy: true
-  } as any, async (accessToken: string, refreshToken: string, _profile: LinkedInProfile, done: (error: any, user?: any) => void) => {
+    proxy: true,
+    // Add custom OAuth 2.0 token exchange handling to log token details
+    passReqToCallback: true,
+    customHeaders: {
+      // Only send what's absolutely required
+      Authorization: `Basic ${Buffer.from(`${process.env.LINKEDIN_CLIENT_ID}:${process.env.LINKEDIN_CLIENT_SECRET}`).toString('base64')}`
+    }
+  } as any, async (req: any, accessToken: string, refreshToken: string, params: any, _profile: LinkedInProfile, done: (error: any, user?: any) => void) => {
+    // Log the complete token exchange for debugging
+    console.log('========== LINKEDIN TOKEN EXCHANGE DETAILS ==========');
+    console.log('1. Received code from LinkedIn authorization');
+    console.log('2. Exchanged code for token - SUCCESS');
+    console.log('   Time:', new Date().toISOString());
+    console.log('   Access Token (masked):', accessToken ? `${accessToken.substring(0, 5)}...${accessToken.substring(accessToken.length - 5)}` : 'MISSING');
+    console.log('   Token Length:', accessToken ? accessToken.length : 0);
+    console.log('   Response Params:', JSON.stringify(params, null, 2));
+    console.log('   Token Type:', params?.token_type || 'not specified');
+    console.log('   Expires In:', params?.expires_in || 'not specified');
+    console.log('======================================================');
     try {
       // Instead of using the profile from LinkedIn's API, fetch it from the OpenID Connect endpoint
       const profile = await fetchLinkedInUserProfile(accessToken);

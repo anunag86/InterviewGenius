@@ -8,6 +8,7 @@ import History from "@/pages/History";
 import InterviewDetail from "@/pages/InterviewDetail";
 import Login from "@/pages/Login";
 import LinkedInDiagnostics from "@/pages/LinkedInDiagnostics";
+import LinkedInTokenTest from "@/pages/LinkedInTokenTest";
 import { useEffect, useState } from "react";
 
 // Authentication wrapper component to check if user is authenticated
@@ -94,6 +95,7 @@ function Router() {
     <Switch>
       <Route path="/login" component={Login} />
       <Route path="/linkedin-diagnostics" component={LinkedInDiagnostics} />
+      <Route path="/linkedin-token-test" component={LinkedInTokenTest} />
       <Route path="/">
         {() => <ProtectedRoute component={Home} />}
       </Route>

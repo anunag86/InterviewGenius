@@ -145,6 +145,95 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // LinkedIn authentication diagnostics endpoint
+  // Test endpoint to manually validate a LinkedIn access token
+  app.get('/api/auth/linkedin/test-token', async (req, res) => {
+    // Check if token is provided in query parameter
+    const accessToken = req.query.token as string;
+    
+    if (!accessToken) {
+      return res.status(400).json({
+        success: false,
+        message: 'No token provided. Add ?token=your_access_token to test.'
+      });
+    }
+    
+    console.log('Testing LinkedIn token manually...');
+    console.log('Token (masked):', accessToken.substring(0, 5) + '...' + accessToken.substring(accessToken.length - 5));
+    
+    try {
+      // Make a request to the LinkedIn userinfo endpoint with ONLY Authorization header
+      const response = await fetch('https://api.linkedin.com/v2/userinfo', {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${accessToken}`
+        }
+      });
+      
+      // Log response status
+      console.log('LinkedIn API test status:', response.status, response.statusText);
+      
+      // Get response headers
+      const headers: Record<string, string> = {};
+      response.headers.forEach((value, key) => {
+        headers[key] = value;
+      });
+      
+      // Get response body
+      const responseText = await response.text();
+      let responseData: any = null;
+      
+      try {
+        // Try to parse as JSON if possible
+        responseData = JSON.parse(responseText);
+      } catch (e) {
+        // If not JSON, use the raw text
+        responseData = responseText;
+      }
+      
+      // Determine the error type based on status code
+      let errorType = null;
+      let recommendation = null;
+      
+      if (!response.ok) {
+        if (response.status === 401) {
+          errorType = 'Invalid or expired token';
+          recommendation = 'The token is rejected by LinkedIn. Re-authenticate to get a new token.';
+        } else if (response.status === 403) {
+          errorType = 'Insufficient permissions';
+          recommendation = 'Token is valid but lacks scope permission. Check your LinkedIn app has openid, profile, email scopes.';
+        } else if (response.status === 404) {
+          errorType = 'Endpoint not found';
+          recommendation = 'The userinfo endpoint URL is incorrect. Check LinkedIn developer documentation.';
+        } else {
+          errorType = `${response.status} error`;
+          recommendation = 'Unknown error. Check the response details for more information.';
+        }
+      }
+      
+      // Return diagnostic information
+      return res.json({
+        success: response.ok,
+        status: response.status,
+        statusText: response.statusText,
+        errorType,
+        recommendation,
+        headers,
+        responseData,
+        url: 'https://api.linkedin.com/v2/userinfo',
+        tokenLength: accessToken.length,
+        tokenFirstChars: accessToken.substring(0, 5),
+        tokenLastChars: accessToken.substring(accessToken.length - 5)
+      });
+    } catch (error) {
+      console.error('Error testing LinkedIn token:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Error testing token',
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+
   app.get('/api/auth/linkedin/diagnostics', (req, res) => {
     // Detect the current request's host for accurate callback URL reporting
     const host = req.headers.host || 'unknown-host';
