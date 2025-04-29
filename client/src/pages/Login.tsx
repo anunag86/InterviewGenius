@@ -198,9 +198,27 @@ const Login = () => {
                 <ul className="mt-2 space-y-2">
                   <li>
                     <p className="font-medium">1. Make sure the following callback URL is registered in your LinkedIn Developer Portal:</p>
-                    <code className="mt-1 block p-2 bg-amber-50 rounded border border-amber-200 text-xs overflow-auto">
-                      {callbackUrl || `${window.location.protocol}//${window.location.host}/auth/linkedin/callback`}
-                    </code>
+                    <div className="mt-1 relative">
+                      <code className="block p-2 bg-amber-50 rounded border border-amber-200 text-xs overflow-auto">
+                        {callbackUrl || `${window.location.protocol}//${window.location.host}/auth/linkedin/callback`}
+                      </code>
+                      <button 
+                        onClick={() => {
+                          const url = callbackUrl || `${window.location.protocol}//${window.location.host}/auth/linkedin/callback`;
+                          navigator.clipboard.writeText(url);
+                          // You could add a toast notification here if you wanted to
+                          alert("Callback URL copied to clipboard!");
+                        }}
+                        className="absolute top-1 right-1 p-1 rounded bg-amber-200 hover:bg-amber-300 text-amber-900 text-xs flex items-center"
+                        type="button"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <rect width="14" height="14" x="8" y="8" rx="2" ry="2" />
+                          <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
+                        </svg>
+                        <span className="ml-1">Copy</span>
+                      </button>
+                    </div>
                     
                     <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded text-red-700 text-xs">
                       <div className="flex items-start">
@@ -290,7 +308,18 @@ const Login = () => {
                   </AccordionTrigger>
                   <AccordionContent>
                     <div className="space-y-3 text-sm">
-                      <p>Use this tool to diagnose LinkedIn authentication issues.</p>
+                      <div className="p-2 bg-blue-50 border border-blue-200 rounded text-blue-700">
+                        <p className="font-medium">Troubleshooting "redirect_uri" Errors</p>
+                        <ol className="list-decimal list-inside mt-1 space-y-1 text-xs">
+                          <li>Copy the exact callback URL shown above</li>
+                          <li>Go to <a href="https://www.linkedin.com/developers/apps/" target="_blank" rel="noopener noreferrer" className="underline">LinkedIn Developer Portal</a></li>
+                          <li>Select your application and click "Auth" tab</li>
+                          <li>Add or edit the redirect URL to match exactly (character-for-character)</li>
+                          <li>Click "Save" and try the login again</li>
+                        </ol>
+                      </div>
+                    
+                      <p className="mt-2">Use this tool to diagnose LinkedIn authentication issues:</p>
                       
                       <Button 
                         variant="outline" 
@@ -376,7 +405,7 @@ const Login = () => {
                           
                           <Alert className="mt-2">
                             <AlertTitle>Potential Issues</AlertTitle>
-                            <AlertDescription className="text-[10px] space-y-1">
+                            <AlertDescription className="text-[10px] space-y-2">
                               {!diagnosticData.strategyConfigured && (
                                 <p>- LinkedIn strategy not properly configured</p>
                               )}
@@ -389,6 +418,17 @@ const Login = () => {
                               {diagnosticData.linkedInTest && !diagnosticData.linkedInTest.credentialsValid && (
                                 <p>- LinkedIn API rejected the credentials. Please check your Client ID and Secret.</p>
                               )}
+                              
+                              {/* Always show the redirect_uri explanation */}
+                              <div className="pt-2 border-t border-muted">
+                                <p className="font-medium text-destructive mb-1">Common "redirect_uri" error:</p>
+                                <p>This error occurs when LinkedIn detects a mismatch between:</p>
+                                <ul className="list-disc list-inside ml-2 mt-1">
+                                  <li>The redirect URL registered in your LinkedIn Developer Console</li>
+                                  <li>The redirect URL sent by our application during authentication</li>
+                                </ul>
+                                <p className="mt-1">Every character must match exactly, including "https://" vs "http://" or trailing slashes.</p>
+                              </div>
                             </AlertDescription>
                           </Alert>
                         </div>
