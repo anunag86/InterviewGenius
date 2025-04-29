@@ -61,6 +61,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
   
+  // Simple endpoint for callback URL - redirect to detailed version
+  app.get('/api/linkedin-callback-url', (req, res) => {
+    res.json({
+      callbackURL: process.env.DETECTED_CALLBACK_URL || 
+        `https://${req.headers.host}/auth/linkedin/callback`
+    });
+  });
+  
   // Endpoint to get the current callback URL that needs to be registered in LinkedIn
   app.get('/api/auth/linkedin/callback-url', (req, res) => {
     // Detect the host from the request
