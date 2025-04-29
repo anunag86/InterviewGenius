@@ -4,6 +4,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Loader2, Upload } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 
 interface InterviewFormProps {
   onSubmit: (formData: FormData) => void;
@@ -12,9 +13,9 @@ interface InterviewFormProps {
 
 const InterviewForm = ({ onSubmit, isSubmitting }: InterviewFormProps) => {
   const [jobUrl, setJobUrl] = useState("");
-  const [linkedinUrl, setLinkedinUrl] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [fileError, setFileError] = useState<string | null>(null);
+  const { user } = useAuth();
   
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -62,9 +63,9 @@ const InterviewForm = ({ onSubmit, isSubmitting }: InterviewFormProps) => {
     formData.append("jobUrl", jobUrl);
     formData.append("resume", selectedFile);
     
-    // Add LinkedIn URL if provided
-    if (linkedinUrl) {
-      formData.append("linkedinUrl", linkedinUrl);
+    // Add the LinkedIn URL from user authentication
+    if (user?.linkedinProfileUrl) {
+      formData.append("linkedinUrl", user.linkedinProfileUrl);
     }
     
     onSubmit(formData);
@@ -94,18 +95,13 @@ const InterviewForm = ({ onSubmit, isSubmitting }: InterviewFormProps) => {
             </p>
           </div>
           
-          <div className="space-y-2">
-            <Label htmlFor="linkedinUrl">LinkedIn Profile URL (optional)</Label>
-            <Input
-              id="linkedinUrl"
-              placeholder="https://www.linkedin.com/in/yourprofile"
-              value={linkedinUrl}
-              onChange={(e) => setLinkedinUrl(e.target.value)}
-            />
-            <p className="text-xs text-gray-500">
-              Your LinkedIn profile for enhanced job matching
-            </p>
-          </div>
+          {user?.linkedinProfileUrl && (
+            <div className="bg-blue-50 p-4 rounded-lg">
+              <p className="text-sm text-blue-800">
+                <span className="font-medium">LinkedIn Profile:</span> Your LinkedIn data will be automatically included from your connected profile.
+              </p>
+            </div>
+          )}
           
           <div className="space-y-2">
             <Label htmlFor="resume">Resume (Word document)</Label>

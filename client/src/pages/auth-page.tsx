@@ -1,78 +1,18 @@
 import { useState } from "react";
-import { useAuth } from "@/hooks/use-auth";
+import { useAuth } from "@/hooks/useAuth";
 import { Redirect } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, AlertCircle } from "lucide-react";
 
 export default function AuthPage() {
-  const { user, isLoading, loginMutation, registerMutation } = useAuth();
-  const [error, setError] = useState<string | null>(null);
-  
-  // Login form state
-  const [loginUsername, setLoginUsername] = useState("");
-  const [loginPassword, setLoginPassword] = useState("");
-  
-  // Register form state
-  const [regUsername, setRegUsername] = useState("");
-  const [regEmail, setRegEmail] = useState("");
-  const [regPassword, setRegPassword] = useState("");
-  
-  // Handle login form submission
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    
-    try {
-      await loginMutation.mutateAsync({
-        username: loginUsername,
-        password: loginPassword,
-      });
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Login failed");
-    }
-  };
-  
-  // Handle register form submission
-  const handleRegister = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    
-    try {
-      await registerMutation.mutateAsync({
-        username: regUsername,
-        email: regEmail,
-        password: regPassword,
-      });
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Registration failed");
-    }
-  };
+  const { user, isLoading, login, loginError } = useAuth();
+  const [error, setError] = useState<string | null>(loginError);
   
   // Redirect to home if logged in
   if (user) {
     return <Redirect to="/" />;
   }
-  
-  // Handle LinkedIn login
-  const handleLinkedInLogin = async () => {
-    try {
-      // Use the new minimal LinkedIn authentication approach for maximum compatibility
-      const response = await fetch("/api/auth/linkedin/minimal-url");
-      if (!response.ok) {
-        throw new Error("Failed to get LinkedIn auth URL");
-      }
-      
-      const data = await response.json();
-      window.location.href = data.url;
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "LinkedIn login failed");
-    }
-  };
   
   return (
     <div className="min-h-screen grid md:grid-cols-2">
@@ -93,10 +33,10 @@ export default function AuthPage() {
           <Button 
             variant="outline" 
             className="w-full bg-[#0A66C2] text-white hover:bg-[#004182]"
-            onClick={handleLinkedInLogin}
-            disabled={isLoading || loginMutation.isPending || registerMutation.isPending}
+            onClick={login}
+            disabled={isLoading}
           >
-            {isLoading || loginMutation.isPending || registerMutation.isPending ? (
+            {isLoading ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             ) : (
               <svg className="mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
@@ -106,123 +46,10 @@ export default function AuthPage() {
             Continue with LinkedIn
           </Button>
           
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
-            </div>
-          </div>
-          
-          <Tabs defaultValue="login" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="login">Login</TabsTrigger>
-              <TabsTrigger value="register">Register</TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="login">
-              <Card>
-                <form onSubmit={handleLogin}>
-                  <CardHeader>
-                    <CardTitle>Login</CardTitle>
-                    <CardDescription>Enter your credentials to access your account</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="username">Username</Label>
-                      <Input 
-                        id="username" 
-                        placeholder="yourusername" 
-                        value={loginUsername} 
-                        onChange={(e) => setLoginUsername(e.target.value)}
-                        required 
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="password">Password</Label>
-                      <Input 
-                        id="password" 
-                        type="password" 
-                        placeholder="••••••••" 
-                        value={loginPassword} 
-                        onChange={(e) => setLoginPassword(e.target.value)}
-                        required 
-                      />
-                    </div>
-                  </CardContent>
-                  <CardFooter>
-                    <Button 
-                      type="submit" 
-                      className="w-full" 
-                      disabled={isLoading || loginMutation.isPending}
-                    >
-                      {loginMutation.isPending && (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      )}
-                      Login
-                    </Button>
-                  </CardFooter>
-                </form>
-              </Card>
-            </TabsContent>
-            
-            <TabsContent value="register">
-              <Card>
-                <form onSubmit={handleRegister}>
-                  <CardHeader>
-                    <CardTitle>Register</CardTitle>
-                    <CardDescription>Create a new account</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="reg-username">Username</Label>
-                      <Input 
-                        id="reg-username" 
-                        placeholder="yourusername" 
-                        value={regUsername} 
-                        onChange={(e) => setRegUsername(e.target.value)}
-                        required 
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="reg-email">Email (optional)</Label>
-                      <Input 
-                        id="reg-email" 
-                        type="email" 
-                        placeholder="you@example.com" 
-                        value={regEmail} 
-                        onChange={(e) => setRegEmail(e.target.value)}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="reg-password">Password</Label>
-                      <Input 
-                        id="reg-password" 
-                        type="password" 
-                        placeholder="••••••••" 
-                        value={regPassword} 
-                        onChange={(e) => setRegPassword(e.target.value)}
-                        required 
-                      />
-                    </div>
-                  </CardContent>
-                  <CardFooter>
-                    <Button 
-                      type="submit" 
-                      className="w-full" 
-                      disabled={isLoading || registerMutation.isPending}
-                    >
-                      {registerMutation.isPending && (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      )}
-                      Register
-                    </Button>
-                  </CardFooter>
-                </form>
-              </Card>
-            </TabsContent>
-          </Tabs>
+          <p className="text-center text-sm text-gray-500 mt-4">
+            PrepTalk uses LinkedIn to analyze your profile for better job matching.
+            We never post on your behalf.
+          </p>
         </div>
       </div>
       
