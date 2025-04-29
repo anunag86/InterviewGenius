@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import multer from "multer";
 import { generateInterview, getInterviewStatus, getInterviewHistory, saveUserResponse, getUserResponsesForInterview, gradeUserResponse } from "./controllers/interview";
 import { submitFeedback } from "./controllers/feedback";
+import { ensureAuthenticated } from "./auth";
 
 // Configure multer for memory storage (files are processed in memory)
 const upload = multer({
@@ -24,25 +25,26 @@ const upload = multer({
 });
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // API routes
+  // Public API routes
+  app.post("/api/feedback", submitFeedback);
+
+  // Protected API routes (require authentication)
   app.post(
     "/api/interview/generate",
+    ensureAuthenticated,
     upload.single("resume"),
     generateInterview
   );
   
-  app.get("/api/interview/status/:id", getInterviewStatus);
+  app.get("/api/interview/status/:id", ensureAuthenticated, getInterviewStatus);
   
   // Interview history endpoint
-  app.get("/api/interview/history", getInterviewHistory);
+  app.get("/api/interview/history", ensureAuthenticated, getInterviewHistory);
   
-  // User responses endpoints - new!
-  app.post("/api/interview/response", saveUserResponse);
-  app.get("/api/interview/:interviewPrepId/responses", getUserResponsesForInterview);
-  app.post("/api/interview/response/grade", gradeUserResponse);
-  
-  // Feedback endpoint
-  app.post("/api/feedback", submitFeedback);
+  // User responses endpoints
+  app.post("/api/interview/response", ensureAuthenticated, saveUserResponse);
+  app.get("/api/interview/:interviewPrepId/responses", ensureAuthenticated, getUserResponsesForInterview);
+  app.post("/api/interview/response/grade", ensureAuthenticated, gradeUserResponse);
 
   const httpServer = createServer(app);
 

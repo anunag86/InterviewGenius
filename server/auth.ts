@@ -22,23 +22,32 @@ export function configureAuth(app: Express) {
   // Setup session store with PostgreSQL
   const PgSession = connectPgSimple(session);
 
-  // Initialize session middleware
-  app.use(
-    session({
-      store: new PgSession({
-        pool,
-        tableName: 'session' // This table will be created automatically
-      }),
-      secret: process.env.SESSION_SECRET || 'preptalk-secret',
-      resave: false,
-      saveUninitialized: false,
-      cookie: {
-        maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax'
-      }
-    })
-  );
+  // Ensure the session table exists
+  try {
+    console.log('Setting up session store with PostgreSQL');
+    
+    // Initialize session middleware with proper settings
+    app.use(
+      session({
+        store: new PgSession({
+          pool,
+          tableName: 'session', // Use the existing session table
+          createTableIfMissing: true, // Create table if it doesn't exist
+        }),
+        secret: process.env.SESSION_SECRET || 'preptalk-secret-key-dev-only',
+        resave: false,
+        saveUninitialized: false,
+        cookie: {
+          maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'lax'
+        }
+      })
+    );
+    console.log('Session middleware initialized successfully');
+  } catch (error) {
+    console.error('Error setting up session middleware:', error);
+  }
 
   // Initialize passport
   app.use(passport.initialize());

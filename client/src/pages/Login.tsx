@@ -14,16 +14,23 @@ const Login = () => {
   useEffect(() => {
     const checkAuth = async () => {
       try {
+        console.log('Checking authentication status...');
         const response = await fetch('/api/me');
+        
+        if (!response.ok) {
+          throw new Error(`API returned ${response.status}: ${response.statusText}`);
+        }
+        
         const data = await response.json();
+        console.log('Authentication check result:', data);
         
         if (data.isAuthenticated) {
-          // User is already authenticated, redirect to home
+          console.log('User is authenticated, redirecting to home...');
           window.location.href = '/';
         }
       } catch (err) {
-        setError('Failed to check authentication status');
         console.error('Auth check error:', err);
+        setError('Failed to check authentication status. Please try again.');
       } finally {
         setIsLoading(false);
       }
