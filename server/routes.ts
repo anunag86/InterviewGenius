@@ -33,7 +33,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // HARDCODED: The exact callback URL that's registered in LinkedIn Developer Portal
   // This must match EXACTLY what's in LinkedIn's Developer Portal - no dynamic detection
-  const callbackURL = 'https://workspace.repl.co/auth/linkedin/callback';
+  const callbackURL = 'https://d1c83042-9bf3-4c77-aac6-0e48ec45ead6-00-1ig9xnjl41ayf.picard.replit.dev/auth/linkedin/callback';
   
   // Store this fixed URL in multiple environment variables to ensure consistency
   process.env.FIXED_LINKEDIN_CALLBACK_URL = callbackURL;
@@ -73,7 +73,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     // Return ONLY the hardcoded URL that's consistent with our LinkedIn registration
     // This must be the same URL used in LinkedIn Developer Portal
     res.json({
-      callbackURL: 'https://workspace.repl.co/auth/linkedin/callback'
+      callbackURL: 'https://d1c83042-9bf3-4c77-aac6-0e48ec45ead6-00-1ig9xnjl41ayf.picard.replit.dev/auth/linkedin/callback'
     });
   });
   
@@ -83,7 +83,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Endpoint to get the FIXED callback URL that needs to be registered in LinkedIn
   app.get('/api/auth/linkedin/callback-url', (req, res) => {
     // HARDCODED URL - this is the ONLY one that will work
-    const hardcodedCallbackURL = 'https://workspace.repl.co/auth/linkedin/callback';
+    const hardcodedCallbackURL = 'https://d1c83042-9bf3-4c77-aac6-0e48ec45ead6-00-1ig9xnjl41ayf.picard.replit.dev/auth/linkedin/callback';
     
     // For display purposes only, detect the current host (NOT USED for authentication)
     const host = req.headers.host || 'unknown-host';

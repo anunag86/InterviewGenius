@@ -10,7 +10,7 @@ import { Request, Response } from "express";
 export const getLinkedInDiagnostic = (req: Request, res: Response) => {
   // Use the FIXED hardcoded callback URL that's registered in LinkedIn Developer Portal
   // This is the ONLY callback URL that will work with LinkedIn OIDC authentication
-  const fixedCallbackURL = 'https://workspace.repl.co/auth/linkedin/callback';
+  const fixedCallbackURL = 'https://d1c83042-9bf3-4c77-aac6-0e48ec45ead6-00-1ig9xnjl41ayf.picard.replit.dev/auth/linkedin/callback';
   
   // Dynamic detection is only for display/debugging purposes - we will NOT use this URL
   const host = req.headers.host || 'unknown-host';
