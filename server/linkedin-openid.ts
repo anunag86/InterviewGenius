@@ -49,9 +49,9 @@ if (!global.linkedInAuthStates) {
 export async function setupLinkedInOpenID(app: Express, callbackURL: string) {
   console.log('⭐️⭐️⭐️ Setting up LinkedIn OpenID Connect authentication ⭐️⭐️⭐️');
   
-  // HARDCODED: Always use this exact callback URL, ignoring any dynamic values
+  // Use the EXACT domain from our current deployment
   // This must match exactly what's registered in LinkedIn Developer Portal
-  const hardcodedCallbackURL = 'https://workspace.repl.co/auth/linkedin/callback';
+  const hardcodedCallbackURL = 'https://d1c83042-9bf3-4c77-aac6-0e48ec45ead6-00-1ig9xnjl41ayf.picard.replit.dev/auth/linkedin/callback';
   
   console.log('Using HARDCODED callback URL:', hardcodedCallbackURL);
   console.log('NOTE: Dynamic callback URL detection is disabled to ensure consistency');
@@ -77,7 +77,7 @@ export function setupLinkedInRoutes(app: Express) {
       
       // HARDCODED: This must match what's registered in LinkedIn Developer Portal
       // NOTE: We are NOT using ANY dynamic logic or environment variables here
-      const fixedCallbackURL = 'https://workspace.repl.co/auth/linkedin/callback';
+      const fixedCallbackURL = 'https://d1c83042-9bf3-4c77-aac6-0e48ec45ead6-00-1ig9xnjl41ayf.picard.replit.dev/auth/linkedin/callback';
       
       console.log('- Using EXACT callback URL:', fixedCallbackURL);
       console.log('- Callback URL must match what is registered in LinkedIn Developer Portal');
@@ -142,7 +142,7 @@ export function setupLinkedInRoutes(app: Express) {
       
       // Step 3: Exchange the code for an access token
       // HARDCODED - CRITICAL: The same callback URL must be used in both auth and token exchange steps
-      const hardcodedCallbackUrl = 'https://workspace.repl.co/auth/linkedin/callback';
+      const hardcodedCallbackUrl = 'https://d1c83042-9bf3-4c77-aac6-0e48ec45ead6-00-1ig9xnjl41ayf.picard.replit.dev/auth/linkedin/callback';
       
       console.log('📍 Using HARDCODED callback URL for token exchange:', hardcodedCallbackUrl);
       console.log('⚠️ This MUST match exactly with authorization request callback and LinkedIn Developer Portal');

@@ -143,7 +143,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         <p>You <strong>MUST</strong> use this exact URL in your LinkedIn application:</p>
         
         <div class="highlight-box" id="hardcoded-url">
-          https://workspace.repl.co/auth/linkedin/callback
+          https://d1c83042-9bf3-4c77-aac6-0e48ec45ead6-00-1ig9xnjl41ayf.picard.replit.dev/auth/linkedin/callback
           <button class="copy-btn" onclick="copyToClipboard('hardcoded-url')">Copy</button>
         </div>
         
