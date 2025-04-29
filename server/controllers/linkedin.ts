@@ -8,7 +8,12 @@ import { Request, Response } from "express";
  * Used by the UI to help users troubleshoot authentication issues
  */
 export const getLinkedInDiagnostic = (req: Request, res: Response) => {
-  // Detect the current request's host for accurate callback URL reporting
+  // Get the FIXED callback URL that's used in the authentication flow
+  const fixedCallbackURL = process.env.FIXED_LINKEDIN_CALLBACK_URL || 
+                          process.env.LINKEDIN_CALLBACK_URL || 
+                          process.env.LINKEDIN_REDIRECT_URI;
+  
+  // Just for display purposes, also detect the current request's host
   const host = req.headers.host || 'unknown-host';
   const protocol = host.includes('localhost') ? 'http' : 'https';
   const detectedCallbackUrl = `${protocol}://${host}/auth/linkedin/callback`;
@@ -16,6 +21,19 @@ export const getLinkedInDiagnostic = (req: Request, res: Response) => {
   // Get client ID and secret for diagnostics (masked)
   const clientId = process.env.LINKEDIN_CLIENT_ID || '';
   const clientSecret = process.env.LINKEDIN_CLIENT_SECRET || '';
+  
+  console.log('LinkedIn diagnostics requested:', {
+    callbackUrl: fixedCallbackURL,
+    linkedinClientConfigured: !!clientId && !!clientSecret,
+    sessionConfigured: true,
+    passportInitialized: true,
+    authEndpoints: { login: '/auth/linkedin', callback: '/auth/linkedin/callback' },
+    serverDetails: {
+      host,
+      protocol,
+      nodeEnv: process.env.NODE_ENV
+    }
+  });
   
   // Format diagnostic data to match UI expectations
   const data = {
@@ -26,9 +44,18 @@ export const getLinkedInDiagnostic = (req: Request, res: Response) => {
     clientSecretLength: clientSecret.length,
     strategyConfigured: true,
     callbackConfigured: true,
-    callbackURL: detectedCallbackUrl,
-    expectedCallbackURL: detectedCallbackUrl,
-    detectedHost: host
+    callbackURL: fixedCallbackURL || detectedCallbackUrl,
+    expectedCallbackURL: fixedCallbackURL || detectedCallbackUrl,
+    actualCallbackUsed: fixedCallbackURL || 'Not configured yet',
+    detectedHost: host,
+    
+    // Add more detailed callback information
+    callbackInfo: {
+      fixedCallbackURL: fixedCallbackURL || 'Not set',
+      detectedCallbackUrl,
+      linkedinRedirectUri: process.env.LINKEDIN_REDIRECT_URI || 'Not set',
+      explanation: "The callback URL must EXACTLY match what's registered in LinkedIn Developer Portal"
+    }
   };
   
   // Return diagnostic info

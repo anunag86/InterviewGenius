@@ -50,11 +50,15 @@ export async function setupLinkedInOpenID(app: Express, callbackURL: string) {
   console.log('⭐️⭐️⭐️ Setting up LinkedIn OpenID Connect authentication ⭐️⭐️⭐️');
   console.log('Using callback URL:', callbackURL);
   
-  // Store environment variable for later use
-  process.env.LINKEDIN_REDIRECT_URI = callbackURL;
+  // CRITICAL: Store the FIXED callback URL that will be used consistently
+  // This must be EXACTLY the same URL registered in LinkedIn Developer Portal
+  const fixedCallbackURL = process.env.FIXED_LINKEDIN_CALLBACK_URL || callbackURL;
   
-  // Store the callback URL for later use
-  app.locals.linkedInCallbackUrl = callbackURL;
+  // Store in multiple places to ensure consistency across all authentication steps
+  process.env.LINKEDIN_REDIRECT_URI = fixedCallbackURL;
+  app.locals.linkedInCallbackUrl = fixedCallbackURL;
+  process.env.LINKEDIN_CALLBACK_URL = fixedCallbackURL;
+  console.log('Fixed callback URL set:', fixedCallbackURL);
   
   // Return success - actual setup is handled in the routes
   return true;
@@ -69,17 +73,26 @@ export function setupLinkedInRoutes(app: Express) {
     try {
       console.log('🔄 LinkedIn OpenID Connect authentication initiated');
       
-      // Get the callback URL from environment variable
-      const callbackUrl = process.env.LINKEDIN_REDIRECT_URI;
-      console.log('- Using callback URL:', callbackUrl);
+      // Get the FIXED callback URL - MUST match exactly what's registered in LinkedIn Developer Portal
+      const fixedCallbackURL = process.env.FIXED_LINKEDIN_CALLBACK_URL || 
+                              process.env.LINKEDIN_CALLBACK_URL || 
+                              process.env.LINKEDIN_REDIRECT_URI;
+      
+      if (!fixedCallbackURL) {
+        console.error('❌ CRITICAL ERROR: No fixed callback URL available for LinkedIn auth');
+        return res.redirect('/login?error=missing_callback_url');
+      }
+      
+      console.log('- Using EXACT callback URL:', fixedCallbackURL);
+      console.log('- Callback URL must match what is registered in LinkedIn Developer Portal');
       
       // Generate CSRF state token to prevent CSRF attacks
       const state = crypto.randomBytes(16).toString('hex');
       
-      // Store the state in session
+      // Store the state and fixed callback URL in session
       if (req.session) {
         req.session.linkedinState = state;
-        req.session.linkedinRedirectUri = callbackUrl;
+        req.session.linkedinRedirectUri = fixedCallbackURL;
       } else {
         console.error('Session not available');
         return res.redirect('/login?error=session_not_available');
@@ -89,7 +102,7 @@ export function setupLinkedInRoutes(app: Express) {
       const authUrl = new URL('https://www.linkedin.com/oauth/v2/authorization');
       authUrl.searchParams.append('response_type', 'code');
       authUrl.searchParams.append('client_id', process.env.LINKEDIN_CLIENT_ID || '');
-      authUrl.searchParams.append('redirect_uri', callbackUrl || '');
+      authUrl.searchParams.append('redirect_uri', fixedCallbackURL);
       authUrl.searchParams.append('state', state);
       authUrl.searchParams.append('scope', 'openid profile email');
       
@@ -132,10 +145,20 @@ export function setupLinkedInRoutes(app: Express) {
       console.log('1️⃣ Exchanging authorization code for token');
       
       // Step 3: Exchange the code for an access token
+      const fixedRedirectUri = process.env.FIXED_LINKEDIN_CALLBACK_URL || process.env.LINKEDIN_CALLBACK_URL || req.session.linkedinRedirectUri;
+      
+      if (!fixedRedirectUri) {
+        console.error('❌ CRITICAL ERROR: No fixed redirect URI available for token exchange');
+        return res.redirect('/login?error=missing_redirect_uri');
+      }
+      
+      console.log('📍 Using fixed redirect URI for token exchange:', fixedRedirectUri);
+      console.log('⚠️ This MUST match exactly what is registered in LinkedIn Developer Portal');
+      
       const params = new URLSearchParams();
       params.append('grant_type', 'authorization_code');
       params.append('code', code);
-      params.append('redirect_uri', process.env.LINKEDIN_REDIRECT_URI || '');
+      params.append('redirect_uri', fixedRedirectUri);
       params.append('client_id', process.env.LINKEDIN_CLIENT_ID || '');
       params.append('client_secret', process.env.LINKEDIN_CLIENT_SECRET || '');
       

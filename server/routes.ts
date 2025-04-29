@@ -31,10 +31,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Set up LinkedIn OAuth2 authentication
   console.log('Setting up LinkedIn OAuth2 authentication routes...');
   
-  // Detect current application host for callback URL
-  const host = process.env.REPL_IDENTITY || process.env.REPLIT_CLUSTER || 'localhost:5000';
-  const protocol = host.includes('localhost') ? 'http' : 'https';
-  const callbackURL = `${protocol}://${host}/auth/linkedin/callback`;
+  // IMPORTANT: This must be a fixed, hardcoded URL that exactly matches what's registered in LinkedIn's Developer Portal
+  // DO NOT use a dynamic URL that changes with each deployment or you'll get "redirect_uri_mismatch" errors
+  // The callback URL must be registered in LinkedIn's Developer Portal configuration
+  
+  // First check if there's a fixed callback URL from environment variables (ideal for production)
+  let callbackURL = process.env.LINKEDIN_CALLBACK_URL;
+  
+  // If no fixed URL is provided, create a static one that will be consistent for this deployment
+  if (!callbackURL) {
+    // Use Replit's domain if available
+    const host = process.env.REPLIT_SLUG ? 
+      `${process.env.REPLIT_SLUG}.replit.dev` : 
+      process.env.REPL_SLUG ?
+      `${process.env.REPL_SLUG}.repl.co` :
+      'localhost:5000';
+    const protocol = host.includes('localhost') ? 'http' : 'https';
+    callbackURL = `${protocol}://${host}/auth/linkedin/callback`;
+  }
+  
+  // This is the callback URL that will be used throughout the entire authentication flow
+  // Store it in environment for other parts of the application
+  process.env.FIXED_LINKEDIN_CALLBACK_URL = callbackURL;
   
   // Initialize LinkedIn authentication
   console.log('Initializing LinkedIn OAuth2 with callback URL:', callbackURL);
