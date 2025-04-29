@@ -357,6 +357,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Logout endpoint
+  app.get('/api/auth/logout', (req, res) => {
+    // Check if user is authenticated
+    if (req.isAuthenticated()) {
+      console.log('Logging out user:', req.user);
+      
+      // Perform logout
+      req.logout((err) => {
+        if (err) {
+          console.error('Error during logout:', err);
+          return res.status(500).json({ 
+            success: false, 
+            message: 'Error during logout'
+          });
+        }
+        
+        // Clear the session
+        req.session.destroy((err) => {
+          if (err) {
+            console.error('Error destroying session:', err);
+            return res.status(500).json({ 
+              success: false,
+              message: 'Error destroying session' 
+            });
+          }
+          
+          // Successfully logged out
+          return res.json({ 
+            success: true, 
+            message: 'Successfully logged out' 
+          });
+        });
+      });
+    } else {
+      // User was not logged in
+      res.json({ 
+        success: true, 
+        message: 'User was not logged in' 
+      });
+    }
+  });
+
   app.get('/api/auth/linkedin/diagnostics', (req, res) => {
     // Detect the current request's host for accurate callback URL reporting
     const host = req.headers.host || 'unknown-host';
