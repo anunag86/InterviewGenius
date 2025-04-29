@@ -53,21 +53,33 @@ export function configureAuth(app: Express) {
   app.use(passport.initialize());
   app.use(passport.session());
 
-  // Get the hostname for proper callback URL
-  const getHostName = () => {
-    // Try to get the hostname from environment variables (for production)
-    const replitDomain = process.env.REPL_SLUG 
+  // Use dynamic host detection for callback URL to handle Replit's changing domains
+  
+  // Store detected host from first request
+  let detectedHost: string | null = null;
+  
+  // Middleware to capture the actual host on first request
+  app.use((req, res, next) => {
+    if (!detectedHost && req.headers.host) {
+      detectedHost = req.headers.host;
+      console.log('🔔 Host dynamically detected:', detectedHost);
+    }
+    next();
+  });
+  
+  // Create dynamic function to get callback URL based on detected host
+  const getCallbackURL = (requestHost?: string) => {
+    // Use requestHost, or detectedHost, or fallback to environment variables
+    const host = requestHost || detectedHost || (process.env.REPL_SLUG 
       ? `${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co` 
-      : null;
+      : 'localhost:5000');
     
-    // Use the replit domain if available, otherwise fallback to localhost
-    return replitDomain || 'localhost:5000';
+    const protocol = host.includes('localhost') ? 'http' : 'https';
+    return `${protocol}://${host}/auth/linkedin/callback`;
   };
   
-  // Create full callback URL to match LinkedIn settings
-  const host = getHostName();
-  const protocol = host.includes('localhost') ? 'http' : 'https';
-  const callbackURL = `${protocol}://${host}/auth/linkedin/callback`;
+  // Initial callback URL (will be updated on first request)
+  let callbackURL = getCallbackURL();
   
   console.log('LinkedIn Strategy Configuration:');
   console.log('- Client ID:', process.env.LINKEDIN_CLIENT_ID ? '✓ Present' : '✗ Missing');
@@ -165,11 +177,48 @@ export function configureAuth(app: Express) {
       return res.redirect('/login?error=missing_credentials');
     }
     
+    // Update the callback URL based on the current request host
+    if (req.headers.host && req.headers.host !== detectedHost) {
+      detectedHost = req.headers.host;
+      const newCallbackURL = getCallbackURL(detectedHost);
+      console.log('🔄 Updating callback URL to match current request:', newCallbackURL);
+      
+      // Recreate LinkedIn strategy with updated callback URL
+      // We need to access the strategy through passport internals
+      // Use ts-ignore to bypass TypeScript's type checking for internal properties
+      // @ts-ignore - Accessing private passport internals
+      const linkedinStrategy = passport._strategies?.linkedin;
+      
+      if (linkedinStrategy) {
+        // Create a new strategy with the updated callback URL
+        passport.use(new LinkedInStrategy({
+          clientID: process.env.LINKEDIN_CLIENT_ID || '',
+          clientSecret: process.env.LINKEDIN_CLIENT_SECRET || '',
+          callbackURL: newCallbackURL,
+          scope: ['r_emailaddress', 'r_liteprofile'],
+          authType: 'reauthenticate',
+          state: true,
+          proxy: true
+        } as any, linkedinStrategy._verify));
+        
+        console.log('✅ LinkedIn strategy updated with new callback URL');
+      }
+    }
+    
     // Custom auth options to force new auth
     const authOptions = { 
       scope: ['r_emailaddress', 'r_liteprofile'],
       state: Math.random().toString(36).substring(2),
     };
+    
+    // Safely log current strategy's callback URL
+    try {
+      // @ts-ignore - Accessing private passport internals
+      const callbackURL = passport._strategies?.linkedin?._oauth2?._callbackURL;
+      console.log('🔍 Using callback URL:', callbackURL || 'Could not determine callback URL');
+    } catch (error) {
+      console.log('Could not access strategy callback URL');
+    }
     
     passport.authenticate('linkedin', authOptions)(req, res, next);
   });

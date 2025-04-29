@@ -120,6 +120,14 @@ const Login = () => {
                   {error}
                 </div>
               )}
+              
+              <div className="p-3 rounded-md bg-amber-100 border border-amber-200 text-amber-700 text-sm">
+                <p className="font-medium">Important:</p>
+                <p className="mt-1">Make sure the following callback URL is registered in your LinkedIn Developer Portal:</p>
+                <code className="mt-2 block p-2 bg-amber-50 rounded border border-amber-200 text-xs overflow-auto">
+                  {`${window.location.protocol}//${window.location.host}/auth/linkedin/callback`}
+                </code>
+              </div>
             </CardContent>
             <CardFooter>
               <Button 
