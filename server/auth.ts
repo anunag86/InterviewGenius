@@ -484,6 +484,49 @@ export function configureAuth(app: Express) {
       // @ts-ignore - Accessing private passport internals
       const updatedCallbackURL = passport._strategies?.linkedin?._oauth2?._callbackURL;
       console.log('✅ Verified callback URL before auth:', updatedCallbackURL);
+      
+      // THIS IS CRITICAL: Log the exact LinkedIn Code Exchange Parameter Method
+      // This is what the error image specifically recommends
+      try {
+        const oauthStrat = passport._strategies?.linkedin?._oauth2;
+        if (oauthStrat) {
+          const originalGetOAuthAccessToken = oauthStrat.getOAuthAccessToken;
+          // Override the method to log token exchange details
+          oauthStrat.getOAuthAccessToken = function(code: string, params: any, callback: Function) {
+            console.log('⭐️⭐️⭐️ LINKEDIN CODE EXCHANGE ATTEMPTED ⭐️⭐️⭐️');
+            console.log('Code:', code ? code.substring(0, 5) + '...' + code.substring(code.length - 5) : 'MISSING');
+            console.log('Params:', params);
+            console.log('Callback URL:', this._callbackURL);
+            
+            // Call the original method
+            return originalGetOAuthAccessToken.call(this, code, params, function(err: any, accessToken: string, refreshToken: string, results: any) {
+              console.log('⭐️⭐️⭐️ LINKEDIN TOKEN EXCHANGE RESULT ⭐️⭐️⭐️');
+              console.log('Error:', err ? 'YES' : 'NO');
+              if (err) {
+                console.error('LinkedIn token exchange error:', err);
+              }
+              console.log('Access Token:', accessToken ? accessToken.substring(0, 5) + '...' + accessToken.substring(accessToken.length - 5) : 'MISSING');
+              console.log('Results:', results);
+              
+              // Store the token info in the global variable
+              if (accessToken) {
+                global.linkedInLastToken = {
+                  token: accessToken,
+                  tokenType: results?.token_type || null,
+                  params: results,
+                  timestamp: new Date().toISOString()
+                };
+              }
+              
+              // Call the original callback
+              callback(err, accessToken, refreshToken, results);
+            });
+          };
+          console.log('✅ LinkedIn token exchange logger installed');
+        }
+      } catch (e) {
+        console.error('Failed to install token exchange logger:', e);
+      }
     } catch (error) {
       console.error('Failed to update LinkedIn strategy before authentication:', error);
     }
@@ -495,6 +538,8 @@ export function configureAuth(app: Express) {
   app.get(
     '/auth/linkedin/callback',
     (req, res, next) => {
+      // CRITICAL DEBUGGING: Simple log to confirm this route is hit
+      console.log('🔥 LINKEDIN CALLBACK HIT WITH QUERY:', req.query);
       console.log('LinkedIn callback route accessed with details:');
       console.log('- Host:', req.headers.host);
       console.log('- Query params:', req.query);
@@ -579,6 +624,49 @@ export function configureAuth(app: Express) {
         }));
         
         console.log('✅ Created stateless LinkedIn strategy for this request');
+        
+        // Install code exchange logging in the stateless strategy too
+        try {
+          // @ts-ignore - Accessing private passport internals
+          const oauthStrat = passport._strategies?.['linkedin-stateless']?._oauth2;
+          if (oauthStrat) {
+            const originalGetOAuthAccessToken = oauthStrat.getOAuthAccessToken;
+            // Override the method to log token exchange details
+            oauthStrat.getOAuthAccessToken = function(code: string, params: any, callback: Function) {
+              console.log('🔵🔵🔵 STATELESS LINKEDIN CODE EXCHANGE ATTEMPTED 🔵🔵🔵');
+              console.log('Code:', code ? code.substring(0, 5) + '...' + code.substring(code.length - 5) : 'MISSING');
+              console.log('Params:', params);
+              console.log('Callback URL:', this._callbackURL);
+              
+              // Call the original method
+              return originalGetOAuthAccessToken.call(this, code, params, function(err: any, accessToken: string, refreshToken: string, results: any) {
+                console.log('🔵🔵🔵 STATELESS LINKEDIN TOKEN EXCHANGE RESULT 🔵🔵🔵');
+                console.log('Error:', err ? 'YES' : 'NO');
+                if (err) {
+                  console.error('Stateless LinkedIn token exchange error:', err);
+                }
+                console.log('Access Token:', accessToken ? accessToken.substring(0, 5) + '...' + accessToken.substring(accessToken.length - 5) : 'MISSING');
+                console.log('Results:', results);
+                
+                // Store the token info in the global variable
+                if (accessToken) {
+                  global.linkedInLastToken = {
+                    token: accessToken,
+                    tokenType: results?.token_type || null,
+                    params: results,
+                    timestamp: new Date().toISOString()
+                  };
+                }
+                
+                // Call the original callback
+                callback(err, accessToken, refreshToken, results);
+              });
+            };
+            console.log('✅ Stateless LinkedIn token exchange logger installed');
+          }
+        } catch (e) {
+          console.error('Failed to install stateless token exchange logger:', e);
+        }
       } catch (strategyError) {
         console.error('Failed to create stateless LinkedIn strategy:', strategyError);
       }
@@ -588,6 +676,9 @@ export function configureAuth(app: Express) {
         failureRedirect: '/login?error=auth_failed',
         session: true // We still want to create a session
       }, (err: Error | null, user: any, info: { message: string } | undefined) => {
+        // Log token response as suggested in the error image
+        console.log("🔍 Access token response from LinkedIn:", info);
+        
         console.log('LinkedIn authentication result:', { 
           error: err ? 'Yes' : 'No', 
           user: user ? 'Found' : 'Not found', 
