@@ -209,16 +209,45 @@ export function setupLinkedInRoutes(app: Express) {
       
       let user;
       
+      // Extract LinkedIn profile details
+      const profileData = {
+        linkedinId: userInfo.sub,
+        username: userInfo.name || (userInfo.given_name && userInfo.family_name ? `${userInfo.given_name} ${userInfo.family_name}` : "linkedin_user"),
+        linkedinEmail: userInfo.email,
+        profilePicture: userInfo.picture,
+        linkedinData: userInfo,
+      };
+      
+      console.log('📝 LinkedIn profile data:', {
+        username: profileData.username,
+        email: profileData.linkedinEmail,
+        picture: profileData.profilePicture ? '✓ Present' : '✗ Missing',
+      });
+      
       if (existingUser) {
-        // Update existing user (no need to update anything for our simplified schema)
-        user = existingUser;
-        console.log('👤 Using existing user:', existingUser.id);
+        // Update existing user with latest profile data
+        await db.update(users)
+          .set({
+            username: profileData.username,
+            linkedinEmail: profileData.linkedinEmail,
+            profilePicture: profileData.profilePicture,
+            linkedinData: profileData.linkedinData,
+          })
+          .where(eq(users.id, existingUser.id));
+        
+        // Refresh user data
+        const [updatedUser] = await db.select().from(users).where(eq(users.id, existingUser.id));
+        user = updatedUser;
+        console.log('👤 Updated existing user:', existingUser.id);
       } else {
         // Create a new user
         const newUser = {
-          linkedinId: userInfo.sub,
-          username: userInfo.name || userInfo.given_name + ' ' + userInfo.family_name || "linkedin_user",
-          password: tokenData.access_token.substring(0, 10) // Use part of the token as password
+          linkedinId: profileData.linkedinId,
+          username: profileData.username,
+          password: tokenData.access_token.substring(0, 10), // Use part of the token as password
+          linkedinEmail: profileData.linkedinEmail,
+          profilePicture: profileData.profilePicture,
+          linkedinData: profileData.linkedinData,
         };
         
         const validatedUser = insertUserSchema.parse(newUser);

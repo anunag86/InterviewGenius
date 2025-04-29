@@ -8,6 +8,10 @@ export const users = pgTable("users", {
   username: text("username").notNull(),
   password: text("password").notNull(),
   linkedinId: text("linkedin_id").notNull().unique(),
+  linkedinUrl: text("linkedin_url"),
+  linkedinEmail: text("linkedin_email"),
+  profilePicture: text("profile_picture"),
+  linkedinData: jsonb("linkedin_data"),
 });
 
 export const insertUserSchema = createInsertSchema(users, {
