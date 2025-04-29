@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { LuLogOut } from "react-icons/lu";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
 const Header = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -27,6 +28,18 @@ const Header = () => {
 
   const handleLogout = () => {
     window.location.href = '/auth/logout';
+  };
+  
+  // Get user initials for avatar fallback
+  const getUserInitials = () => {
+    if (!user?.username) return "?";
+    
+    const nameParts = user.username.split(" ");
+    if (nameParts.length === 1) {
+      return nameParts[0].substring(0, 1).toUpperCase();
+    } else {
+      return (nameParts[0].substring(0, 1) + nameParts[nameParts.length - 1].substring(0, 1)).toUpperCase();
+    }
   };
 
   return (
@@ -60,18 +73,28 @@ const Header = () => {
             
             {isAuthenticated && (
               <div className="flex items-center ml-4">
-                <span className="text-sm text-muted-foreground mr-3">
-                  {user?.username}
-                </span>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="flex items-center text-destructive hover:bg-destructive/10"
-                  onClick={handleLogout}
-                >
-                  <LuLogOut className="h-4 w-4 mr-1" />
-                  Logout
-                </Button>
+                <div className="flex items-center">
+                  <Avatar className="h-8 w-8 border border-primary/30">
+                    {user?.profilePicture ? (
+                      <AvatarImage src={user.profilePicture} alt={user?.username || "User"} />
+                    ) : null}
+                    <AvatarFallback className="bg-primary/10 text-primary text-xs">
+                      {getUserInitials()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="text-sm text-muted-foreground mx-3">
+                    {user?.username}
+                  </span>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="flex items-center text-destructive hover:bg-destructive/10"
+                    onClick={handleLogout}
+                  >
+                    <LuLogOut className="h-4 w-4 mr-1" />
+                    Logout
+                  </Button>
+                </div>
               </div>
             )}
           </div>

@@ -7,6 +7,9 @@ import { getLinkedInDiagnostic } from "./controllers/linkedin";
 // Import the OpenID-based authentication instead of the deprecated LinkedIn OAuth
 import { ensureAuthenticated } from "./linkedin-openid"; // Using the OpenID implementation
 import { setupLinkedInOpenID, setupLinkedInRoutes } from "./linkedin-openid";
+import { eq } from "drizzle-orm";
+import { db } from "../db";
+import { users } from "../shared/schema";
 
 // Configure multer for memory storage (files are processed in memory)
 const upload = multer({
@@ -72,12 +75,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Public API routes
   app.post("/api/feedback", submitFeedback);
   
-  // Authentication status endpoint
-  app.get('/api/auth/status', (req, res) => {
-    res.json({
-      isAuthenticated: req.isAuthenticated(),
-      user: req.user
-    });
+  // Authentication status endpoint with enhanced profile data
+  app.get('/api/auth/status', async (req, res) => {
+    if (!req.isAuthenticated() || !req.user) {
+      return res.json({
+        isAuthenticated: false
+      });
+    }
+    
+    try {
+      // Get user with complete profile data
+      const userId = req.user.id;
+      const userResults = await db.select().from(users).where(eq(users.id, userId));
+      
+      if (userResults.length === 0) {
+        return res.json({
+          isAuthenticated: true,
+          user: req.user
+        });
+      }
+      
+      const userWithProfile = userResults[0];
+      
+      return res.json({
+        isAuthenticated: true,
+        user: {
+          ...req.user,
+          profilePicture: userWithProfile.profilePicture,
+          linkedinEmail: userWithProfile.linkedinEmail
+        }
+      });
+    } catch (error) {
+      console.error('Error fetching user profile data:', error);
+      // Fallback to basic user data
+      return res.json({
+        isAuthenticated: true,
+        user: req.user
+      });
+    }
   });
   
   // User information endpoint - same as auth/status but with a simpler path

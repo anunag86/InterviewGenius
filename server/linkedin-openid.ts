@@ -209,12 +209,27 @@ export function setupLinkedInRoutes(app: Express) {
       
       let user;
       
-      // Extract LinkedIn profile details
+      // Extract LinkedIn profile details and attempt to derive LinkedIn URL
+      let linkedinUrl = null;
+      
+      // Try to construct LinkedIn URL from the user's name if available
+      if (userInfo.name) {
+        const formattedName = userInfo.name
+          .toLowerCase()
+          .replace(/\s+/g, '-') // Replace spaces with hyphens
+          .replace(/[^a-z0-9-]/g, ''); // Remove special characters
+      
+        if (formattedName) {
+          linkedinUrl = `https://linkedin.com/in/${formattedName}`;
+        }
+      }
+      
       const profileData = {
         linkedinId: userInfo.sub,
         username: userInfo.name || (userInfo.given_name && userInfo.family_name ? `${userInfo.given_name} ${userInfo.family_name}` : "linkedin_user"),
         linkedinEmail: userInfo.email,
         profilePicture: userInfo.picture,
+        linkedinUrl: linkedinUrl,
         linkedinData: userInfo,
       };
       
@@ -231,6 +246,7 @@ export function setupLinkedInRoutes(app: Express) {
             username: profileData.username,
             linkedinEmail: profileData.linkedinEmail,
             profilePicture: profileData.profilePicture,
+            linkedinUrl: profileData.linkedinUrl,
             linkedinData: profileData.linkedinData,
           })
           .where(eq(users.id, existingUser.id));
@@ -247,6 +263,7 @@ export function setupLinkedInRoutes(app: Express) {
           password: tokenData.access_token.substring(0, 10), // Use part of the token as password
           linkedinEmail: profileData.linkedinEmail,
           profilePicture: profileData.profilePicture,
+          linkedinUrl: profileData.linkedinUrl,
           linkedinData: profileData.linkedinData,
         };
         

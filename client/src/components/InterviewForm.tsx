@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -8,10 +8,12 @@ import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { InfoIcon } from "lucide-react";
 
 const formSchema = z.object({
   jobUrl: z.string().url("Please enter a valid URL").min(1, "Job posting URL is required"),
-  linkedinUrl: z.string().url("Please enter a valid LinkedIn URL").min(1, "LinkedIn profile URL is required"),
+  linkedinUrl: z.string().url("Please enter a valid URL").min(1, "LinkedIn profile URL is required"),
 });
 
 interface InterviewFormProps {
@@ -21,6 +23,9 @@ interface InterviewFormProps {
 
 const InterviewForm = ({ onSubmit, isSubmitting }: InterviewFormProps) => {
   const { toast } = useToast();
+  const [userLinkedinUrl, setUserLinkedinUrl] = useState<string | null>(null);
+  const [isLoadingProfile, setIsLoadingProfile] = useState(true);
+  
   const { 
     selectedFile, 
     fileInputRef, 
@@ -30,13 +35,42 @@ const InterviewForm = ({ onSubmit, isSubmitting }: InterviewFormProps) => {
     handleDrop 
   } = useFileUpload([".doc", ".docx"]);
 
+  useEffect(() => {
+    // Check if user has LinkedIn profile URL stored
+    const fetchUserProfile = async () => {
+      try {
+        setIsLoadingProfile(true);
+        const response = await fetch('/api/auth/status');
+        if (response.ok) {
+          const data = await response.json();
+          if (data.isAuthenticated && data.user && data.user.linkedinUrl) {
+            setUserLinkedinUrl(data.user.linkedinUrl);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching user profile:', error);
+      } finally {
+        setIsLoadingProfile(false);
+      }
+    };
+
+    fetchUserProfile();
+  }, []);
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       jobUrl: "",
-      linkedinUrl: "",
+      linkedinUrl: userLinkedinUrl || "",
     },
   });
+  
+  // Update form when LinkedIn URL is loaded
+  useEffect(() => {
+    if (userLinkedinUrl) {
+      form.setValue('linkedinUrl', userLinkedinUrl);
+    }
+  }, [userLinkedinUrl, form]);
 
   const handleFormSubmit = (values: z.infer<typeof formSchema>) => {
     if (!selectedFile) {
@@ -138,6 +172,14 @@ const InterviewForm = ({ onSubmit, isSubmitting }: InterviewFormProps) => {
                 <FormLabel className="text-sm font-medium text-foreground">
                   LinkedIn Profile URL
                 </FormLabel>
+                {userLinkedinUrl && (
+                  <Alert className="py-2 mb-2 bg-success/10 text-success border border-success/20">
+                    <InfoIcon className="h-4 w-4 mr-2" />
+                    <AlertDescription>
+                      Your LinkedIn profile URL was automatically retrieved from your account.
+                    </AlertDescription>
+                  </Alert>
+                )}
                 <FormControl>
                   <div className="mt-1 relative rounded-md shadow-sm">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -149,11 +191,15 @@ const InterviewForm = ({ onSubmit, isSubmitting }: InterviewFormProps) => {
                     <Input
                       {...field}
                       placeholder="https://linkedin.com/in/yourprofile"
-                      className="pl-10 py-3 border-border focus:border-primary focus:ring-primary"
+                      className={`pl-10 py-3 border-border focus:border-primary focus:ring-primary ${userLinkedinUrl ? 'border-success/50' : ''}`}
                     />
                   </div>
                 </FormControl>
-                <p className="mt-1 text-xs text-muted-foreground">Enter your LinkedIn profile URL</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {userLinkedinUrl 
+                    ? "Your LinkedIn profile URL was auto-filled from your account information"
+                    : "Enter your LinkedIn profile URL"}
+                </p>
                 <FormMessage />
               </FormItem>
             )}
