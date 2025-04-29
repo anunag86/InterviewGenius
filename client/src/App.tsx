@@ -7,6 +7,7 @@ import Home from "@/pages/Home";
 import History from "@/pages/History";
 import InterviewDetail from "@/pages/InterviewDetail";
 import Login from "@/pages/Login";
+import LinkedInDiagnostics from "@/pages/LinkedInDiagnostics";
 import { useEffect, useState } from "react";
 
 // Authentication wrapper component to check if user is authenticated
@@ -92,6 +93,7 @@ function Router() {
   return (
     <Switch>
       <Route path="/login" component={Login} />
+      <Route path="/linkedin-diagnostics" component={LinkedInDiagnostics} />
       <Route path="/">
         {() => <ProtectedRoute component={Home} />}
       </Route>
