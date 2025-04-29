@@ -2,31 +2,9 @@ import { useEffect, useState } from "react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Badge } from "@/components/ui/badge";
 import { FaLinkedin } from "react-icons/fa";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
-
-interface LinkedInDiagnosticData {
-  clientIdStatus: string;
-  clientIdLength: number;
-  clientIdPartial: string;
-  clientSecretStatus: string;
-  clientSecretLength: number;
-  strategyConfigured: boolean;
-  callbackConfigured: boolean;
-  callbackURL: string;
-  expectedCallbackURL: string;
-  detectedHost: string;
-  linkedInTest?: {
-    urlTested: string;
-    credentialsValid: boolean;
-    statusCode: number;
-    authUrlFormat: string;
-  };
-}
 
 const Login = () => {
   const [isLoading, setIsLoading] = useState(true);
@@ -193,73 +171,7 @@ const Login = () => {
                 </div>
               )}
               
-              <div className="p-3 rounded-md bg-amber-100 border border-amber-200 text-amber-700 text-sm">
-                <p className="font-medium">Important LinkedIn Developer Configuration:</p>
-                
-                <div className="mt-3 mb-4">
-                  <a 
-                    href="/api/auth/linkedin/callback-url" 
-                    target="_blank" 
-                    className="block w-full text-center py-2 bg-[#0077B5] hover:bg-[#0077B5]/90 text-white rounded-md"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="inline-block w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                    </svg>
-                    Get Current Callback URL & Instructions
-                  </a>
-                  <p className="text-xs mt-2 text-center">
-                    ⭐ Use this tool to get the exact callback URL that must be registered in your LinkedIn Developer Portal
-                  </p>
-                </div>
-                
-                <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded text-red-700 text-xs">
-                  <div className="flex items-start">
-                    <svg 
-                      xmlns="http://www.w3.org/2000/svg" 
-                      viewBox="0 0 20 20" 
-                      fill="currentColor" 
-                      className="w-4 h-4 mr-1 flex-shrink-0 text-red-600 mt-0.5"
-                    >
-                      <path fillRule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
-                    </svg>
-                    <div>
-                      <p className="font-bold">Common Authentication Issues:</p>
-                      <ol className="list-decimal list-inside mt-1 space-y-1">
-                        <li><strong>Callback URL mismatch</strong>: This must be an exact character-for-character match in LinkedIn</li>
-                        <li><strong>Missing or incorrect scopes</strong>: We use OpenID Connect scopes (<code className="bg-red-50 px-1 border border-red-200">openid</code>, <code className="bg-red-50 px-1 border border-red-200">profile</code>, <code className="bg-red-50 px-1 border border-red-200">email</code>)</li>
-                        <li><strong>Invalid credentials</strong>: Client ID or Secret might be incorrect</li>
-                      </ol>
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="mt-3">
-                  <p className="font-medium">LinkedIn OAuth 2.0 Configuration Requirements:</p>
-                  <ul className="list-disc list-inside mt-1 space-y-1 text-xs">
-                    <li>We're using <strong>OpenID Connect scopes</strong>, not the older LinkedIn scopes:</li>
-                    <div className="ml-5 mt-1 grid grid-cols-2 gap-1">
-                      <div className="bg-amber-50 p-1 rounded border border-amber-200">
-                        <span className="font-bold">✓ Use these scopes:</span>
-                        <div className="mt-1">
-                          <code className="block">openid</code>
-                          <code className="block">profile</code>
-                          <code className="block">email</code>
-                        </div>
-                      </div>
-                      <div className="bg-red-50 p-1 rounded border border-red-200">
-                        <span className="font-bold">✗ Don't use these:</span>
-                        <div className="mt-1 line-through opacity-70">
-                          <code className="block">r_liteprofile</code>
-                          <code className="block">r_emailaddress</code>
-                          <code className="block">w_member_social</code>
-                        </div>
-                      </div>
-                    </div>
-                    <li className="mt-2">Make sure your LinkedIn app has been upgraded to use OpenID Connect</li>
-                    <li>Verify that your app has permissions for these scopes in the LinkedIn Developer Portal</li>
-                  </ul>
-                </div>
-              </div>
+              {/* LinkedIn authentication debugging info removed - now working correctly */}
             </CardContent>
             <CardFooter className="flex flex-col gap-3">
               <Button 
@@ -270,25 +182,7 @@ const Login = () => {
                 Sign in with LinkedIn
               </Button>
               
-              <div className="flex flex-col space-y-2">
-                <Link href="/linkedin-diagnostics" className="w-full">
-                  <Button variant="outline" className="w-full text-sm" type="button">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                    </svg>
-                    LinkedIn Authentication Diagnostics
-                  </Button>
-                </Link>
-                
-                <Link href="/linkedin-token-test" className="w-full">
-                  <Button variant="outline" className="w-full text-sm" type="button">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
-                    </svg>
-                    Test LinkedIn Token
-                  </Button>
-                </Link>
-              </div>
+              {/* Diagnostic tools removed as they are no longer needed */}
             </CardFooter>
           </Card>
 
@@ -316,160 +210,7 @@ const Login = () => {
                 </ul>
               </div>
               
-              {/* LinkedIn Diagnostic Tool */}
-              <Accordion type="single" collapsible className="w-full">
-                <AccordionItem value="linkedin-diagnostics">
-                  <AccordionTrigger className="text-sm font-medium">
-                    <div className="flex items-center">
-                      <span>LinkedIn Authentication Diagnostics</span>
-                      {isDiagnosticLoading && (
-                        <div className="ml-2 h-3 w-3 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
-                      )}
-                    </div>
-                  </AccordionTrigger>
-                  <AccordionContent>
-                    <div className="space-y-3 text-sm">
-                      <div className="p-2 bg-blue-50 border border-blue-200 rounded text-blue-700">
-                        <p className="font-medium">Troubleshooting "redirect_uri" Errors</p>
-                        <ol className="list-decimal list-inside mt-1 space-y-1 text-xs">
-                          <li>Copy the exact callback URL shown above</li>
-                          <li>Go to <a href="https://www.linkedin.com/developers/apps/" target="_blank" rel="noopener noreferrer" className="underline">LinkedIn Developer Portal</a></li>
-                          <li>Select your application and click "Auth" tab</li>
-                          <li>Add or edit the redirect URL to match exactly (character-for-character)</li>
-                          <li>Click "Save" and try the login again</li>
-                        </ol>
-                      </div>
-                    
-                      <p className="mt-2">Use this tool to diagnose LinkedIn authentication issues:</p>
-                      
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="w-full"
-                        onClick={runLinkedInDiagnostic}
-                        disabled={isDiagnosticLoading}
-                      >
-                        {isDiagnosticLoading ? 'Running Diagnostic...' : 'Run Diagnostic'}
-                      </Button>
-                      
-                      {/* Diagnostic Results */}
-                      {diagnosticData && (
-                        <div className="mt-4 space-y-3 border border-border rounded-md p-3 text-xs">
-                          <div>
-                            <h4 className="font-medium mb-1">Credentials</h4>
-                            <div className="grid grid-cols-2 gap-1">
-                              <div>Client ID:</div>
-                              <div>
-                                <Badge variant={diagnosticData.clientIdStatus === 'present' ? 'default' : 'destructive'}>
-                                  {diagnosticData.clientIdStatus === 'present' ? 'Present' : 'Missing'}
-                                </Badge>
-                                {diagnosticData.clientIdStatus === 'present' && (
-                                  <span className="ml-2 text-muted-foreground">
-                                    Length: {diagnosticData.clientIdLength}
-                                  </span>
-                                )}
-                              </div>
-                              
-                              <div>Client Secret:</div>
-                              <div>
-                                <Badge variant={diagnosticData.clientSecretStatus === 'present' ? 'default' : 'destructive'}>
-                                  {diagnosticData.clientSecretStatus === 'present' ? 'Present' : 'Missing'}
-                                </Badge>
-                                {diagnosticData.clientSecretStatus === 'present' && (
-                                  <span className="ml-2 text-muted-foreground">
-                                    Length: {diagnosticData.clientSecretLength}
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                          
-                          <div>
-                            <h4 className="font-medium mb-1">Callback URL</h4>
-                            <div className="grid grid-cols-1 gap-1">
-                              <div>
-                                <span className="font-medium">Expected: </span>
-                                <code className="bg-muted p-1 rounded text-[10px] break-all">{diagnosticData.expectedCallbackURL}</code>
-                              </div>
-                              <div>
-                                <span className="font-medium">Configured: </span>
-                                <code className="bg-muted p-1 rounded text-[10px] break-all">{diagnosticData.callbackURL}</code>
-                              </div>
-                              <div>
-                                <span className="font-medium">Detected Host: </span>
-                                <code className="bg-muted p-1 rounded text-[10px]">{diagnosticData.detectedHost}</code>
-                              </div>
-                            </div>
-                          </div>
-                          
-                          {diagnosticData.linkedInTest && (
-                            <div>
-                              <h4 className="font-medium mb-1">LinkedIn API Test</h4>
-                              <div className="grid grid-cols-2 gap-1">
-                                <div>Credentials Valid:</div>
-                                <div>
-                                  <Badge variant={diagnosticData.linkedInTest.credentialsValid ? 'default' : 'destructive'}>
-                                    {diagnosticData.linkedInTest.credentialsValid ? 'Yes' : 'No'}
-                                  </Badge>
-                                </div>
-                                
-                                <div>Status Code:</div>
-                                <div>{diagnosticData.linkedInTest.statusCode}</div>
-                                
-                                <div>Auth URL:</div>
-                                <div className="text-[10px] break-all">
-                                  {diagnosticData.linkedInTest.authUrlFormat}
-                                </div>
-                              </div>
-                            </div>
-                          )}
-                          
-                          <Alert className="mt-2">
-                            <AlertTitle>Potential Issues</AlertTitle>
-                            <AlertDescription className="text-[10px] space-y-2">
-                              {!diagnosticData.strategyConfigured && (
-                                <p>- LinkedIn strategy not properly configured</p>
-                              )}
-                              {!diagnosticData.callbackConfigured && (
-                                <p>- Callback URL not properly configured in Passport strategy</p>
-                              )}
-                              {diagnosticData.callbackURL !== diagnosticData.expectedCallbackURL && (
-                                <p>- Callback URL mismatch. Make sure the URL is registered in LinkedIn Developer Console.</p>
-                              )}
-                              {diagnosticData.linkedInTest && !diagnosticData.linkedInTest.credentialsValid && (
-                                <p>- LinkedIn API rejected the credentials. Please check your Client ID and Secret.</p>
-                              )}
-                              
-                              {/* Always show the redirect_uri explanation */}
-                              <div className="pt-2 border-t border-muted">
-                                <p className="font-medium text-destructive mb-1">Common "redirect_uri" error:</p>
-                                <p>This error occurs when LinkedIn detects a mismatch between:</p>
-                                <ul className="list-disc list-inside ml-2 mt-1">
-                                  <li>The redirect URL registered in your LinkedIn Developer Console</li>
-                                  <li>The redirect URL sent by our application during authentication</li>
-                                </ul>
-                                <p className="mt-1">Every character must match exactly, including "https://" vs "http://" or trailing slashes.</p>
-                              </div>
-                            </AlertDescription>
-                          </Alert>
-                        </div>
-                      )}
-
-                      <div className="mt-4 text-center">
-                        <Link 
-                          to="/linkedin-diagnostics" 
-                          className="inline-flex items-center text-xs text-blue-600 hover:text-blue-800 hover:underline"
-                        >
-                          Advanced Troubleshooting Tool
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                          </svg>
-                        </Link>
-                      </div>
-                    </div>
-                  </AccordionContent>
-                </AccordionItem>
-              </Accordion>
+              {/* LinkedIn Diagnostic Tool removed since authentication is now working */}
             </div>
           </div>
         </div>
