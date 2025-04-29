@@ -143,7 +143,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         <p>You <strong>MUST</strong> use this exact URL in your LinkedIn application:</p>
         
         <div class="highlight-box" id="hardcoded-url">
-          ${hardcodedCallbackURL}
+          https://workspace.repl.co/auth/linkedin/callback
           <button class="copy-btn" onclick="copyToClipboard('hardcoded-url')">Copy</button>
         </div>
         
@@ -156,7 +156,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         <p>This is your current Replit URL, but it will NOT work with LinkedIn:</p>
         
         <div class="your-url">
-          ${detectedCallbackURL}
+          ${detectedCallbackURL || `${protocol}://${host}/auth/linkedin/callback`}
         </div>
         
         <p><strong>Why?</strong> LinkedIn requires the callback URL to be registered in advance and remain consistent.
