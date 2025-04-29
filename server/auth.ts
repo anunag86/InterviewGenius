@@ -79,6 +79,7 @@ export function configureAuth(app: Express) {
       return 'placeholder-will-be-updated-on-first-request';
     }
     
+    // Always use HTTPS for replit domains, HTTP only for localhost
     const protocol = host.includes('localhost') ? 'http' : 'https';
     
     // Store the detected URL in environment for the frontend to access
@@ -196,7 +197,9 @@ export function configureAuth(app: Express) {
     console.log('- Client Secret length:', clientSecret.length, 'format:', clientSecret.substring(0, 2) + '...' + clientSecret.substring(clientSecret.length - 2));
     
     // Create a test OAuth URL (don't include the full keys in logs)
-    const testCallbackUrl = `${req.protocol}://${req.headers.host}/auth/linkedin/callback`;
+    // Always use https for Replit domains
+    const protocol = req.headers.host?.includes('replit.dev') || req.headers.host?.includes('repl.co') ? 'https' : req.protocol;
+    const testCallbackUrl = `${protocol}://${req.headers.host}/auth/linkedin/callback`;
     console.log('- Test callback URL:', testCallbackUrl);
     
     // Update the callback URL based on the current request host
@@ -327,7 +330,8 @@ export function configureAuth(app: Express) {
   app.get('/api/linkedin-callback-url', (req, res) => {
     // Generate callback URL specifically for this request
     const host = req.headers.host || detectedHost;
-    const protocol = (req.headers['x-forwarded-proto'] || req.protocol) as string;
+    // Always use HTTPS for replit domains, HTTP only for localhost
+    const protocol = host?.includes('localhost') ? 'http' : 'https';
     const callbackURL = `${protocol}://${host}/auth/linkedin/callback`;
     
     // Log and store it in environment
@@ -422,7 +426,8 @@ export function configureAuth(app: Express) {
       
       // Generate a test OAuth URL (for debugging purposes only)
       const host = req.headers.host || detectedHost || 'unknown-host';
-      const protocol = (req.headers['x-forwarded-proto'] || req.protocol) as string;
+      // Always use HTTPS for replit domains, HTTP only for localhost
+      const protocol = host?.includes('localhost') ? 'http' : 'https';
       const expectedCallbackURL = `${protocol}://${host}/auth/linkedin/callback`;
       
       // Create response with diagnostic info
