@@ -3,7 +3,10 @@ import passport from "passport";
 import { db } from "../db";
 import { eq } from "drizzle-orm";
 import { users, insertUserSchema } from "../shared/schema";
-import { Issuer, Strategy, generators, TokenSet, Client } from "openid-client";
+
+// Import client and passport-specific strategy from openid-client
+import { Configuration, Configuration as OpenIDConfiguration } from "openid-client";
+import { Strategy as OpenIDStrategy } from "openid-client/passport";
 
 // Define UserInfoResponse type
 interface UserInfoResponse {
@@ -13,6 +16,19 @@ interface UserInfoResponse {
   family_name?: string;
   email?: string;
   picture?: string;
+  [key: string]: any;
+}
+
+// Define TokenSet type for easier typescript support
+interface TokenSet {
+  access_token?: string;
+  token_type?: string;
+  id_token?: string;
+  refresh_token?: string;
+  expires_in?: number;
+  expires_at?: number;
+  session_state?: string;
+  scope?: string;
   [key: string]: any;
 }
 

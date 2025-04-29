@@ -27,6 +27,21 @@ const upload = multer({
 });
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Set up LinkedIn OpenID Connect authentication
+  console.log('Setting up LinkedIn OpenID Connect authentication routes...');
+  
+  // Detect current application host for callback URL
+  const host = process.env.REPL_IDENTITY || process.env.REPLIT_CLUSTER || 'localhost:5000';
+  const protocol = host.includes('localhost') ? 'http' : 'https';
+  const callbackURL = `${protocol}://${host}/auth/linkedin/callback/oidc`;
+  
+  // Initialize LinkedIn OpenID authentication
+  console.log('Initializing LinkedIn OpenID with callback URL:', callbackURL);
+  await setupLinkedInOpenID(app, callbackURL);
+  
+  // Set up LinkedIn authentication routes
+  setupLinkedInRoutes(app);
+  
   // Public API routes
   app.post("/api/feedback", submitFeedback);
   
