@@ -1,10 +1,18 @@
 import { Express, Request, Response, NextFunction } from "express";
-import passport from "passport";
 import { db } from "../db";
 import { eq } from "drizzle-orm";
 import { users, insertUserSchema } from "../shared/schema";
 import crypto from "crypto";
-import { URLSearchParams } from "url";
+import { Session } from "express-session";
+
+// Add LinkedIn properties to session
+declare module "express-session" {
+  interface SessionData {
+    linkedinState?: string;
+    linkedinRedirectUri?: string;
+    linkedinAccessToken?: string;
+  }
+}
 
 // Global variables for state management
 declare global {
@@ -42,6 +50,9 @@ export async function setupLinkedInOpenID(app: Express, callbackURL: string) {
   console.log('⭐️⭐️⭐️ Setting up LinkedIn OpenID Connect authentication ⭐️⭐️⭐️');
   console.log('Using callback URL:', callbackURL);
   
+  // Store environment variable for later use
+  process.env.LINKEDIN_REDIRECT_URI = callbackURL;
+  
   // Store the callback URL for later use
   app.locals.linkedInCallbackUrl = callbackURL;
   
@@ -58,38 +69,33 @@ export function setupLinkedInRoutes(app: Express) {
     try {
       console.log('🔄 LinkedIn OpenID Connect authentication initiated');
       
-      // Get the callback URL
-      const callbackUrl = app.locals.linkedInCallbackUrl;
+      // Get the callback URL from environment variable
+      const callbackUrl = process.env.LINKEDIN_REDIRECT_URI;
       console.log('- Using callback URL:', callbackUrl);
       
       // Generate CSRF state token to prevent CSRF attacks
       const state = crypto.randomBytes(16).toString('hex');
       
-      // Store the state with timestamp for verification
-      global.linkedInAuthStates[state] = {
-        redirectUri: callbackUrl,
-        timestamp: Date.now()
-      };
+      // Store the state in session
+      if (req.session) {
+        req.session.linkedinState = state;
+        req.session.linkedinRedirectUri = callbackUrl;
+      } else {
+        console.error('Session not available');
+        return res.redirect('/login?error=session_not_available');
+      }
       
-      // Cleanup old state tokens (older than 1 hour)
-      const oneHourAgo = Date.now() - (60 * 60 * 1000);
-      Object.keys(global.linkedInAuthStates).forEach(key => {
-        if (global.linkedInAuthStates[key].timestamp < oneHourAgo) {
-          delete global.linkedInAuthStates[key];
-        }
-      });
-      
-      // Redirect to LinkedIn authorization endpoint
+      // Redirect to LinkedIn authorization endpoint with recommended parameters
       const authUrl = new URL('https://www.linkedin.com/oauth/v2/authorization');
       authUrl.searchParams.append('response_type', 'code');
       authUrl.searchParams.append('client_id', process.env.LINKEDIN_CLIENT_ID || '');
-      authUrl.searchParams.append('redirect_uri', callbackUrl);
+      authUrl.searchParams.append('redirect_uri', callbackUrl || '');
       authUrl.searchParams.append('state', state);
       authUrl.searchParams.append('scope', 'openid profile email');
       
       console.log('- Redirecting to LinkedIn authorization URL');
       res.redirect(authUrl.toString());
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ LinkedIn auth error:', error);
       res.redirect('/login?error=auth_error');
     }
@@ -113,17 +119,10 @@ export function setupLinkedInRoutes(app: Express) {
       const state = req.query.state as string;
       
       // Verify state token to prevent CSRF attacks
-      if (!state || !global.linkedInAuthStates[state]) {
+      if (!state || !req.session || state !== req.session.linkedinState) {
         console.error('Invalid or expired state token');
         return res.redirect('/login?error=invalid_state');
       }
-      
-      // Get the matching redirect URI from state store
-      const storedState = global.linkedInAuthStates[state];
-      const redirectUri = storedState.redirectUri;
-      
-      // Clean up the used state
-      delete global.linkedInAuthStates[state];
       
       if (!code) {
         console.error('No authorization code received from LinkedIn');
@@ -136,69 +135,61 @@ export function setupLinkedInRoutes(app: Express) {
       const params = new URLSearchParams();
       params.append('grant_type', 'authorization_code');
       params.append('code', code);
-      params.append('redirect_uri', redirectUri);
+      params.append('redirect_uri', process.env.LINKEDIN_REDIRECT_URI || '');
       params.append('client_id', process.env.LINKEDIN_CLIENT_ID || '');
       params.append('client_secret', process.env.LINKEDIN_CLIENT_SECRET || '');
       
-      const tokenResponse = await fetch('https://www.linkedin.com/oauth/v2/accessToken', {
+      const tokenRes = await fetch('https://www.linkedin.com/oauth/v2/accessToken', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: params,
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: params.toString()
       });
       
-      // Verify token response
-      if (!tokenResponse.ok) {
-        const errorText = await tokenResponse.text();
-        console.error('Failed to exchange code for token:', tokenResponse.status, errorText);
-        return res.redirect('/login?error=token_exchange_failed');
+      // Parse token data
+      const tokenData = await tokenRes.json();
+      console.log('🎟 Token data:', tokenData);
+      
+      if (!tokenData.access_token) {
+        return res.status(401).send("❌ Failed to get access token");
       }
       
-      // Parse token data
-      const tokenData = await tokenResponse.json();
-      const accessToken = tokenData.access_token;
-      
-      // Store the token for debugging
+      // Store the token for debugging and in session
       global.linkedInLastToken = {
-        token: accessToken,
+        token: tokenData.access_token,
         tokenType: 'Bearer',
         params: tokenData,
         timestamp: new Date().toISOString()
       };
       
+      if (req.session) {
+        req.session.linkedinAccessToken = tokenData.access_token;
+      }
+      
       console.log('✅ Access token received (masked):', 
-        accessToken ? 
-          `${accessToken.substring(0, 5)}...${accessToken.substring(accessToken.length - 5)}` : 
+        tokenData.access_token ? 
+          `${tokenData.access_token.substring(0, 5)}...${tokenData.access_token.substring(tokenData.access_token.length - 5)}` : 
           'MISSING');
       
       console.log('2️⃣ Fetching user profile from userinfo endpoint');
       
-      // Step 4: Fetch the user profile using the OpenID userinfo endpoint
-      const profileResponse = await fetch('https://api.linkedin.com/v2/userinfo', {
+      // Step 4: Fetch user info
+      const userRes = await fetch('https://api.linkedin.com/v2/userinfo', {
         headers: {
-          'Authorization': `Bearer ${accessToken}`
+          Authorization: `Bearer ${tokenData.access_token}`
         }
       });
       
-      // Verify profile response
-      if (!profileResponse.ok) {
-        const errorText = await profileResponse.text();
-        console.error('Failed to fetch user profile:', profileResponse.status, errorText);
-        return res.redirect('/login?error=profile_fetch_failed');
+      if (!userRes.ok) {
+        console.error('❌ LinkedIn userinfo failed:', await userRes.text());
+        return res.status(403).send("❌ Could not fetch user profile");
       }
       
       // Parse user profile
-      const userProfile = await profileResponse.json();
-      
-      console.log('✅ User profile received:', {
-        sub: userProfile.sub,
-        name: userProfile.name,
-        email: userProfile.email || 'none'
-      });
+      const userInfo = await userRes.json();
+      console.log('✅ LinkedIn user:', userInfo);
       
       // Step 5: Find or create user in our database
-      const existingUsers = await db.select().from(users).where(eq(users.linkedinId, userProfile.sub));
+      const existingUsers = await db.select().from(users).where(eq(users.linkedinId, userInfo.sub));
       const existingUser = existingUsers.length > 0 ? existingUsers[0] : null;
       
       let user;
@@ -207,7 +198,7 @@ export function setupLinkedInRoutes(app: Express) {
         // Update existing user with latest token
         await db.update(users)
           .set({ 
-            accessToken: accessToken,
+            accessToken: tokenData.access_token,
             updatedAt: new Date()
           })
           .where(eq(users.id, existingUser.id));
@@ -217,12 +208,12 @@ export function setupLinkedInRoutes(app: Express) {
       } else {
         // Create a new user
         const newUser = {
-          linkedinId: userProfile.sub,
-          displayName: userProfile.name || userProfile.given_name + ' ' + userProfile.family_name,
-          email: userProfile.email || "",
-          photoUrl: userProfile.picture || "",
+          linkedinId: userInfo.sub,
+          displayName: userInfo.name || userInfo.given_name + ' ' + userInfo.family_name,
+          email: userInfo.email || "",
+          photoUrl: userInfo.picture || "",
           profileUrl: "",
-          accessToken: accessToken,
+          accessToken: tokenData.access_token,
           createdAt: new Date(),
           updatedAt: new Date()
         };
@@ -244,7 +235,7 @@ export function setupLinkedInRoutes(app: Express) {
         // Success! Redirect to home page
         return res.redirect('/');
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ LinkedIn callback error:', error);
       res.redirect('/login?error=callback_error');
     }
@@ -252,15 +243,10 @@ export function setupLinkedInRoutes(app: Express) {
   
   // Diagnostics endpoint to show current LinkedIn token info
   app.get('/api/auth/linkedin/latest-token', (req, res) => {
-    // Check if we have global token storage
-    const lastToken = global.linkedInLastToken || { 
-      token: null, 
-      tokenType: null, 
-      params: null, 
-      timestamp: null 
-    };
+    // Check if we have token in session
+    const accessToken = req.session?.linkedinAccessToken;
     
-    if (!lastToken.token) {
+    if (!accessToken) {
       return res.json({
         success: false,
         message: 'No LinkedIn token has been recorded yet. Try logging in first.'
@@ -271,10 +257,8 @@ export function setupLinkedInRoutes(app: Express) {
     return res.json({
       success: true,
       token: {
-        masked: lastToken.token ? `${lastToken.token.substring(0, 5)}...${lastToken.token.substring(lastToken.token.length - 5)}` : null,
-        tokenType: lastToken.tokenType,
-        length: lastToken.token ? lastToken.token.length : 0,
-        receivedAt: lastToken.timestamp,
+        masked: accessToken ? `${accessToken.substring(0, 5)}...${accessToken.substring(accessToken.length - 5)}` : null,
+        length: accessToken ? accessToken.length : 0,
       },
       message: 'Last LinkedIn token information'
     });
@@ -282,13 +266,13 @@ export function setupLinkedInRoutes(app: Express) {
   
   // Test endpoint to manually check a token against LinkedIn's userinfo endpoint
   app.get('/api/auth/linkedin/test-token', async (req, res) => {
-    // Check if token is provided in query parameter
-    const accessToken = req.query.token as string;
+    // Check if token is provided in query parameter or session
+    const accessToken = (req.query.token as string) || req.session?.linkedinAccessToken;
     
     if (!accessToken) {
       return res.status(400).json({
         success: false,
-        message: 'No token provided. Add ?token=your_access_token to test.'
+        message: 'No token provided. Add ?token=your_access_token to test or login first.'
       });
     }
     
@@ -306,30 +290,29 @@ export function setupLinkedInRoutes(app: Express) {
       // Log response status
       console.log('LinkedIn API test status:', response.status, response.statusText);
       
-      // Get response body
-      const responseText = await response.text();
-      let responseData;
-      
-      try {
-        // Try to parse as JSON if possible
-        responseData = JSON.parse(responseText);
-      } catch (e) {
-        // If not JSON, use the raw text
-        responseData = responseText;
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('LinkedIn userinfo failed:', errorText);
+        return res.status(response.status).json({
+          success: false,
+          error: errorText,
+          message: 'Failed to fetch user profile'
+        });
       }
+      
+      // Parse user info
+      const userInfo = await response.json();
       
       // Return result
       return res.json({
-        success: response.ok,
-        status: response.status,
-        statusText: response.statusText,
-        response: responseData
+        success: true,
+        user: userInfo
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error testing LinkedIn token:', error);
       return res.status(500).json({
         success: false,
-        error: error.toString(),
+        error: error?.toString() || 'Unknown error',
         message: 'Failed to test LinkedIn token due to an unexpected error'
       });
     }
