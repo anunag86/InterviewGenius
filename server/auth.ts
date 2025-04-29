@@ -97,14 +97,28 @@ export function configureAuth(app: Express) {
   console.log('LinkedIn Strategy Configuration:');
   console.log('- Client ID:', process.env.LINKEDIN_CLIENT_ID ? '✓ Present' : '✗ Missing');
   console.log('- Client Secret:', process.env.LINKEDIN_CLIENT_SECRET ? '✓ Present' : '✗ Missing');
-  console.log('- Initial Callback URL:', defaultCallbackURL);
-  console.log('(Will be updated on first request)');
   
   // Configure LinkedIn strategy with proper callback URL and more robust error handling
+  // Try to use a better default URL if possible
+  let initialCallbackURL = defaultCallbackURL;
+  
+  // If we have Replit environment variables, use those to create a better default
+  if (process.env.REPLIT_CLUSTER) {
+    const replit_id = process.env.REPLIT_CLUSTER;
+    initialCallbackURL = `https://${replit_id}.replit.dev/auth/linkedin/callback`;
+    console.log('✨ Using Replit cluster ID for initial callback URL:', initialCallbackURL);
+  }
+  
+  // If we already have a detected callback URL from previous requests, use that instead
+  if (process.env.DETECTED_CALLBACK_URL) {
+    initialCallbackURL = process.env.DETECTED_CALLBACK_URL;
+    console.log('✨ Using previously detected callback URL:', initialCallbackURL);
+  }
+  
   passport.use('linkedin', new LinkedInStrategy({
     clientID: process.env.LINKEDIN_CLIENT_ID || '',
     clientSecret: process.env.LINKEDIN_CLIENT_SECRET || '',
-    callbackURL: defaultCallbackURL, // Start with default, will be updated on first request
+    callbackURL: initialCallbackURL, // Start with better default, will still be updated on first request
     scope: ['r_liteprofile'],
     profileFields: ['id', 'first-name', 'last-name', 'profile-picture'],
     state: true,
@@ -238,15 +252,79 @@ export function configureAuth(app: Express) {
       state: Math.random().toString(36).substring(2),
     };
     
-    // Safely log current strategy's callback URL
+    // Force-update the LinkedIn strategy before authentication
+    // This ensures we're always using the correct callback URL
     try {
+      // Create a new strategy with the correct callback URL
+      const correctCallbackURL = `https://${req.headers.host}/auth/linkedin/callback`;
+      
+      console.log('🔄 CRITICAL: Forcing callback URL update before authentication:', correctCallbackURL);
+      
+      // Re-create the LinkedIn strategy with the correct URL
+      passport.use('linkedin', new LinkedInStrategy({
+        clientID: process.env.LINKEDIN_CLIENT_ID || '',
+        clientSecret: process.env.LINKEDIN_CLIENT_SECRET || '',
+        callbackURL: correctCallbackURL,
+        scope: ['r_liteprofile'],
+        profileFields: ['id', 'first-name', 'last-name', 'profile-picture'],
+        state: true,
+        proxy: true
+      } as any, async (accessToken: string, refreshToken: string, profile: LinkedInProfile, done: (error: any, user?: any) => void) => {
+        // Log the profile data for debugging
+        console.log('LinkedIn profile received:', {
+          id: profile.id,
+          displayName: profile.displayName,
+          hasEmails: !!profile.emails?.length,
+          hasPhotos: !!profile.photos?.length
+        });
+        try {
+          // Find existing user based on LinkedIn ID
+          const existingUsers = await db.select().from(users).where(eq(users.linkedinId, profile.id));
+          const existingUser = existingUsers.length > 0 ? existingUsers[0] : null;
+
+          if (existingUser) {
+            // Update user's access token
+            await db.update(users)
+              .set({ 
+                accessToken,
+                updatedAt: new Date()
+              })
+              .where(eq(users.id, existingUser.id));
+              
+            return done(null, existingUser);
+          }
+
+          // If user doesn't exist, create a new one
+          const newUser = {
+            linkedinId: profile.id,
+            displayName: profile.displayName,
+            email: profile.emails?.[0]?.value || "",
+            profileUrl: profile.profileUrl || "",
+            photoUrl: profile.photos?.[0]?.value || "",
+            accessToken,
+            createdAt: new Date(),
+            updatedAt: new Date()
+          };
+
+          const validatedUser = insertUserSchema.parse(newUser);
+          const [createdUser] = await db.insert(users).values(validatedUser).returning();
+          
+          return done(null, createdUser);
+        } catch (error) {
+          console.error("Authentication error:", error);
+          return done(error as Error);
+        }
+      }));
+      
+      // Verify the callbackURL was set correctly
       // @ts-ignore - Accessing private passport internals
-      const callbackURL = passport._strategies?.linkedin?._oauth2?._callbackURL;
-      console.log('🔍 Using callback URL:', callbackURL || 'Could not determine callback URL');
+      const updatedCallbackURL = passport._strategies?.linkedin?._oauth2?._callbackURL;
+      console.log('✅ Verified callback URL before auth:', updatedCallbackURL);
     } catch (error) {
-      console.log('Could not access strategy callback URL');
+      console.error('Failed to update LinkedIn strategy before authentication:', error);
     }
     
+    // Now authenticate with the updated strategy
     passport.authenticate('linkedin', authOptions)(req, res, next);
   });
 
