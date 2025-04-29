@@ -96,7 +96,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (response.ok) {
         setUser(null);
         // Redirect to login page
-        window.location.href = "/login";
+        window.location.href = "/auth";
       } else {
         throw new Error("Logout failed");
       }

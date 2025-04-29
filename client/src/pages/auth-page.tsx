@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { Redirect } from "wouter";
 import { Button } from "@/components/ui/button";
@@ -7,7 +7,13 @@ import { Loader2, AlertCircle } from "lucide-react";
 
 export default function AuthPage() {
   const { user, isLoading, login, loginError } = useAuth();
-  const [error, setError] = useState<string | null>(loginError);
+  const [error, setError] = useState<string | null>(null);
+  
+  useEffect(() => {
+    if (loginError) {
+      setError(loginError);
+    }
+  }, [loginError]);
   
   // Redirect to home if logged in
   if (user) {

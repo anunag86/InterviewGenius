@@ -12,8 +12,8 @@ const Home = () => {
     try {
       setIsSubmitting(true);
       
-      // Submit the form to the API without any LinkedIn URL
-      // (LinkedIn integration has been removed)
+      // Submit the form to the API with LinkedIn data from the user's profile
+      // (LinkedIn integration is automatically handled)
       const response = await fetch("/api/interview/generate", {
         method: "POST",
         body: formData,
