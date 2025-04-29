@@ -125,9 +125,9 @@ export function configureAuth(app: Express) {
     clientID: process.env.LINKEDIN_CLIENT_ID || '',
     clientSecret: process.env.LINKEDIN_CLIENT_SECRET || '',
     callbackURL: initialCallbackURL, // Start with better default, will still be updated on first request
-    // Only use the scopes that are approved in your LinkedIn app
-    scope: ["openid", "profile", "email"], // Using LinkedIn standard scopes
-    profileFields: ['id', 'first-name', 'last-name', 'profile-picture'],
+    // Use LinkedIn's API v2 scopes - these are the ones LinkedIn allows
+    scope: ["r_liteprofile", "r_emailaddress"],
+    profileFields: ['id', 'first-name', 'last-name', 'email-address', 'profile-picture'],
     state: false, // Disable state verification to fix 'Unable to verify authorization request state' error
     proxy: true
   } as any, async (accessToken: string, refreshToken: string, profile: LinkedInProfile, done: (error: any, user?: any) => void) => {
@@ -243,8 +243,8 @@ export function configureAuth(app: Express) {
           clientID: process.env.LINKEDIN_CLIENT_ID || '',
           clientSecret: process.env.LINKEDIN_CLIENT_SECRET || '',
           callbackURL: newCallbackURL,
-          scope: ["openid", "profile", "email"], // Using LinkedIn standard scopes
-          profileFields: ['id', 'first-name', 'last-name', 'profile-picture'],
+          scope: ["r_liteprofile", "r_emailaddress"],
+          profileFields: ['id', 'first-name', 'last-name', 'email-address', 'profile-picture'],
           state: false, // Disable state verification to fix 'Unable to verify authorization request state' error
           proxy: true
         } as any, linkedinStrategy._verify));
@@ -257,7 +257,7 @@ export function configureAuth(app: Express) {
     // This helps bypass the "Unable to verify authorization request state" error
     // State verification has been disabled in the LinkedIn strategy configuration
     const authOptions = { 
-      scope: ["openid", "profile", "email"], // Using LinkedIn standard scopes
+      scope: ["r_liteprofile", "r_emailaddress"], // Using LinkedIn API v2 scopes
       // No state parameter - using stateless authentication
     };
     
@@ -274,8 +274,8 @@ export function configureAuth(app: Express) {
         clientID: process.env.LINKEDIN_CLIENT_ID || '',
         clientSecret: process.env.LINKEDIN_CLIENT_SECRET || '',
         callbackURL: correctCallbackURL,
-        scope: ["openid", "profile", "email"], // Using LinkedIn standard scopes
-        profileFields: ['id', 'first-name', 'last-name', 'profile-picture'],
+        scope: ["r_liteprofile", "r_emailaddress"],
+        profileFields: ['id', 'first-name', 'last-name', 'email-address', 'profile-picture'],
         state: false, // Disable state verification to fix 'Unable to verify authorization request state' error
         proxy: true
       } as any, async (accessToken: string, refreshToken: string, profile: LinkedInProfile, done: (error: any, user?: any) => void) => {
@@ -376,8 +376,8 @@ export function configureAuth(app: Express) {
           clientID: process.env.LINKEDIN_CLIENT_ID || '',
           clientSecret: process.env.LINKEDIN_CLIENT_SECRET || '',
           callbackURL: `https://${req.headers.host}/auth/linkedin/callback`,
-          scope: ["openid", "profile", "email"],
-          profileFields: ['id', 'first-name', 'last-name', 'profile-picture'],
+          scope: ["r_liteprofile", "r_emailaddress"],
+          profileFields: ['id', 'first-name', 'last-name', 'email-address', 'profile-picture'],
           state: false, // Critically important: disable state verification
           proxy: true
         } as any, async (accessToken: string, refreshToken: string, profile: LinkedInProfile, done: (error: any, user?: any) => void) => {
@@ -593,8 +593,8 @@ export function configureAuth(app: Express) {
             clientID: process.env.LINKEDIN_CLIENT_ID || '',
             clientSecret: process.env.LINKEDIN_CLIENT_SECRET || '',
             callbackURL: expectedCallbackURL,
-            scope: ["openid", "profile", "email"], // Using LinkedIn standard scopes
-            profileFields: ['id', 'first-name', 'last-name', 'profile-picture'],
+            scope: ["r_liteprofile", "r_emailaddress"], 
+            profileFields: ['id', 'first-name', 'last-name', 'email-address', 'profile-picture'],
             state: true,
             proxy: true
           } as any, linkedinStrategy._verify));
