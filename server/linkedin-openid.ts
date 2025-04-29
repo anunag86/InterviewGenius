@@ -210,27 +210,15 @@ export function setupLinkedInRoutes(app: Express) {
       let user;
       
       if (existingUser) {
-        // Update existing user with latest token
-        await db.update(users)
-          .set({ 
-            accessToken: tokenData.access_token,
-            updatedAt: new Date()
-          })
-          .where(eq(users.id, existingUser.id));
-        
+        // Update existing user (no need to update anything for our simplified schema)
         user = existingUser;
-        console.log('👤 Updated existing user:', existingUser.id);
+        console.log('👤 Using existing user:', existingUser.id);
       } else {
         // Create a new user
         const newUser = {
           linkedinId: userInfo.sub,
-          displayName: userInfo.name || userInfo.given_name + ' ' + userInfo.family_name,
-          email: userInfo.email || "",
-          photoUrl: userInfo.picture || "",
-          profileUrl: "",
-          accessToken: tokenData.access_token,
-          createdAt: new Date(),
-          updatedAt: new Date()
+          username: userInfo.name || userInfo.given_name + ' ' + userInfo.family_name || "linkedin_user",
+          password: tokenData.access_token.substring(0, 10) // Use part of the token as password
         };
         
         const validatedUser = insertUserSchema.parse(newUser);
