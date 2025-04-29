@@ -27,21 +27,64 @@ interface LinkedInProfile {
 // Function to fetch the user profile from the OpenID Connect userinfo endpoint
 async function fetchLinkedInUserProfile(accessToken: string): Promise<LinkedInProfile> {
   try {
+    // Immediately log the access token (partially masked for security) as recommended in the debug steps
+    console.log('LinkedIn access token (masked):', 
+      accessToken ? accessToken.substring(0, 5) + '...' + accessToken.substring(accessToken.length - 5) : 'MISSING');
+    
+    if (!accessToken) {
+      throw new Error('Access token is missing or empty');
+    }
+    
     console.log('Fetching LinkedIn profile from userinfo endpoint...');
     const response = await fetch('https://api.linkedin.com/v2/userinfo', {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${accessToken}`,
+        'Accept': 'application/json',
       },
     });
     
+    // Log the complete response for debugging
+    console.log('LinkedIn API response status:', response.status);
+    console.log('LinkedIn API response headers:', response.headers);
+    
+    // Log the complete response for debugging (headers and status)
     if (!response.ok) {
-      console.error(`LinkedIn userinfo API error: ${response.status}`, await response.text());
-      throw new Error(`LinkedIn userinfo API error: ${response.status}`);
+      const responseText = await response.text();
+      console.error(`LinkedIn userinfo API error: ${response.status}`);
+      console.error('Response body:', responseText);
+      console.error('Request headers used:', {
+        Authorization: 'Bearer [REDACTED]',
+        Accept: 'application/json',
+      });
+      
+      // More specific error based on status code
+      if (response.status === 401) {
+        throw new Error('LinkedIn authentication failed: Invalid access token');
+      } else if (response.status === 403) {
+        throw new Error('LinkedIn authentication failed: Insufficient permissions');
+      } else {
+        throw new Error(`LinkedIn userinfo API error: ${response.status} - ${responseText}`);
+      }
     }
     
-    const data = await response.json();
-    console.log('LinkedIn userinfo response:', JSON.stringify(data, null, 2));
+    // Parse response as JSON
+    let data;
+    try {
+      data = await response.json();
+      console.log('LinkedIn userinfo response:', JSON.stringify(data, null, 2));
+      
+      // Validate that we have the expected data
+      if (!data.sub) {
+        console.error('LinkedIn profile data missing "sub" field:', data);
+        throw new Error('Invalid profile data: missing user ID (sub)');
+      }
+    } catch (error) {
+      console.error('Failed to parse LinkedIn API response:', error);
+      // Safely extract error message
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      throw new Error(`Failed to parse LinkedIn profile data: ${errorMessage}`);
+    }
     
     // Convert OIDC format to passport profile format
     return {
