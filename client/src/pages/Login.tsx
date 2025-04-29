@@ -9,9 +9,31 @@ import Footer from "../components/Footer";
 const Login = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // Parse URL parameters to check for error messages
+  const getErrorMessage = () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const errorParam = urlParams.get('error');
+    
+    if (errorParam === 'auth_error') {
+      return 'Authentication error occurred. Please try again.';
+    } else if (errorParam === 'auth_failed') {
+      return 'LinkedIn authentication failed. Please try again.';
+    } else if (errorParam === 'login_error') {
+      return 'Error during login process. Please try again.';
+    }
+    
+    return null;
+  };
 
   // Check authentication status when component mounts
   useEffect(() => {
+    // Check URL params for potential error messages from LinkedIn auth
+    const urlErrorMessage = getErrorMessage();
+    if (urlErrorMessage) {
+      setError(urlErrorMessage);
+    }
+    
     const checkAuth = async () => {
       try {
         console.log('Checking authentication status...');
@@ -30,7 +52,9 @@ const Login = () => {
         }
       } catch (err) {
         console.error('Auth check error:', err);
-        setError('Failed to check authentication status. Please try again.');
+        if (!urlErrorMessage) {
+          setError('Failed to check authentication status. Please try again.');
+        }
       } finally {
         setIsLoading(false);
       }

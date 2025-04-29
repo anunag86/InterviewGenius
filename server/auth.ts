@@ -53,12 +53,36 @@ export function configureAuth(app: Express) {
   app.use(passport.initialize());
   app.use(passport.session());
 
-  // Configure LinkedIn strategy
+  // Get the hostname for proper callback URL
+  const getHostName = () => {
+    // Try to get the hostname from environment variables (for production)
+    const replitDomain = process.env.REPL_SLUG 
+      ? `${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co` 
+      : null;
+    
+    // Use the replit domain if available, otherwise fallback to localhost
+    return replitDomain || 'localhost:5000';
+  };
+  
+  // Create full callback URL to match LinkedIn settings
+  const host = getHostName();
+  const protocol = host.includes('localhost') ? 'http' : 'https';
+  const callbackURL = `${protocol}://${host}/auth/linkedin/callback`;
+  
+  console.log('LinkedIn Strategy Configuration:');
+  console.log('- Client ID:', process.env.LINKEDIN_CLIENT_ID ? '✓ Present' : '✗ Missing');
+  console.log('- Client Secret:', process.env.LINKEDIN_CLIENT_SECRET ? '✓ Present' : '✗ Missing');
+  console.log('- Callback URL:', callbackURL);
+  
+  // Configure LinkedIn strategy with proper callback URL
   passport.use(new LinkedInStrategy({
     clientID: process.env.LINKEDIN_CLIENT_ID || '',
     clientSecret: process.env.LINKEDIN_CLIENT_SECRET || '',
-    callbackURL: "/auth/linkedin/callback",
-    scope: ['r_emailaddress', 'r_liteprofile']
+    callbackURL: callbackURL,
+    scope: ['r_emailaddress', 'r_liteprofile'],
+    // Set state parameter for CSRF protection and allow proxies for Replit deployment
+    state: true,
+    proxy: true
   } as any, async (accessToken: string, refreshToken: string, profile: LinkedInProfile, done: (error: any, user?: any) => void) => {
     try {
       // Find existing user based on LinkedIn ID
@@ -115,15 +139,49 @@ export function configureAuth(app: Express) {
     }
   });
 
-  // LinkedIn auth routes
-  app.get('/auth/linkedin', passport.authenticate('linkedin'));
+  // LinkedIn auth routes with detailed logging
+  app.get('/auth/linkedin', (req, res, next) => {
+    console.log('LinkedIn auth route accessed');
+    passport.authenticate('linkedin')(req, res, next);
+  });
 
   app.get(
     '/auth/linkedin/callback',
-    passport.authenticate('linkedin', {
-      successRedirect: '/',
-      failureRedirect: '/login'
-    })
+    (req, res, next) => {
+      console.log('LinkedIn callback route accessed', {
+        query: req.query,
+        params: req.params,
+        headers: req.headers['host']
+      });
+      
+      passport.authenticate('linkedin', (err: Error | null, user: any, info: { message: string } | undefined) => {
+        console.log('LinkedIn authentication result:', { 
+          error: err ? 'Yes' : 'No', 
+          user: user ? 'Found' : 'Not found', 
+          info: info || 'No info'
+        });
+        
+        if (err) {
+          console.error('LinkedIn auth error:', err);
+          return res.redirect('/login?error=auth_error');
+        }
+        
+        if (!user) {
+          console.error('LinkedIn auth failed:', info);
+          return res.redirect('/login?error=auth_failed');
+        }
+        
+        req.logIn(user, (err) => {
+          if (err) {
+            console.error('Login error:', err);
+            return res.redirect('/login?error=login_error');
+          }
+          
+          console.log('User successfully authenticated and logged in');
+          return res.redirect('/');
+        });
+      })(req, res, next);
+    }
   );
 
   // Logout route
