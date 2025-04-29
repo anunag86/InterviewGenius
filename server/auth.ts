@@ -375,20 +375,36 @@ export function configureAuth(app: Express) {
           
         linkedinAuthUrl = authURL;
           
-        // Make a simplified validation check
+        // Validation approach: use a simpler check for credential validation
+        // LinkedIn authentication URLs with valid client IDs return 200/302, even with a bad redirect_uri
         try {
-          // We'll use the fetch API instead of require('https')
-          const response = await fetch(authURL, { 
-            method: 'HEAD',
+          // Check LinkedIn's authorization endpoint with minimal parameters (not including redirect_uri)
+          const minimalAuthURL = `https://www.linkedin.com/oauth/v2/authorization?`
+            + `response_type=code`
+            + `&client_id=${encodeURIComponent(clientId)}`
+            + `&scope=r_liteprofile`;
+            
+          // Don't use HEAD - some APIs don't respond properly to HEAD requests
+          const response = await fetch(minimalAuthURL, { 
+            method: 'GET',
             headers: {
               'User-Agent': 'Mozilla/5.0 PrepTalk App'
             }
           });
           
-          // LinkedIn should redirect or return something other than 400/401 if credentials are valid
-          credentialsValid = response.status < 400 || response.status === 302;
+          // Log the full result for debugging
+          console.log(`LinkedIn auth validation test status: ${response.status}`);
           linkedinStatusCode = response.status;
-          console.log(`LinkedIn auth URL test status: ${response.status}`);
+
+          // Either we get a valid response (200-299) or a redirect (30x) if credentials are valid
+          // If we get a 4xx error, it likely means invalid client ID
+          credentialsValid = (response.status >= 200 && response.status < 400);
+          
+          if (!credentialsValid) {
+            console.log(`LinkedIn credential validation failed with status: ${response.status}`);
+          } else {
+            console.log(`LinkedIn credential validation successful with status: ${response.status}`);
+          }
         } catch (testError) {
           console.error('Failed to validate LinkedIn credentials:', testError);
           // Set some default values for the diagnostic info
