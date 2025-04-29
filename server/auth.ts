@@ -91,13 +91,12 @@ export function configureAuth(app: Express) {
   console.log('- Callback URL:', callbackURL);
   
   // Configure LinkedIn strategy with proper callback URL and more robust error handling
-  passport.use(new LinkedInStrategy({
+  passport.use('linkedin', new LinkedInStrategy({
     clientID: process.env.LINKEDIN_CLIENT_ID || '',
     clientSecret: process.env.LINKEDIN_CLIENT_SECRET || '',
     callbackURL: callbackURL,
     scope: ['r_emailaddress', 'r_liteprofile'],
-    // Explicitly setting auth type and response type
-    authType: 'reauthenticate',
+    profileFields: ['id', 'first-name', 'last-name', 'email-address', 'profile-picture'],
     state: true,
     proxy: true
   } as any, async (accessToken: string, refreshToken: string, profile: LinkedInProfile, done: (error: any, user?: any) => void) => {
@@ -181,6 +180,18 @@ export function configureAuth(app: Express) {
       return res.redirect('/login?error=missing_credentials');
     }
     
+    // Log key information (just length/format, not the actual key values)
+    const clientId = process.env.LINKEDIN_CLIENT_ID || '';
+    const clientSecret = process.env.LINKEDIN_CLIENT_SECRET || '';
+    
+    console.log('LinkedIn credentials check:');
+    console.log('- Client ID length:', clientId.length, 'format:', clientId.substring(0, 2) + '...' + clientId.substring(clientId.length - 2));
+    console.log('- Client Secret length:', clientSecret.length, 'format:', clientSecret.substring(0, 2) + '...' + clientSecret.substring(clientSecret.length - 2));
+    
+    // Create a test OAuth URL (don't include the full keys in logs)
+    const testCallbackUrl = `${req.protocol}://${req.headers.host}/auth/linkedin/callback`;
+    console.log('- Test callback URL:', testCallbackUrl);
+    
     // Update the callback URL based on the current request host
     if (req.headers.host && req.headers.host !== detectedHost) {
       detectedHost = req.headers.host;
@@ -195,12 +206,12 @@ export function configureAuth(app: Express) {
       
       if (linkedinStrategy) {
         // Create a new strategy with the updated callback URL
-        passport.use(new LinkedInStrategy({
+        passport.use('linkedin', new LinkedInStrategy({
           clientID: process.env.LINKEDIN_CLIENT_ID || '',
           clientSecret: process.env.LINKEDIN_CLIENT_SECRET || '',
           callbackURL: newCallbackURL,
           scope: ['r_emailaddress', 'r_liteprofile'],
-          authType: 'reauthenticate',
+          profileFields: ['id', 'first-name', 'last-name', 'email-address', 'profile-picture'],
           state: true,
           proxy: true
         } as any, linkedinStrategy._verify));
@@ -318,6 +329,123 @@ export function configureAuth(app: Express) {
     
     // Return it to the client
     res.json({ callbackURL });
+  });
+  
+  // Add a diagnostic endpoint for LinkedIn OAuth
+  app.get('/api/linkedin-diagnostic', async (req, res) => {
+    try {
+      // Log LinkedIn API key information (safely)
+      const clientId = process.env.LINKEDIN_CLIENT_ID || '';
+      const clientSecret = process.env.LINKEDIN_CLIENT_SECRET || '';
+      const partialClientId = clientId.length > 4 ? 
+        clientId.substring(0, 2) + '...' + clientId.substring(clientId.length - 2) : 
+        'invalid';
+        
+      // Test if the LinkedIn credentials are valid by making a request directly to LinkedIn
+      let credentialsValid = false;
+      let linkedinAuthUrl = '';
+      let linkedinStatusCode = 0;
+      
+      try {
+        // Make a simple request to LinkedIn's API to verify the credentials
+        const testHost = req.headers.host || detectedHost || 'unknown-host';
+        const testCallbackURL = `https://${testHost}/auth/linkedin/callback`;
+        const testState = 'test_state_123456';
+        
+        // Construct the authorization URL
+        const authURL = `https://www.linkedin.com/oauth/v2/authorization?`
+          + `response_type=code`
+          + `&client_id=${encodeURIComponent(clientId)}`
+          + `&redirect_uri=${encodeURIComponent(testCallbackURL)}`
+          + `&state=${encodeURIComponent(testState)}`
+          + `&scope=r_emailaddress,r_liteprofile`;
+          
+        linkedinAuthUrl = authURL;
+          
+        // Make a HEAD request to check if the URL is valid
+        try {
+          const https = require('https');
+          const testURL = new URL(authURL);
+          
+          await new Promise((resolve, reject) => {
+            const reqOptions = {
+              method: 'HEAD',
+              hostname: testURL.hostname,
+              path: testURL.pathname + testURL.search,
+              headers: {
+                'User-Agent': 'Mozilla/5.0 PrepTalk App'
+              }
+            };
+            
+            const req = https.request(reqOptions, (response: any) => {
+              // LinkedIn should redirect or return something other than 400/401 if credentials are valid
+              credentialsValid = response.statusCode < 400 || response.statusCode === 302;
+              linkedinStatusCode = response.statusCode;
+              console.log(`LinkedIn auth URL test status: ${response.statusCode}`);
+              resolve(true);
+            });
+            
+            req.on('error', (err: any) => {
+              console.error('Error testing LinkedIn auth URL:', err);
+              reject(err);
+            });
+            
+            req.end();
+          });
+        } catch (testError) {
+          console.error('Failed to validate LinkedIn credentials:', testError);
+        }
+      } catch (validationError) {
+        console.error('Error during LinkedIn credential validation:', validationError);
+      }
+      
+      // Fetch internal strategy information
+      // @ts-ignore - Accessing private passport internals
+      const strategy = passport._strategies?.linkedin;
+      const hasStrategy = !!strategy;
+      
+      // Get callback URL from strategy if available
+      let callbackURL = null;
+      try {
+        // @ts-ignore - Accessing private passport internals
+        callbackURL = strategy?._oauth2?._callbackURL;
+      } catch (e) {
+        // Ignore errors
+      }
+      
+      // Generate a test OAuth URL (for debugging purposes only)
+      const host = req.headers.host || detectedHost || 'unknown-host';
+      const protocol = (req.headers['x-forwarded-proto'] || req.protocol) as string;
+      const expectedCallbackURL = `${protocol}://${host}/auth/linkedin/callback`;
+      
+      // Create response with diagnostic info
+      const diagnosticInfo = {
+        clientIdStatus: clientId ? 'present' : 'missing',
+        clientIdLength: clientId.length,
+        clientIdPartial: partialClientId,
+        clientSecretStatus: clientSecret ? 'present' : 'missing',
+        clientSecretLength: clientSecret.length,
+        strategyConfigured: hasStrategy,
+        callbackConfigured: !!callbackURL,
+        callbackURL: callbackURL || 'not available',
+        expectedCallbackURL,
+        detectedHost: detectedHost || 'none',
+      };
+      
+      // Return diagnostic info
+      return res.json({
+        status: 'success',
+        message: 'LinkedIn OAuth diagnostic completed',
+        data: diagnosticInfo
+      });
+    } catch (error) {
+      console.error('Error in LinkedIn diagnostic:', error);
+      return res.status(500).json({
+        status: 'error',
+        message: 'LinkedIn OAuth diagnostic failed',
+        error: String(error)
+      });
+    }
   });
 }
 
