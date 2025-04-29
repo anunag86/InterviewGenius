@@ -51,6 +51,11 @@ const Login = () => {
     } else if (errorParam === 'login_error') {
       return `Error during login process: ${messageParam || 'Please try again.'}`;
     } else if (errorParam === 'linkedin_error') {
+      // Check for scope errors specifically
+      if (descriptionParam && descriptionParam.includes('r_emailaddress') && descriptionParam.includes('not authorized')) {
+        return `LinkedIn scope error: The "r_emailaddress" scope is not authorized for this application. We've updated our system to only use the "r_liteprofile" scope. Please try signing in again.`;
+      }
+      // Default message for other LinkedIn errors
       return `LinkedIn rejected the request: ${descriptionParam || 'Please ensure the callback URL is registered in LinkedIn.'}`;
     } else if (errorParam === 'missing_code') {
       return 'LinkedIn did not provide an authorization code. Please try again.';
@@ -189,25 +194,35 @@ const Login = () => {
               )}
               
               <div className="p-3 rounded-md bg-amber-100 border border-amber-200 text-amber-700 text-sm">
-                <p className="font-medium">Important:</p>
-                <p className="mt-1">Make sure the following callback URL is registered in your LinkedIn Developer Portal:</p>
-                <code className="mt-2 block p-2 bg-amber-50 rounded border border-amber-200 text-xs overflow-auto">
-                  {callbackUrl || `${window.location.protocol}//${window.location.host}/auth/linkedin/callback`}
-                </code>
-                
-                {callbackUrl && (
-                  <div className="mt-2 flex items-center">
-                    <svg 
-                      xmlns="http://www.w3.org/2000/svg" 
-                      viewBox="0 0 20 20" 
-                      fill="currentColor" 
-                      className="w-4 h-4 mr-1 text-amber-600"
-                    >
-                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a.75.75 0 000 1.5h.253a.25.25 0 01.244.304l-.459 2.066A1.75 1.75 0 0010.747 15H11a.75.75 0 000-1.5h-.253a.25.25 0 01-.244-.304l.459-2.066A1.75 1.75 0 009.253 9H9z" clipRule="evenodd" />
-                    </svg>
-                    <span className="text-xs">This is the exact URL detected by our server.</span>
-                  </div>
-                )}
+                <p className="font-medium">Important LinkedIn Developer Configuration:</p>
+                <ul className="mt-2 space-y-2">
+                  <li>
+                    <p className="font-medium">1. Make sure the following callback URL is registered in your LinkedIn Developer Portal:</p>
+                    <code className="mt-1 block p-2 bg-amber-50 rounded border border-amber-200 text-xs overflow-auto">
+                      {callbackUrl || `${window.location.protocol}//${window.location.host}/auth/linkedin/callback`}
+                    </code>
+                    
+                    {callbackUrl && (
+                      <div className="mt-1 flex items-center">
+                        <svg 
+                          xmlns="http://www.w3.org/2000/svg" 
+                          viewBox="0 0 20 20" 
+                          fill="currentColor" 
+                          className="w-4 h-4 mr-1 text-amber-600"
+                        >
+                          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a.75.75 0 000 1.5h.253a.25.25 0 01.244.304l-.459 2.066A1.75 1.75 0 0010.747 15H11a.75.75 0 000-1.5h-.253a.25.25 0 01-.244-.304l.459-2.066A1.75 1.75 0 009.253 9H9z" clipRule="evenodd" />
+                        </svg>
+                        <span className="text-xs">This is the exact URL detected by our server.</span>
+                      </div>
+                    )}
+                  </li>
+                  
+                  <li>
+                    <p className="font-medium">2. Configure the correct OAuth 2.0 scopes:</p>
+                    <p className="mt-1">Our application now only requires the <code className="bg-amber-50 px-1 rounded">r_liteprofile</code> scope.</p>
+                    <p className="text-xs mt-1">The <code className="bg-amber-50 px-1 rounded">r_emailaddress</code> scope is not required and will cause authentication errors if enabled without special LinkedIn verification.</p>
+                  </li>
+                </ul>
               </div>
             </CardContent>
             <CardFooter>

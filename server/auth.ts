@@ -102,8 +102,8 @@ export function configureAuth(app: Express) {
     clientID: process.env.LINKEDIN_CLIENT_ID || '',
     clientSecret: process.env.LINKEDIN_CLIENT_SECRET || '',
     callbackURL: callbackURL,
-    scope: ['r_emailaddress', 'r_liteprofile'],
-    profileFields: ['id', 'first-name', 'last-name', 'email-address', 'profile-picture'],
+    scope: ['r_liteprofile'],
+    profileFields: ['id', 'first-name', 'last-name', 'profile-picture'],
     state: true,
     proxy: true
   } as any, async (accessToken: string, refreshToken: string, profile: LinkedInProfile, done: (error: any, user?: any) => void) => {
@@ -217,8 +217,8 @@ export function configureAuth(app: Express) {
           clientID: process.env.LINKEDIN_CLIENT_ID || '',
           clientSecret: process.env.LINKEDIN_CLIENT_SECRET || '',
           callbackURL: newCallbackURL,
-          scope: ['r_emailaddress', 'r_liteprofile'],
-          profileFields: ['id', 'first-name', 'last-name', 'email-address', 'profile-picture'],
+          scope: ['r_liteprofile'],
+          profileFields: ['id', 'first-name', 'last-name', 'profile-picture'],
           state: true,
           proxy: true
         } as any, linkedinStrategy._verify));
@@ -229,7 +229,7 @@ export function configureAuth(app: Express) {
     
     // Custom auth options to force new auth
     const authOptions = { 
-      scope: ['r_emailaddress', 'r_liteprofile'],
+      scope: ['r_liteprofile'],
       state: Math.random().toString(36).substring(2),
     };
     
@@ -365,7 +365,7 @@ export function configureAuth(app: Express) {
           + `&client_id=${encodeURIComponent(clientId)}`
           + `&redirect_uri=${encodeURIComponent(testCallbackURL)}`
           + `&state=${encodeURIComponent(testState)}`
-          + `&scope=r_emailaddress,r_liteprofile`;
+          + `&scope=r_liteprofile`;
           
         linkedinAuthUrl = authURL;
           
