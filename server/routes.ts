@@ -3,7 +3,6 @@ import { createServer, type Server } from "http";
 import multer from "multer";
 import { generateInterview, getInterviewStatus, getInterviewHistory, saveUserResponse, getUserResponsesForInterview, gradeUserResponse } from "./controllers/interview";
 import { submitFeedback } from "./controllers/feedback";
-import { registerAuthRoutes } from "./authRoutes";
 
 // Configure multer for memory storage (files are processed in memory)
 const upload = multer({
@@ -25,9 +24,6 @@ const upload = multer({
 });
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Register authentication routes
-  registerAuthRoutes(app);
-  
   // API routes
   app.post(
     "/api/interview/generate",
@@ -40,16 +36,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Interview history endpoint
   app.get("/api/interview/history", getInterviewHistory);
   
-  // User responses endpoints
+  // User responses endpoints - new!
   app.post("/api/interview/response", saveUserResponse);
   app.get("/api/interview/:interviewPrepId/responses", getUserResponsesForInterview);
   app.post("/api/interview/response/grade", gradeUserResponse);
   
   // Feedback endpoint
   app.post("/api/feedback", submitFeedback);
-  
-  // Create HTTP server
+
   const httpServer = createServer(app);
-  
+
   return httpServer;
 }

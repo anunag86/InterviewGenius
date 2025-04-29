@@ -1,34 +1,10 @@
 import express, { type Request, Response, NextFunction } from "express";
-import session from "express-session";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
-import { pool } from "../db";
-import connectPgSimple from "connect-pg-simple";
-import { migrationCode } from "./migrations";
-
-const PgSession = connectPgSimple(session);
 
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
-
-// Session middleware
-app.use(session({
-  store: new PgSession({
-    pool,
-    tableName: 'user_sessions',
-    createTableIfMissing: true
-  }),
-  secret: process.env.SESSION_SECRET || 'preptalk_session_secret',
-  resave: false,
-  saveUninitialized: false,
-  cookie: {
-    maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
-    secure: process.env.NODE_ENV === 'production',
-    httpOnly: true,
-    sameSite: 'lax'
-  }
-}));
 
 app.use((req, res, next) => {
   const start = Date.now();
@@ -61,16 +37,6 @@ app.use((req, res, next) => {
 });
 
 (async () => {
-  try {
-    // Run database migrations
-    log("Running database migrations...");
-    await migrationCode();
-    log("Database migrations completed successfully");
-  } catch (err) {
-    log("Error running migrations: " + (err instanceof Error ? err.message : String(err)));
-    // Continue anyway to allow development without complete DB setup
-  }
-  
   const server = await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
@@ -93,14 +59,12 @@ app.use((req, res, next) => {
   // ALWAYS serve the app on port 5000
   // this serves both the API and the client.
   // It is the only port that is not firewalled.
-const port = parseInt(process.env.PORT || "5000", 10);
+const port = process.env.PORT || 5000;
 server.listen({
   port,
   host: "0.0.0.0",
+  reusePort: true,
 }, () => {
   log(`serving on port ${port}`);
-}).on('error', (err) => {
-  console.error('Server error:', err);
-  process.exit(1);
 });
 })();

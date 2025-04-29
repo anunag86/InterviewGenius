@@ -6,25 +6,12 @@ import { relations } from "drizzle-orm";
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: text("username").notNull().unique(),
-  email: text("email").notNull().default(""), // Email may come from LinkedIn or manual entry
-  password: text("password"), // Only present for non-LinkedIn users
-  linkedinId: text("linkedin_id").unique(), // Can be null for manual users
-  firstName: text("first_name").notNull().default(""),
-  lastName: text("last_name").notNull().default(""),
-  displayName: text("display_name").notNull().default(""),
-  profilePictureUrl: text("profile_picture_url").notNull().default(""),
-  linkedinProfileUrl: text("linkedin_profile_url").notNull().default(""),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  lastLoginAt: timestamp("last_login_at").defaultNow().notNull(),
+  password: text("password").notNull(),
 });
 
-export const insertUserSchema = createInsertSchema(users, {
-  email: (schema) => schema.optional(),
-  firstName: (schema) => schema.optional(),
-  lastName: (schema) => schema.optional(),
-  displayName: (schema) => schema.optional(),
-  profilePictureUrl: (schema) => schema.optional(),
-  linkedinProfileUrl: (schema) => schema.optional(),
+export const insertUserSchema = createInsertSchema(users).pick({
+  username: true,
+  password: true,
 });
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -41,13 +28,13 @@ export const interviewPreps = pgTable("interview_preps", {
   data: jsonb("data").notNull(), // JSON data for interview prep results
   createdAt: timestamp("created_at").defaultNow().notNull(),
   expiresAt: timestamp("expires_at").notNull(), // Will be set to createdAt + 30 days
-  userId: integer("user_id").references(() => users.id), // Reference to users.id
+  userId: text("user_id"), // Optional for anonymous users
 });
 
 // User responses to interview questions in SAR format
 export const userResponses = pgTable("user_responses", {
   id: serial("id").primaryKey(),
-  userId: integer("user_id").references(() => users.id),
+  userId: text("user_id"),
   interviewPrepId: text("interview_prep_id").notNull(),
   questionId: text("question_id").notNull(),
   roundId: text("round_id").notNull(),
