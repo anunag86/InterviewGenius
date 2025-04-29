@@ -99,29 +99,7 @@ const Login = () => {
     window.location.href = '/auth/linkedin';
   };
   
-  const runLinkedInDiagnostic = async () => {
-    setIsDiagnosticLoading(true);
-    try {
-      const response = await fetch('/api/linkedin-diagnostic');
-      if (response.ok) {
-        const result = await response.json();
-        if (result.status === 'success' && result.data) {
-          setDiagnosticData(result.data);
-        } else {
-          console.error('LinkedIn diagnostic returned error:', result);
-          setError('Failed to run LinkedIn diagnostic. Please try again.');
-        }
-      } else {
-        console.error(`Diagnostic API returned ${response.status}: ${response.statusText}`);
-        setError('Failed to access LinkedIn diagnostic endpoint. Please try again.');
-      }
-    } catch (err) {
-      console.error('LinkedIn diagnostic error:', err);
-      setError('Error connecting to diagnostic service. Please try again.');
-    } finally {
-      setIsDiagnosticLoading(false);
-    }
-  };
+  // No diagnostic functionalities needed anymore
 
   if (isLoading) {
     return (

@@ -1,6 +1,34 @@
+import { useEffect, useState } from "react";
 import { Link } from "wouter";
+import { Button } from "@/components/ui/button";
+import { LuLogOut } from "react-icons/lu";
 
 const Header = () => {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [user, setUser] = useState<any>(null);
+
+  useEffect(() => {
+    // Check authentication status when component mounts
+    const checkAuthStatus = async () => {
+      try {
+        const response = await fetch('/api/auth/status');
+        if (response.ok) {
+          const data = await response.json();
+          setIsAuthenticated(data.isAuthenticated);
+          setUser(data.user);
+        }
+      } catch (error) {
+        console.error('Error checking authentication status:', error);
+      }
+    };
+
+    checkAuthStatus();
+  }, []);
+
+  const handleLogout = () => {
+    window.location.href = '/auth/logout';
+  };
+
   return (
     <header className="bg-card shadow-sm rounded-b-lg">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -13,21 +41,40 @@ const Header = () => {
             </span>
             <h1 className="text-xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">PrepTalk</h1>
           </Link>
-          <nav>
-            <ul className="flex space-x-4">
-              <li>
-                <Link href="/" className="text-foreground hover:text-primary transition-colors duration-200 font-medium">
-                  Home
-                </Link>
-              </li>
-
-              <li>
-                <Link href="/about" className="text-foreground hover:text-primary transition-colors duration-200 font-medium">
-                  About
-                </Link>
-              </li>
-            </ul>
-          </nav>
+          
+          <div className="flex items-center space-x-4">
+            <nav>
+              <ul className="flex space-x-4">
+                <li>
+                  <Link href="/" className="text-foreground hover:text-primary transition-colors duration-200 font-medium">
+                    Home
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/about" className="text-foreground hover:text-primary transition-colors duration-200 font-medium">
+                    About
+                  </Link>
+                </li>
+              </ul>
+            </nav>
+            
+            {isAuthenticated && (
+              <div className="flex items-center ml-4">
+                <span className="text-sm text-muted-foreground mr-3">
+                  {user?.username}
+                </span>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="flex items-center text-destructive hover:bg-destructive/10"
+                  onClick={handleLogout}
+                >
+                  <LuLogOut className="h-4 w-4 mr-1" />
+                  Logout
+                </Button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </header>
