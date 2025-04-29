@@ -90,19 +90,21 @@ export function configureAuth(app: Express) {
     return url;
   };
   
-  // Initial callback URL (will be updated on first request)
-  let callbackURL = getCallbackURL();
+  // Set up a default callback URL that will work with localhost for initial setup
+  // We'll update this as soon as we get a real request, but this ensures the strategy initializes properly
+  const defaultCallbackURL = 'https://localhost:5000/auth/linkedin/callback';
   
   console.log('LinkedIn Strategy Configuration:');
   console.log('- Client ID:', process.env.LINKEDIN_CLIENT_ID ? '✓ Present' : '✗ Missing');
   console.log('- Client Secret:', process.env.LINKEDIN_CLIENT_SECRET ? '✓ Present' : '✗ Missing');
-  console.log('- Callback URL:', callbackURL);
+  console.log('- Initial Callback URL:', defaultCallbackURL);
+  console.log('(Will be updated on first request)');
   
   // Configure LinkedIn strategy with proper callback URL and more robust error handling
   passport.use('linkedin', new LinkedInStrategy({
     clientID: process.env.LINKEDIN_CLIENT_ID || '',
     clientSecret: process.env.LINKEDIN_CLIENT_SECRET || '',
-    callbackURL: callbackURL,
+    callbackURL: defaultCallbackURL, // Start with default, will be updated on first request
     scope: ['r_liteprofile'],
     profileFields: ['id', 'first-name', 'last-name', 'profile-picture'],
     state: true,
@@ -373,38 +375,25 @@ export function configureAuth(app: Express) {
           
         linkedinAuthUrl = authURL;
           
-        // Make a HEAD request to check if the URL is valid
+        // Make a simplified validation check
         try {
-          const https = require('https');
-          const testURL = new URL(authURL);
-          
-          await new Promise((resolve, reject) => {
-            const reqOptions = {
-              method: 'HEAD',
-              hostname: testURL.hostname,
-              path: testURL.pathname + testURL.search,
-              headers: {
-                'User-Agent': 'Mozilla/5.0 PrepTalk App'
-              }
-            };
-            
-            const req = https.request(reqOptions, (response: any) => {
-              // LinkedIn should redirect or return something other than 400/401 if credentials are valid
-              credentialsValid = response.statusCode < 400 || response.statusCode === 302;
-              linkedinStatusCode = response.statusCode;
-              console.log(`LinkedIn auth URL test status: ${response.statusCode}`);
-              resolve(true);
-            });
-            
-            req.on('error', (err: any) => {
-              console.error('Error testing LinkedIn auth URL:', err);
-              reject(err);
-            });
-            
-            req.end();
+          // We'll use the fetch API instead of require('https')
+          const response = await fetch(authURL, { 
+            method: 'HEAD',
+            headers: {
+              'User-Agent': 'Mozilla/5.0 PrepTalk App'
+            }
           });
+          
+          // LinkedIn should redirect or return something other than 400/401 if credentials are valid
+          credentialsValid = response.status < 400 || response.status === 302;
+          linkedinStatusCode = response.status;
+          console.log(`LinkedIn auth URL test status: ${response.status}`);
         } catch (testError) {
           console.error('Failed to validate LinkedIn credentials:', testError);
+          // Set some default values for the diagnostic info
+          credentialsValid = false;
+          linkedinStatusCode = 0;
         }
       } catch (validationError) {
         console.error('Error during LinkedIn credential validation:', validationError);
@@ -429,6 +418,31 @@ export function configureAuth(app: Express) {
       // Always use HTTPS for replit domains, HTTP only for localhost
       const protocol = host?.includes('localhost') ? 'http' : 'https';
       const expectedCallbackURL = `${protocol}://${host}/auth/linkedin/callback`;
+      
+      // Update the LinkedIn strategy with this URL (if needed)
+      try {
+        // @ts-ignore - Accessing private passport internals
+        const linkedinStrategy = passport._strategies?.linkedin;
+        if (linkedinStrategy && (!callbackURL || callbackURL.includes('localhost'))) {
+          // Create a new strategy with the updated callback URL
+          passport.use('linkedin', new LinkedInStrategy({
+            clientID: process.env.LINKEDIN_CLIENT_ID || '',
+            clientSecret: process.env.LINKEDIN_CLIENT_SECRET || '',
+            callbackURL: expectedCallbackURL,
+            scope: ['r_liteprofile'],
+            profileFields: ['id', 'first-name', 'last-name', 'profile-picture'],
+            state: true,
+            proxy: true
+          } as any, linkedinStrategy._verify));
+          
+          console.log('✅ LinkedIn strategy updated with new callback URL:', expectedCallbackURL);
+          
+          // Update the callbackURL for the diagnostics
+          callbackURL = expectedCallbackURL;
+        }
+      } catch (e) {
+        console.error('Error updating LinkedIn strategy:', e);
+      }
       
       // Create response with diagnostic info
       const diagnosticInfo = {
