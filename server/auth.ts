@@ -75,7 +75,11 @@ export function configureAuth(app: Express) {
       : 'localhost:5000');
     
     const protocol = host.includes('localhost') ? 'http' : 'https';
-    return `${protocol}://${host}/auth/linkedin/callback`;
+    
+    // Store the detected URL in environment for the frontend to access
+    process.env.DETECTED_CALLBACK_URL = `${protocol}://${host}/auth/linkedin/callback`;
+    
+    return process.env.DETECTED_CALLBACK_URL;
   };
   
   // Initial callback URL (will be updated on first request)
@@ -299,6 +303,21 @@ export function configureAuth(app: Express) {
         user: null
       });
     }
+  });
+  
+  // Add an endpoint for getting the exact callback URL that LinkedIn needs
+  app.get('/api/linkedin-callback-url', (req, res) => {
+    // Generate callback URL specifically for this request
+    const host = req.headers.host || detectedHost;
+    const protocol = (req.headers['x-forwarded-proto'] || req.protocol) as string;
+    const callbackURL = `${protocol}://${host}/auth/linkedin/callback`;
+    
+    // Log and store it in environment
+    console.log('LinkedIn callback URL requested:', callbackURL);
+    process.env.DETECTED_CALLBACK_URL = callbackURL;
+    
+    // Return it to the client
+    res.json({ callbackURL });
   });
 }
 

@@ -9,6 +9,7 @@ import Footer from "../components/Footer";
 const Login = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [callbackUrl, setCallbackUrl] = useState<string | null>(null);
   
   // Parse URL parameters to check for error messages
   const getErrorMessage = () => {
@@ -42,33 +43,51 @@ const Login = () => {
       setError(urlErrorMessage);
     }
     
-    const checkAuth = async () => {
+    // Fetch both authentication status and callback URL in parallel
+    const fetchData = async () => {
       try {
-        console.log('Checking authentication status...');
-        const response = await fetch('/api/me');
+        // Fetch authentication status
+        const authPromise = fetch('/api/me');
         
-        if (!response.ok) {
-          throw new Error(`API returned ${response.status}: ${response.statusText}`);
+        // Fetch the callback URL from the server
+        const callbackPromise = fetch('/api/linkedin-callback-url');
+        
+        // Wait for both to complete
+        const [authResponse, callbackResponse] = await Promise.all([authPromise, callbackPromise]);
+        
+        // Handle auth check
+        if (authResponse.ok) {
+          const authData = await authResponse.json();
+          console.log('Authentication check result:', authData);
+          
+          if (authData.isAuthenticated) {
+            console.log('User is authenticated, redirecting to home...');
+            window.location.href = '/';
+            return; // Exit early
+          }
+        } else {
+          console.error(`Auth API returned ${authResponse.status}: ${authResponse.statusText}`);
         }
         
-        const data = await response.json();
-        console.log('Authentication check result:', data);
-        
-        if (data.isAuthenticated) {
-          console.log('User is authenticated, redirecting to home...');
-          window.location.href = '/';
+        // Handle callback URL
+        if (callbackResponse.ok) {
+          const callbackData = await callbackResponse.json();
+          console.log('Callback URL retrieved:', callbackData.callbackURL);
+          setCallbackUrl(callbackData.callbackURL);
+        } else {
+          console.error(`Callback API returned ${callbackResponse.status}: ${callbackResponse.statusText}`);
         }
       } catch (err) {
-        console.error('Auth check error:', err);
+        console.error('Data fetching error:', err);
         if (!urlErrorMessage) {
-          setError('Failed to check authentication status. Please try again.');
+          setError('Failed to initialize application. Please try again.');
         }
       } finally {
         setIsLoading(false);
       }
     };
 
-    checkAuth();
+    fetchData();
   }, []);
 
   const handleLinkedInLogin = () => {
@@ -125,8 +144,22 @@ const Login = () => {
                 <p className="font-medium">Important:</p>
                 <p className="mt-1">Make sure the following callback URL is registered in your LinkedIn Developer Portal:</p>
                 <code className="mt-2 block p-2 bg-amber-50 rounded border border-amber-200 text-xs overflow-auto">
-                  {`${window.location.protocol}//${window.location.host}/auth/linkedin/callback`}
+                  {callbackUrl || `${window.location.protocol}//${window.location.host}/auth/linkedin/callback`}
                 </code>
+                
+                {callbackUrl && (
+                  <div className="mt-2 flex items-center">
+                    <svg 
+                      xmlns="http://www.w3.org/2000/svg" 
+                      viewBox="0 0 20 20" 
+                      fill="currentColor" 
+                      className="w-4 h-4 mr-1 text-amber-600"
+                    >
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a.75.75 0 000 1.5h.253a.25.25 0 01.244.304l-.459 2.066A1.75 1.75 0 0010.747 15H11a.75.75 0 000-1.5h-.253a.25.25 0 01-.244-.304l.459-2.066A1.75 1.75 0 009.253 9H9z" clipRule="evenodd" />
+                    </svg>
+                    <span className="text-xs">This is the exact URL detected by our server.</span>
+                  </div>
+                )}
               </div>
             </CardContent>
             <CardFooter>
