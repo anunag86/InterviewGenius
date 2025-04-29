@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LinkedIn OAuth Diagnostics</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    
+    h1 {
+      color: #0077B5;
+      border-bottom: 2px solid #0077B5;
+      padding-bottom: 10px;
+    }
+    
+    h2 {
+      margin-top: 30px;
+      color: #0077B5;
+    }
+    
+    .card {
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      overflow: hidden;
+    }
+    
+    .card-header {
+      background-color: #f5f5f5;
+      padding: 15px;
+      font-weight: bold;
+      border-bottom: 1px solid #ddd;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .card-body {
+      padding: 15px;
+    }
+    
+    .status {
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: bold;
+      text-transform: uppercase;
+    }
+    
+    .status.passed {
+      background-color: #28a745;
+      color: white;
+    }
+    
+    .status.failed {
+      background-color: #dc3545;
+      color: white;
+    }
+    
+    .status.warning {
+      background-color: #ffc107;
+      color: #212529;
+    }
+    
+    .status.pending {
+      background-color: #17a2b8;
+      color: white;
+    }
+    
+    .details-box {
+      background-color: #f8f9fa;
+      border-radius: 4px;
+      padding: 10px;
+      margin-top: 10px;
+      font-family: monospace;
+      white-space: pre-wrap;
+      max-height: 200px;
+      overflow: auto;
+    }
+    
+    .btn {
+      display: inline-block;
+      font-weight: 400;
+      text-align: center;
+      white-space: nowrap;
+      vertical-align: middle;
+      user-select: none;
+      border: 1px solid transparent;
+      padding: 0.375rem 0.75rem;
+      font-size: 1rem;
+      line-height: 1.5;
+      border-radius: 0.25rem;
+      transition: all 0.15s ease-in-out;
+      cursor: pointer;
+    }
+    
+    .btn-primary {
+      color: #fff;
+      background-color: #0077B5;
+      border-color: #0077B5;
+    }
+    
+    .btn-secondary {
+      color: #fff;
+      background-color: #6c757d;
+      border-color: #6c757d;
+    }
+    
+    .btn-success {
+      color: #fff;
+      background-color: #28a745;
+      border-color: #28a745;
+    }
+    
+    .spinner {
+      border: 3px solid #f3f3f3;
+      border-top: 3px solid #0077B5;
+      border-radius: 50%;
+      width: 20px;
+      height: 20px;
+      animation: spin 1s linear infinite;
+      display: inline-block;
+      margin-right: 8px;
+      vertical-align: middle;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    .summary-box {
+      background-color: #f0f7ff;
+      border-left: 4px solid #0077B5;
+      padding: 15px;
+      margin: 20px 0;
+    }
+    
+    .controls {
+      margin: 20px 0;
+    }
+  </style>
+</head>
+<body>
+  <h1>LinkedIn OAuth Diagnostic Tool</h1>
+  
+  <div class="summary-box">
+    <p>This tool runs a series of tests to diagnose issues with your LinkedIn OAuth integration. It checks:</p>
+    <ul>
+      <li>Environment variables configuration</li>
+      <li>LinkedIn API connectivity</li>
+      <li>Credentials validation</li>
+      <li>Redirect URIs configuration</li>
+      <li>Session management</li>
+      <li>Authorization URL generation and validation</li>
+    </ul>
+  </div>
+  
+  <div class="controls">
+    <button id="run-all" class="btn btn-primary">Run All Checks</button>
+  </div>
+  
+  <div id="results-container">
+    <!-- Environment Check -->
+    <div class="card" id="env-check">
+      <div class="card-header">
+        <span>Environment Variables Check</span>
+        <span class="status pending" id="env-status">Pending</span>
+      </div>
+      <div class="card-body">
+        <p>Checking LinkedIn OAuth environment variables...</p>
+        <div id="env-results"></div>
+      </div>
+    </div>
+    
+    <!-- API Connection Check -->
+    <div class="card" id="connection-check">
+      <div class="card-header">
+        <span>LinkedIn API Connection</span>
+        <span class="status pending" id="connection-status">Pending</span>
+      </div>
+      <div class="card-body">
+        <p>Checking connection to LinkedIn API...</p>
+        <div id="connection-results"></div>
+      </div>
+    </div>
+    
+    <!-- Credentials Check -->
+    <div class="card" id="credentials-check">
+      <div class="card-header">
+        <span>Credentials Validation</span>
+        <span class="status pending" id="credentials-status">Pending</span>
+      </div>
+      <div class="card-body">
+        <p>Validating LinkedIn client credentials...</p>
+        <div id="credentials-results"></div>
+      </div>
+    </div>
+    
+    <!-- Redirect URIs Check -->
+    <div class="card" id="redirect-check">
+      <div class="card-header">
+        <span>Redirect URIs Configuration</span>
+        <span class="status pending" id="redirect-status">Pending</span>
+      </div>
+      <div class="card-body">
+        <p>Checking redirect URIs configuration...</p>
+        <div id="redirect-results"></div>
+      </div>
+    </div>
+    
+    <!-- Session Check -->
+    <div class="card" id="session-check">
+      <div class="card-header">
+        <span>Session Configuration</span>
+        <span class="status pending" id="session-status">Pending</span>
+      </div>
+      <div class="card-body">
+        <p>Checking session configuration...</p>
+        <div id="session-results"></div>
+      </div>
+    </div>
+    
+    <!-- Auth URL Check -->
+    <div class="card" id="authurl-check">
+      <div class="card-header">
+        <span>Authorization URL Generation</span>
+        <span class="status pending" id="authurl-status">Pending</span>
+      </div>
+      <div class="card-body">
+        <p>Testing authorization URL generation...</p>
+        <div id="authurl-results"></div>
+      </div>
+    </div>
+    
+    <!-- Final Summary -->
+    <div class="card" id="summary" style="display: none;">
+      <div class="card-header">
+        <span>Diagnostic Summary</span>
+      </div>
+      <div class="card-body">
+        <div id="summary-results"></div>
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    // Helper functions
+    function updateStatus(id, status, message, details = null) {
+      document.getElementById(`${id}-status`).textContent = status.toUpperCase();
+      document.getElementById(`${id}-status`).className = `status ${status.toLowerCase()}`;
+      
+      let html = `<p><strong>${message}</strong></p>`;
+      
+      if (details) {
+        html += `<div class="details-box">${formatDetails(details)}</div>`;
+      }
+      
+      document.getElementById(`${id}-results`).innerHTML = html;
+    }
+    
+    function formatDetails(details) {
+      if (typeof details === 'object') {
+        return JSON.stringify(details, null, 2);
+      }
+      return details;
+    }
+    
+    // Tests
+    async function checkEnvironment() {
+      updateStatus('env', 'pending', 'Checking environment variables...');
+      
+      try {
+        const response = await fetch('/api/debug/linkedin/environment');
+        const data = await response.json();
+        
+        if (data.clientIdConfigured && data.clientSecretConfigured) {
+          updateStatus('env', 'passed', 'LinkedIn OAuth environment variables are properly configured.', data);
+          return true;
+        } else {
+          let message = 'LinkedIn OAuth environment variables are not properly configured:';
+          if (!data.clientIdConfigured) message += ' Missing Client ID.';
+          if (!data.clientSecretConfigured) message += ' Missing Client Secret.';
+          
+          updateStatus('env', 'failed', message, data);
+          return false;
+        }
+      } catch (error) {
+        updateStatus('env', 'failed', `Error checking environment: ${error.message}`);
+        return false;
+      }
+    }
+    
+    async function checkConnection() {
+      updateStatus('connection', 'pending', 'Testing connection to LinkedIn API...');
+      
+      try {
+        const response = await fetch('/api/debug/linkedin/connection');
+        const data = await response.json();
+        
+        if (data.connectionSuccessful) {
+          updateStatus('connection', 'passed', 'Successfully connected to LinkedIn API.', data);
+          return true;
+        } else {
+          updateStatus('connection', 'warning', `Could not connect to LinkedIn API: ${data.error || 'Unknown error'}`, data);
+          return false;
+        }
+      } catch (error) {
+        updateStatus('connection', 'warning', `Error testing connection: ${error.message}`);
+        return false;
+      }
+    }
+    
+    async function checkCredentials() {
+      updateStatus('credentials', 'pending', 'Validating LinkedIn credentials...');
+      
+      try {
+        const response = await fetch('/api/debug/linkedin/credentials');
+        const data = await response.json();
+        
+        if (data.valid) {
+          updateStatus('credentials', 'passed', 'LinkedIn credentials appear to be valid.', data);
+          return true;
+        } else if (data.error === 'missing_credentials') {
+          updateStatus('credentials', 'failed', 'Cannot validate credentials because they are not configured.', data);
+          return false;
+        } else {
+          updateStatus('credentials', 'failed', `LinkedIn credentials validation failed: ${data.message || 'Invalid credentials'}`, data);
+          return false;
+        }
+      } catch (error) {
+        updateStatus('credentials', 'warning', `Error validating credentials: ${error.message}`);
+        return false;
+      }
+    }
+    
+    async function checkRedirectURIs() {
+      updateStatus('redirect', 'pending', 'Checking redirect URIs configuration...');
+      
+      try {
+        const response = await fetch('/api/debug/linkedin/redirect-uris');
+        const data = await response.json();
+        
+        if (data.redirectUris && data.redirectUris.length > 0) {
+          updateStatus('redirect', 'passed', `Generated ${data.redirectUris.length} possible redirect URIs.`, data);
+          
+          // Also test a redirect URI
+          try {
+            const testResponse = await fetch('/api/debug/linkedin/redirect-test');
+            const testData = await testResponse.json();
+            
+            if (testData.success) {
+              document.getElementById('redirect-results').innerHTML += `
+                <p><strong>Redirect URI Test: ✅ Passed</strong> - At least one redirect URI is properly configured in your LinkedIn app.</p>
+                <div class="details-box">${formatDetails(testData)}</div>
+              `;
+              return true;
+            } else {
+              document.getElementById('redirect-results').innerHTML += `
+                <p><strong>Redirect URI Test: ❌ Failed</strong> - None of the tested redirect URIs are configured in your LinkedIn app.</p>
+                <div class="details-box">${formatDetails(testData)}</div>
+              `;
+              return false;
+            }
+          } catch (testError) {
+            document.getElementById('redirect-results').innerHTML += `
+              <p><strong>Redirect URI Test: ⚠️ Warning</strong> - Error testing redirect URI: ${testError.message}</p>
+            `;
+            return false;
+          }
+        } else {
+          updateStatus('redirect', 'warning', 'Could not generate any redirect URIs.', data);
+          return false;
+        }
+      } catch (error) {
+        updateStatus('redirect', 'warning', `Error checking redirect URIs: ${error.message}`);
+        return false;
+      }
+    }
+    
+    async function checkSession() {
+      updateStatus('session', 'pending', 'Checking session configuration...');
+      
+      try {
+        // We'll check if the session is working by setting and retrieving a value
+        const testValue = `test_${Date.now()}`;
+        
+        const setResponse = await fetch(`/api/debug/session/set?key=diagnostic_test&value=${testValue}`);
+        const setData = await setResponse.json();
+        
+        if (setData.success) {
+          const getResponse = await fetch('/api/debug/session/get?key=diagnostic_test');
+          const getData = await getResponse.json();
+          
+          if (getData.value === testValue) {
+            updateStatus('session', 'passed', 'Session configuration is working correctly.', {
+              session_configured: true,
+              test_value: testValue,
+              retrieved_value: getData.value,
+              session_id: getData.sessionId
+            });
+            return true;
+          } else {
+            updateStatus('session', 'failed', 'Session data is not persisting correctly.', {
+              session_configured: true,
+              test_value: testValue,
+              retrieved_value: getData.value,
+              session_id: getData.sessionId
+            });
+            return false;
+          }
+        } else {
+          updateStatus('session', 'failed', 'Failed to set session data.', setData);
+          return false;
+        }
+      } catch (error) {
+        // If the test endpoints aren't available, we'll check if the session exists
+        try {
+          const response = await fetch('/api/debug/request-headers');
+          const data = await response.json();
+          
+          if (data.cookies && data.cookies.includes('connect.sid')) {
+            updateStatus('session', 'passed', 'Session appears to be configured (connect.sid cookie found).', {
+              cookies: data.cookies,
+              headers: data.headers
+            });
+            return true;
+          } else {
+            updateStatus('session', 'warning', 'Session cookie not found. OAuth state validation might not work.', {
+              cookies: data.cookies,
+              headers: data.headers
+            });
+            return false;
+          }
+        } catch (headerError) {
+          updateStatus('session', 'warning', `Could not verify session configuration: ${headerError.message}`);
+          return false;
+        }
+      }
+    }
+    
+    async function checkAuthUrl() {
+      updateStatus('authurl', 'pending', 'Testing authorization URL generation...');
+      
+      try {
+        const response = await fetch('/api/auth/linkedin/minimal-url');
+        const data = await response.json();
+        
+        if (data.url) {
+          updateStatus('authurl', 'passed', 'Successfully generated LinkedIn authorization URL.', {
+            redirect_uri: data.redirectUri,
+            auth_url_prefix: data.url.substring(0, 60) + '...',
+            state: data.state
+          });
+          
+          // Add a test button
+          const container = document.getElementById('authurl-results');
+          container.innerHTML += `
+            <div style="margin-top: 15px;">
+              <button id="test-auth-url" class="btn btn-primary">Test Authorization URL</button>
+              <div id="auth-url-test-result" style="margin-top: 10px; display: none;"></div>
+            </div>
+          `;
+          
+          document.getElementById('test-auth-url').addEventListener('click', function() {
+            window.open(data.url, '_blank');
+            document.getElementById('auth-url-test-result').style.display = 'block';
+            document.getElementById('auth-url-test-result').innerHTML = `
+              <p>A new tab should have opened with the LinkedIn authorization page.</p>
+              <p>If you don't see the LinkedIn authorization page or get an error, check your redirect URI configuration in your LinkedIn app settings.</p>
+            `;
+          });
+          
+          return true;
+        } else {
+          updateStatus('authurl', 'failed', `Failed to generate authorization URL: ${data.error || 'Unknown error'}`, data);
+          return false;
+        }
+      } catch (error) {
+        updateStatus('authurl', 'failed', `Error generating authorization URL: ${error.message}`);
+        return false;
+      }
+    }
+    
+    // Generate overall diagnostic summary
+    function generateSummary(results) {
+      const total = Object.keys(results).length;
+      const passed = Object.values(results).filter(r => r === true).length;
+      const failed = Object.values(results).filter(r => r === false).length;
+      
+      document.getElementById('summary').style.display = 'block';
+      
+      let html = '';
+      
+      if (passed === total) {
+        html = `
+          <h3 style="color: #28a745;">✅ All Checks Passed</h3>
+          <p>Your LinkedIn OAuth configuration appears to be correct. LinkedIn authentication should work properly.</p>
+        `;
+      } else if (failed === total) {
+        html = `
+          <h3 style="color: #dc3545;">❌ All Checks Failed</h3>
+          <p>Your LinkedIn OAuth configuration has serious issues that need to be fixed before authentication will work.</p>
+        `;
+      } else {
+        html = `
+          <h3 style="color: #ffc107;">⚠️ Some Checks Failed</h3>
+          <p>${passed} out of ${total} checks passed. There are issues with your LinkedIn OAuth configuration that may prevent authentication from working properly.</p>
+        `;
+      }
+      
+      // Add recommendations based on specific failures
+      html += '<h4>Recommendations:</h4><ul>';
+      
+      if (!results.env) {
+        html += `
+          <li>
+            <strong>Configure LinkedIn OAuth credentials:</strong> 
+            Make sure you have set the LINKEDIN_CLIENT_ID and LINKEDIN_CLIENT_SECRET environment variables.
+          </li>
+        `;
+      }
+      
+      if (!results.credentials) {
+        html += `
+          <li>
+            <strong>Check your LinkedIn credentials:</strong> 
+            Verify that your Client ID and Client Secret are correct in your LinkedIn Developer Application.
+          </li>
+        `;
+      }
+      
+      if (!results.redirect) {
+        html += `
+          <li>
+            <strong>Configure redirect URIs:</strong> 
+            Ensure that you have added the correct redirect URIs to your LinkedIn Application settings.
+            Try adding these URIs to your LinkedIn App configuration:
+            <ul>
+              <li><code>${window.location.origin}/minimal-callback</code></li>
+              <li><code>${window.location.origin}/callback</code></li>
+              <li><code>${window.location.origin}/api/auth/linkedin/callback</code></li>
+            </ul>
+          </li>
+        `;
+      }
+      
+      if (!results.session) {
+        html += `
+          <li>
+            <strong>Fix session configuration:</strong> 
+            Make sure your Express session middleware is properly configured. This is required for OAuth state validation.
+          </li>
+        `;
+      }
+      
+      if (!results.authurl) {
+        html += `
+          <li>
+            <strong>Check authorization URL generation:</strong> 
+            There's a problem with generating the LinkedIn authorization URL. Verify your credentials and redirect URI configuration.
+          </li>
+        `;
+      }
+      
+      html += '</ul>';
+      
+      // Add links to additional resources
+      html += `
+        <h4>Next Steps:</h4>
+        <p>Try these pages to continue troubleshooting:</p>
+        <ul>
+          <li><a href="/linkedin-auth" target="_blank">Direct LinkedIn Authentication</a> - Simple authentication flow</li>
+          <li><a href="/linkedin/minimal-test" target="_blank">Minimal LinkedIn Test</a> - Test with more debugging details</li>
+          <li><a href="/linkedin/systematic" target="_blank">Systematic Test</a> - Step-by-step testing of each OAuth component</li>
+        </ul>
+      `;
+      
+      document.getElementById('summary-results').innerHTML = html;
+    }
+    
+    // Run all tests
+    async function runAllTests() {
+      document.getElementById('run-all').disabled = true;
+      document.getElementById('run-all').innerHTML = '<span class="spinner"></span> Running Tests...';
+      
+      const results = {
+        env: await checkEnvironment(),
+        connection: await checkConnection(),
+        credentials: await checkCredentials(),
+        redirect: await checkRedirectURIs(),
+        session: await checkSession(),
+        authurl: await checkAuthUrl()
+      };
+      
+      generateSummary(results);
+      
+      document.getElementById('run-all').disabled = false;
+      document.getElementById('run-all').innerHTML = 'Run All Checks Again';
+    }
+    
+    // Add event listeners
+    document.getElementById('run-all').addEventListener('click', runAllTests);
+    
+    // Auto-run tests on page load
+    document.addEventListener('DOMContentLoaded', runAllTests);
+  </script>
+</body>
+</html>

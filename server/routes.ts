@@ -35,6 +35,8 @@ import {
   exchangeToken,
   getProfile
 } from "./controllers/linkedinSystematicTest";
+import { runDiagnostics, generateDiagnosticReport } from "./controllers/linkedinDiagnosticTool";
+import { setSessionValue, getSessionValue } from "./controllers/sessionDebug";
 
 // Configure multer for memory storage (files are processed in memory)
 const upload = multer({
@@ -123,6 +125,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/debug/linkedin/redirect-uris", generateAllPossibleRedirectUris);
   app.get("/api/debug/request-headers", debugRequestHeaders);
   
+  // Session debugging endpoints
+  app.get("/api/debug/session/set", setSessionValue);
+  app.get("/api/debug/session/get", getSessionValue);
+  
+  // Comprehensive LinkedIn diagnostic tool
+  app.get("/linkedin/diagnostic-tool", generateDiagnosticReport);
+  app.get("/api/linkedin/diagnostic-tool", runDiagnostics);
+  
   // Simple LinkedIn auth endpoints with different redirect URI pattern
   app.get("/api/auth/linkedin/simple-url", getSimpleLinkedInAuthUrl);
   app.get("/callback", handleSimpleLinkedInCallback);
@@ -207,6 +217,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Auto-detecting LinkedIn test
   app.get("/linkedin/auto-detect", (req, res) => {
     res.sendFile('linkedin-auto-detect.html', { root: './client/public' });
+  });
+  
+  // New comprehensive diagnostic tool
+  app.get("/linkedin/diagnostic", (req, res) => {
+    res.sendFile('linkedin-diagnostic.html', { root: './client/public' });
   });
   
   // API endpoint for LinkedIn diagnostics
