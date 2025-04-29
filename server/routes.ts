@@ -53,6 +53,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
   
+  // User information endpoint - same as auth/status but with a simpler path
+  app.get('/api/me', (req, res) => {
+    res.json({
+      isAuthenticated: req.isAuthenticated(),
+      user: req.user
+    });
+  });
+  
   // Endpoint to get the current callback URL that needs to be registered in LinkedIn
   app.get('/api/auth/linkedin/callback-url', (req, res) => {
     // Detect the host from the request
