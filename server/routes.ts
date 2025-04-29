@@ -85,7 +85,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     
     try {
       // Get user with complete profile data
-      const userId = req.user.id;
+      const userId = (req.user as any).id;
       const userResults = await db.select().from(users).where(eq(users.id, userId));
       
       if (userResults.length === 0) {
@@ -102,7 +102,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         user: {
           ...req.user,
           profilePicture: userWithProfile.profilePicture,
-          linkedinEmail: userWithProfile.linkedinEmail
+          linkedinEmail: userWithProfile.linkedinEmail,
+          linkedinUrl: userWithProfile.linkedinUrl
         }
       });
     } catch (error) {
