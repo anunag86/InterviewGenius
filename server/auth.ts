@@ -168,8 +168,28 @@ export function configureAuth(app: Express) {
     
     // Store the detected URL in environment for the frontend to access
     const url = `${protocol}://${host}/auth/linkedin/callback`;
-    process.env.DETECTED_CALLBACK_URL = url;
+    
+    // Also store alternative URL formats to help with debugging
+    const alternativeUrls = [
+      // LinkedIn seems to be strict about trailing slashes, so we store both versions
+      url,
+      url.endsWith('/') ? url.slice(0, -1) : `${url}/`,
+      // Also store the URL with www. prefix in case that's registered
+      url.replace('://', '://www.'),
+      // Also store without any subdomain prefix in case that's how it's registered
+      url.replace(/^https?:\/\/[^.]+\./, `${protocol}://`)
+    ];
+    
+    // Log all possible URLs that might be registered in LinkedIn
     console.log('📌 Setting callback URL to:', url);
+    console.log('🔍 Alternative URL formats that might be registered:');
+    alternativeUrls.forEach((altUrl, i) => {
+      console.log(`  ${i+1}. ${altUrl}`);
+    });
+    
+    // Store in environment for other parts of the application
+    process.env.DETECTED_CALLBACK_URL = url;
+    process.env.ALTERNATE_CALLBACK_URLS = JSON.stringify(alternativeUrls);
     
     return url;
   };
