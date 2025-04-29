@@ -257,7 +257,7 @@ export function configureAuth(app: Express) {
     // This helps bypass the "Unable to verify authorization request state" error
     // State verification has been disabled in the LinkedIn strategy configuration
     const authOptions = { 
-      scope: ["r_liteprofile"], // Using only the basic profile scope
+      scope: ["openid", "profile", "email"], // Using approved LinkedIn OAuth scopes
       // No state parameter - using stateless authentication
     };
     
@@ -274,7 +274,7 @@ export function configureAuth(app: Express) {
         clientID: process.env.LINKEDIN_CLIENT_ID || '',
         clientSecret: process.env.LINKEDIN_CLIENT_SECRET || '',
         callbackURL: correctCallbackURL,
-        scope: ["r_liteprofile"],
+        scope: ["openid", "profile", "email"],
         profileFields: ['id', 'first-name', 'last-name', 'profile-picture'],
         state: false, // Disable state verification to fix 'Unable to verify authorization request state' error
         proxy: true
@@ -376,7 +376,7 @@ export function configureAuth(app: Express) {
           clientID: process.env.LINKEDIN_CLIENT_ID || '',
           clientSecret: process.env.LINKEDIN_CLIENT_SECRET || '',
           callbackURL: `https://${req.headers.host}/auth/linkedin/callback`,
-          scope: ["r_liteprofile"],
+          scope: ["openid", "profile", "email"],
           profileFields: ['id', 'first-name', 'last-name', 'profile-picture'],
           state: false, // Critically important: disable state verification
           proxy: true
@@ -519,7 +519,7 @@ export function configureAuth(app: Express) {
           + `&client_id=${encodeURIComponent(clientId)}`
           + `&redirect_uri=${encodeURIComponent(testCallbackURL)}`
           + `&state=${encodeURIComponent(testState)}`
-          + `&scope=r_liteprofile`;
+          + `&scope=openid profile email`;
           
         linkedinAuthUrl = authURL;
           
@@ -530,7 +530,7 @@ export function configureAuth(app: Express) {
           const minimalAuthURL = `https://www.linkedin.com/oauth/v2/authorization?`
             + `response_type=code`
             + `&client_id=${encodeURIComponent(clientId)}`
-            + `&scope=r_liteprofile`;
+            + `&scope=openid profile email`;
             
           // Don't use HEAD - some APIs don't respond properly to HEAD requests
           const response = await fetch(minimalAuthURL, { 
@@ -593,7 +593,7 @@ export function configureAuth(app: Express) {
             clientID: process.env.LINKEDIN_CLIENT_ID || '',
             clientSecret: process.env.LINKEDIN_CLIENT_SECRET || '',
             callbackURL: expectedCallbackURL,
-            scope: ["r_liteprofile"],
+            scope: ["openid", "profile", "email"],
             profileFields: ['id', 'first-name', 'last-name', 'profile-picture'],
             state: true,
             proxy: true
