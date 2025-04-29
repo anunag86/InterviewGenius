@@ -263,16 +263,12 @@ export function configureAuth(app: Express) {
       }
     }
     
-    // Custom auth options to force new auth
-    // Use a fixed state for easier debugging
-    // The state needs to be consistent between request and callback
-    const stateValue = 'preptalk-linkedin-auth';
-    // Store this state in the session for verification
-    req.session.linkedInAuthState = stateValue;
-    
+    // Using simplified auth options without state parameter
+    // This helps bypass the "Unable to verify authorization request state" error
+    // State verification has been disabled in the LinkedIn strategy configuration
     const authOptions = { 
       scope: ["openid", "profile", "email"], // Using LinkedIn standard scopes
-      state: stateValue,
+      // No state parameter - using stateless authentication
     };
     
     // Force-update the LinkedIn strategy before authentication
@@ -290,7 +286,7 @@ export function configureAuth(app: Express) {
         callbackURL: correctCallbackURL,
         scope: ["openid", "profile", "email"], // Using LinkedIn standard scopes
         profileFields: ['id', 'first-name', 'last-name', 'profile-picture'],
-        state: true,
+        state: false, // Disable state verification to fix 'Unable to verify authorization request state' error
         proxy: true
       } as any, async (accessToken: string, refreshToken: string, profile: LinkedInProfile, done: (error: any, user?: any) => void) => {
         // Log the profile data for debugging

@@ -28,6 +28,7 @@ export default function LinkedInDiagnostics() {
   const [callbackURL, setCallbackURL] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
   
   // Get callback URL on component mount
   useEffect(() => {
@@ -107,16 +108,25 @@ export default function LinkedInDiagnostics() {
             <div className="bg-muted p-3 rounded-md flex justify-between items-center">
               <code className="text-sm">{callbackURL || 'Loading...'}</code>
               <Button 
-                variant="outline" 
+                variant={copied ? "default" : "outline"}
                 size="sm"
                 onClick={() => {
                   if (callbackURL) {
                     navigator.clipboard.writeText(callbackURL);
+                    setCopied(true);
+                    setTimeout(() => setCopied(false), 2000);
                   }
                 }}
                 disabled={!callbackURL}
               >
-                Copy
+                {copied ? (
+                  <>
+                    <CheckCircle2 className="h-3 w-3 mr-2" />
+                    Copied
+                  </>
+                ) : (
+                  "Copy"
+                )}
               </Button>
             </div>
           </div>
