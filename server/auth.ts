@@ -69,17 +69,24 @@ export function configureAuth(app: Express) {
   
   // Create dynamic function to get callback URL based on detected host
   const getCallbackURL = (requestHost?: string) => {
-    // Use requestHost, or detectedHost, or fallback to environment variables
-    const host = requestHost || detectedHost || (process.env.REPL_SLUG 
-      ? `${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co` 
-      : 'localhost:5000');
+    // Use requestHost, or detectedHost, or fallback to automatically detected Replit domain
+    const host = requestHost || detectedHost;
+    
+    // If we don't have a host yet, don't generate a callback URL
+    // We'll wait for the first request to set it properly
+    if (!host) {
+      console.log('⚠️ No host detected yet, waiting for first request to set callback URL');
+      return 'placeholder-will-be-updated-on-first-request';
+    }
     
     const protocol = host.includes('localhost') ? 'http' : 'https';
     
     // Store the detected URL in environment for the frontend to access
-    process.env.DETECTED_CALLBACK_URL = `${protocol}://${host}/auth/linkedin/callback`;
+    const url = `${protocol}://${host}/auth/linkedin/callback`;
+    process.env.DETECTED_CALLBACK_URL = url;
+    console.log('📌 Setting callback URL to:', url);
     
-    return process.env.DETECTED_CALLBACK_URL;
+    return url;
   };
   
   // Initial callback URL (will be updated on first request)
