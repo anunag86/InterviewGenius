@@ -3,7 +3,9 @@ import { createServer, type Server } from "http";
 import multer from "multer";
 import { generateInterview, getInterviewStatus, getInterviewHistory, saveUserResponse, getUserResponsesForInterview, gradeUserResponse } from "./controllers/interview";
 import { submitFeedback } from "./controllers/feedback";
-import { ensureAuthenticated } from "./auth";
+// Import the OpenID-based authentication instead of the deprecated LinkedIn OAuth
+import { ensureAuthenticated } from "./auth"; // Keep this temporarily for backward compatibility
+import { setupLinkedInOpenID, setupLinkedInRoutes } from "./linkedin-openid";
 
 // Configure multer for memory storage (files are processed in memory)
 const upload = multer({

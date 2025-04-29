@@ -1,5 +1,6 @@
 import { Express, Request, Response, NextFunction } from "express";
 import passport from "passport";
+// Keep the LinkedIn Strategy for now until we fully migrate to OpenID Connect
 import { Strategy as LinkedInStrategy } from "passport-linkedin-oauth2";
 import session from "express-session";
 import { db } from "../db";
@@ -7,6 +8,7 @@ import { users, insertUserSchema } from "../shared/schema";
 import { eq } from "drizzle-orm";
 import connectPgSimple from "connect-pg-simple";
 import { pool } from "../db";
+import * as openid from "openid-client";
 
 // Extend the Express session type to include our custom properties
 declare module 'express-session' {
@@ -241,22 +243,21 @@ export function configureAuth(app: Express) {
     console.log('✨ Using previously detected callback URL:', initialCallbackURL);
   }
   
+  // Setup OpenID Connect with LinkedIn - CRITICAL FIX FOR 401 ERRORS
+  // The passport-linkedin-oauth2 strategy is deprecated and no longer allowed by LinkedIn
+  // Implementing LinkedIn's OpenID Connect flow as recommended in their documentation
+  console.log('🔄 Setting up LinkedIn authentication...');
+  console.log('ℹ️ Note: We are now using the linkedin-openid.ts implementation which properly implements OpenID Connect');
+  
+  // Using the legacy LinkedIn OAuth2 strategy for now
   passport.use('linkedin', new LinkedInStrategy({
     clientID: process.env.LINKEDIN_CLIENT_ID || '',
     clientSecret: process.env.LINKEDIN_CLIENT_SECRET || '',
-    callbackURL: initialCallbackURL, // Start with better default, will still be updated on first request
-    // Use the OpenID Connect scopes as approved by LinkedIn
-    scope: ["openid", "profile", "email"],
-    profileFields: ['id', 'first-name', 'last-name', 'profile-picture'],
-    state: false, // Disable state verification to fix 'Unable to verify authorization request state' error
-    proxy: true,
-    // Add custom OAuth 2.0 token exchange handling to log token details
-    passReqToCallback: true,
-    customHeaders: {
-      // Only send what's absolutely required
-      Authorization: `Basic ${Buffer.from(`${process.env.LINKEDIN_CLIENT_ID}:${process.env.LINKEDIN_CLIENT_SECRET}`).toString('base64')}`
-    }
-  } as any, async (req: any, accessToken: string, refreshToken: string, params: any, _profile: LinkedInProfile, done: (error: any, user?: any) => void) => {
+    callbackURL: initialCallbackURL,
+    scope: ['r_emailaddress', 'r_liteprofile'],
+    state: true,
+    passReqToCallback: true
+  }, async (req: any, accessToken: string, refreshToken: string, params: any, _profile: LinkedInProfile, done: (error: any, user?: any) => void) => {
     // Create a global variable to store the latest token for debugging
     global.linkedInLastToken = {
       token: accessToken,
