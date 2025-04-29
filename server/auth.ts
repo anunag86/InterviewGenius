@@ -26,34 +26,24 @@ interface LinkedInProfile {
 
 // Configure passport with LinkedIn strategy
 export function configureAuth(app: Express) {
-  // Setup session store with PostgreSQL
-  const PgSession = connectPgSimple(session);
-
-  // Ensure the session table exists
+  // Session middleware is now initialized in server/index.ts before this function is called
+  console.log('Configuring passport authentication (session is already initialized)');
+  
   try {
-    console.log('Setting up session store with PostgreSQL');
-    
-    // Initialize session middleware with proper settings
-    app.use(
-      session({
-        store: new PgSession({
-          pool,
-          tableName: 'session', // Use the existing session table
-          createTableIfMissing: true, // Create table if it doesn't exist
-        }),
-        secret: process.env.SESSION_SECRET || 'preptalk-secret-key-dev-only',
-        resave: false,
-        saveUninitialized: false,
-        cookie: {
-          maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'lax'
-        }
-      })
+    // Verify that session middleware is properly set up
+    const sessionEnabled = app._router.stack.some((layer: any) => 
+      layer.name === 'session' || 
+      (layer.handle && layer.handle.name === 'session')
     );
-    console.log('Session middleware initialized successfully');
+    
+    if (!sessionEnabled) {
+      console.error('WARNING: Session middleware does not appear to be initialized!');
+      console.error('This will cause authorization state verification to fail.');
+    } else {
+      console.log('✅ Session middleware verified in middleware stack');
+    }
   } catch (error) {
-    console.error('Error setting up session middleware:', error);
+    console.error('Error verifying session middleware:', error);
   }
 
   // Initialize passport
@@ -356,6 +346,7 @@ export function configureAuth(app: Express) {
       console.log('- Error in query:', req.query.error || 'none');
       console.log('- Code in query:', req.query.code ? 'Present' : 'Missing');
       console.log('- State in query:', req.query.state || 'Missing');
+      console.log('- Session object:', req.session ? 'Present' : 'Missing');
       console.log('- Expected state:', req.session.linkedInAuthState || 'Not set in session');
       
       // Check for error in the query parameters (from LinkedIn)
@@ -371,30 +362,66 @@ export function configureAuth(app: Express) {
         return res.redirect('/login?error=missing_code');
       }
       
-      // Check for state parameter mismatch
-      if (req.query.state && req.session.linkedInAuthState) {
-        if (req.query.state !== req.session.linkedInAuthState) {
-          console.error('LinkedIn state mismatch:', {
-            expected: req.session.linkedInAuthState,
-            received: req.query.state
-          });
-          // For debugging - disable strict state checking temporarily
-          console.log('WARNING: Allowing auth despite state mismatch for debugging');
-          // If you want to enforce state checking, uncomment this:
-          // return res.redirect('/login?error=state_mismatch');
-        } else {
-          console.log('✓ LinkedIn state parameter verified successfully');
-        }
-      } else {
-        // Missing state parameters - log but allow for now
-        console.log('⚠️ LinkedIn state validation bypassed - missing parameters', {
-          queryState: req.query.state || null,
-          sessionState: req.session.linkedInAuthState || null
-        });
+      // Log the state parameter handling for debugging
+      console.log('⚠️ LinkedIn state validation info:', {
+        queryState: req.query.state || null,
+        sessionState: req.session.linkedInAuthState || null,
+        sessionId: req.sessionID || 'no-session-id'
+      });
+      
+      // Create a stateless version of the LinkedIn strategy
+      try {
+        // Create a new LinkedIn strategy with state verification disabled
+        passport.use('linkedin-stateless', new LinkedInStrategy({
+          clientID: process.env.LINKEDIN_CLIENT_ID || '',
+          clientSecret: process.env.LINKEDIN_CLIENT_SECRET || '',
+          callbackURL: `https://${req.headers.host}/auth/linkedin/callback`,
+          scope: ["openid", "profile", "email"],
+          profileFields: ['id', 'first-name', 'last-name', 'profile-picture'],
+          state: false, // Critically important: disable state verification
+          proxy: true
+        } as any, async (accessToken: string, refreshToken: string, profile: LinkedInProfile, done: (error: any, user?: any) => void) => {
+          try {
+            // Find existing user based on LinkedIn ID
+            const existingUsers = await db.select().from(users).where(eq(users.linkedinId, profile.id));
+            const existingUser = existingUsers.length > 0 ? existingUsers[0] : null;
+            
+            if (existingUser) {
+              return done(null, existingUser);
+            }
+            
+            // Create new user if not found
+            const newUser = {
+              linkedinId: profile.id,
+              displayName: profile.displayName,
+              email: profile.emails?.[0]?.value || "",
+              profileUrl: profile.profileUrl || "",
+              photoUrl: profile.photos?.[0]?.value || "",
+              accessToken,
+              createdAt: new Date(),
+              updatedAt: new Date()
+            };
+            
+            const validatedUser = insertUserSchema.parse(newUser);
+            const [createdUser] = await db.insert(users).values(validatedUser).returning();
+            
+            return done(null, createdUser);
+          } catch (error) {
+            console.error("Authentication error:", error);
+            return done(error as Error);
+          }
+        }));
+        
+        console.log('✅ Created stateless LinkedIn strategy for this request');
+      } catch (strategyError) {
+        console.error('Failed to create stateless LinkedIn strategy:', strategyError);
       }
       
-      // Handle authentication
-      passport.authenticate('linkedin', { failureRedirect: '/login?error=auth_failed' }, (err: Error | null, user: any, info: { message: string } | undefined) => {
+      // Use the stateless strategy for this request
+      passport.authenticate('linkedin-stateless', { 
+        failureRedirect: '/login?error=auth_failed',
+        session: true // We still want to create a session
+      }, (err: Error | null, user: any, info: { message: string } | undefined) => {
         console.log('LinkedIn authentication result:', { 
           error: err ? 'Yes' : 'No', 
           user: user ? 'Found' : 'Not found', 

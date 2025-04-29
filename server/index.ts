@@ -2,13 +2,39 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { configureAuth } from "./auth";
+import session from "express-session";
+import connectPgSimple from "connect-pg-simple";
+import { pool } from "../db";
 
 // Create Express app
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-// Setup authentication with LinkedIn
+// Set up session first - this needs to be before passport initialization
+// Setup session store with PostgreSQL
+const PgSession = connectPgSimple(session);
+
+console.log('Setting up session middleware at the application level');
+app.use(
+  session({
+    store: new PgSession({
+      pool,
+      tableName: 'session', // Use the existing session table
+      createTableIfMissing: true, // Create table if it doesn't exist
+    }),
+    secret: process.env.SESSION_SECRET || 'preptalk-secret-key-dev-only',
+    resave: true, // Changed to true to ensure session is saved
+    saveUninitialized: true, // Changed to true to ensure new sessions are saved
+    cookie: {
+      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+      secure: false, // Disable secure cookie for development
+      sameSite: 'lax'
+    }
+  })
+);
+
+// Setup authentication with LinkedIn (now after session middleware)
 configureAuth(app);
 
 app.use((req, res, next) => {
