@@ -49,6 +49,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Set up LinkedIn authentication routes
   setupLinkedInRoutes(app);
   
+  // Logout route
+  app.get('/auth/logout', (req, res) => {
+    console.log('User logout requested');
+    
+    // Clear the session
+    if (req.session) {
+      req.session.destroy((err) => {
+        if (err) {
+          console.error('Error destroying session during logout:', err);
+          return res.status(500).json({ success: false, message: 'Failed to logout' });
+        }
+        
+        // Redirect to login page
+        res.redirect('/login');
+      });
+    } else {
+      res.redirect('/login');
+    }
+  });
+  
   // Public API routes
   app.post("/api/feedback", submitFeedback);
   

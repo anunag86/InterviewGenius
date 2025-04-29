@@ -10,8 +10,6 @@ const Login = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [callbackUrl, setCallbackUrl] = useState<string | null>(null);
-  const [diagnosticData, setDiagnosticData] = useState<LinkedInDiagnosticData | null>(null);
-  const [isDiagnosticLoading, setIsDiagnosticLoading] = useState(false);
   
   // Parse URL parameters to check for error messages
   const getErrorMessage = () => {
