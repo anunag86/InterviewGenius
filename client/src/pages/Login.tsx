@@ -195,74 +195,70 @@ const Login = () => {
               
               <div className="p-3 rounded-md bg-amber-100 border border-amber-200 text-amber-700 text-sm">
                 <p className="font-medium">Important LinkedIn Developer Configuration:</p>
-                <ul className="mt-2 space-y-2">
-                  <li>
-                    <p className="font-medium">1. Make sure the following callback URL is registered in your LinkedIn Developer Portal:</p>
-                    <div className="mt-1 relative">
-                      <code className="block p-2 bg-amber-50 rounded border border-amber-200 text-xs overflow-auto">
-                        {callbackUrl || `${window.location.protocol}//${window.location.host}/auth/linkedin/callback`}
-                      </code>
-                      <button 
-                        onClick={() => {
-                          const url = callbackUrl || `${window.location.protocol}//${window.location.host}/auth/linkedin/callback`;
-                          navigator.clipboard.writeText(url);
-                          // You could add a toast notification here if you wanted to
-                          alert("Callback URL copied to clipboard!");
-                        }}
-                        className="absolute top-1 right-1 p-1 rounded bg-amber-200 hover:bg-amber-300 text-amber-900 text-xs flex items-center"
-                        type="button"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <rect width="14" height="14" x="8" y="8" rx="2" ry="2" />
-                          <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
-                        </svg>
-                        <span className="ml-1">Copy</span>
-                      </button>
+                
+                <div className="mt-3 mb-4">
+                  <a 
+                    href="/api/auth/linkedin/callback-url" 
+                    target="_blank" 
+                    className="block w-full text-center py-2 bg-[#0077B5] hover:bg-[#0077B5]/90 text-white rounded-md"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="inline-block w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                    </svg>
+                    Get Current Callback URL & Instructions
+                  </a>
+                  <p className="text-xs mt-2 text-center">
+                    ⭐ Use this tool to get the exact callback URL that must be registered in your LinkedIn Developer Portal
+                  </p>
+                </div>
+                
+                <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded text-red-700 text-xs">
+                  <div className="flex items-start">
+                    <svg 
+                      xmlns="http://www.w3.org/2000/svg" 
+                      viewBox="0 0 20 20" 
+                      fill="currentColor" 
+                      className="w-4 h-4 mr-1 flex-shrink-0 text-red-600 mt-0.5"
+                    >
+                      <path fillRule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+                    </svg>
+                    <div>
+                      <p className="font-bold">Common Authentication Issues:</p>
+                      <ol className="list-decimal list-inside mt-1 space-y-1">
+                        <li><strong>Callback URL mismatch</strong>: This must be an exact character-for-character match in LinkedIn</li>
+                        <li><strong>Missing or incorrect scopes</strong>: We use OpenID Connect scopes (<code className="bg-red-50 px-1 border border-red-200">openid</code>, <code className="bg-red-50 px-1 border border-red-200">profile</code>, <code className="bg-red-50 px-1 border border-red-200">email</code>)</li>
+                        <li><strong>Invalid credentials</strong>: Client ID or Secret might be incorrect</li>
+                      </ol>
                     </div>
-                    
-                    <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded text-red-700 text-xs">
-                      <div className="flex items-start">
-                        <svg 
-                          xmlns="http://www.w3.org/2000/svg" 
-                          viewBox="0 0 20 20" 
-                          fill="currentColor" 
-                          className="w-4 h-4 mr-1 flex-shrink-0 text-red-600 mt-0.5"
-                        >
-                          <path fillRule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
-                        </svg>
-                        <div>
-                          <p className="font-bold">Important:</p>
-                          <p>This must be an <strong>exact</strong> character-for-character match in your LinkedIn Developer Portal. "redirect_uri" errors occur when there's any difference between this URL and what's registered.</p>
+                  </div>
+                </div>
+                
+                <div className="mt-3">
+                  <p className="font-medium">LinkedIn OAuth 2.0 Configuration Requirements:</p>
+                  <ul className="list-disc list-inside mt-1 space-y-1 text-xs">
+                    <li>We're using <strong>OpenID Connect scopes</strong>, not the older LinkedIn scopes:</li>
+                    <div className="ml-5 mt-1 grid grid-cols-2 gap-1">
+                      <div className="bg-amber-50 p-1 rounded border border-amber-200">
+                        <span className="font-bold">✓ Use these scopes:</span>
+                        <div className="mt-1">
+                          <code className="block">openid</code>
+                          <code className="block">profile</code>
+                          <code className="block">email</code>
+                        </div>
+                      </div>
+                      <div className="bg-red-50 p-1 rounded border border-red-200">
+                        <span className="font-bold">✗ Don't use these:</span>
+                        <div className="mt-1 line-through opacity-70">
+                          <code className="block">r_liteprofile</code>
+                          <code className="block">r_emailaddress</code>
+                          <code className="block">w_member_social</code>
                         </div>
                       </div>
                     </div>
-                    
-                    {callbackUrl && (
-                      <div className="mt-1 flex items-center">
-                        <svg 
-                          xmlns="http://www.w3.org/2000/svg" 
-                          viewBox="0 0 20 20" 
-                          fill="currentColor" 
-                          className="w-4 h-4 mr-1 text-amber-600"
-                        >
-                          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a.75.75 0 000 1.5h.253a.25.25 0 01.244.304l-.459 2.066A1.75 1.75 0 0010.747 15H11a.75.75 0 000-1.5h-.253a.25.25 0 01-.244-.304l.459-2.066A1.75 1.75 0 009.253 9H9z" clipRule="evenodd" />
-                        </svg>
-                        <span className="text-xs">This is the exact URL detected by our server.</span>
-                      </div>
-                    )}
-                  </li>
-                  
-                  <li>
-                    <p className="font-medium">2. Configure the correct OAuth 2.0 scopes in your LinkedIn application:</p>
-                    <p className="mt-1">Based on the error message, we need to make sure your LinkedIn app has the correct scopes enabled:</p>
-                    <ul className="list-disc list-inside mt-1 space-y-1">
-                      <li>Check that <code className="bg-amber-50 px-1 rounded">r_liteprofile</code> is enabled</li>
-                      <li>You might need just <code className="bg-amber-50 px-1 rounded">r_liteprofile</code> or both <code className="bg-amber-50 px-1 rounded">r_emailaddress</code> and <code className="bg-amber-50 px-1 rounded">r_liteprofile</code></li>
-                      <li>LinkedIn might require <code className="bg-amber-50 px-1 rounded">r_emailaddress</code> to be verified before using</li>
-                    </ul>
-                    <p className="text-xs mt-2">For which scopes are enabled in your LinkedIn application, please check the "Auth" tab in your LinkedIn Developer Portal.</p>
-                  </li>
-                </ul>
+                    <li className="mt-2">Make sure your LinkedIn app has been upgraded to use OpenID Connect</li>
+                    <li>Verify that your app has permissions for these scopes in the LinkedIn Developer Portal</li>
+                  </ul>
+                </div>
               </div>
             </CardContent>
             <CardFooter className="flex flex-col gap-3">
