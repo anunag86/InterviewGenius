@@ -249,7 +249,7 @@ export function configureAuth(app: Express) {
     
     // Custom auth options to force new auth
     const authOptions = { 
-      scope: ['r_liteprofile'],
+      scope: [], // Empty array uses LinkedIn's default scopes
       state: Math.random().toString(36).substring(2),
     };
     
@@ -266,7 +266,7 @@ export function configureAuth(app: Express) {
         clientID: process.env.LINKEDIN_CLIENT_ID || '',
         clientSecret: process.env.LINKEDIN_CLIENT_SECRET || '',
         callbackURL: correctCallbackURL,
-        scope: ['r_liteprofile'],
+        scope: [], // Empty array uses LinkedIn's default scopes
         profileFields: ['id', 'first-name', 'last-name', 'profile-picture'],
         state: true,
         proxy: true
@@ -524,7 +524,7 @@ export function configureAuth(app: Express) {
             clientID: process.env.LINKEDIN_CLIENT_ID || '',
             clientSecret: process.env.LINKEDIN_CLIENT_SECRET || '',
             callbackURL: expectedCallbackURL,
-            scope: ['r_liteprofile'],
+            scope: [], // Empty array uses LinkedIn's default scopes
             profileFields: ['id', 'first-name', 'last-name', 'profile-picture'],
             state: true,
             proxy: true
