@@ -12,6 +12,7 @@ interface InterviewFormProps {
 
 const InterviewForm = ({ onSubmit, isSubmitting }: InterviewFormProps) => {
   const [jobUrl, setJobUrl] = useState("");
+  const [linkedinUrl, setLinkedinUrl] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [fileError, setFileError] = useState<string | null>(null);
   
@@ -61,6 +62,11 @@ const InterviewForm = ({ onSubmit, isSubmitting }: InterviewFormProps) => {
     formData.append("jobUrl", jobUrl);
     formData.append("resume", selectedFile);
     
+    // Add LinkedIn URL if provided
+    if (linkedinUrl) {
+      formData.append("linkedinUrl", linkedinUrl);
+    }
+    
     onSubmit(formData);
   };
   
@@ -85,6 +91,19 @@ const InterviewForm = ({ onSubmit, isSubmitting }: InterviewFormProps) => {
             />
             <p className="text-xs text-gray-500">
               Link to the job posting on LinkedIn, Indeed, or company website
+            </p>
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="linkedinUrl">LinkedIn Profile URL (optional)</Label>
+            <Input
+              id="linkedinUrl"
+              placeholder="https://www.linkedin.com/in/yourprofile"
+              value={linkedinUrl}
+              onChange={(e) => setLinkedinUrl(e.target.value)}
+            />
+            <p className="text-xs text-gray-500">
+              Your LinkedIn profile for enhanced job matching
             </p>
           </div>
           
