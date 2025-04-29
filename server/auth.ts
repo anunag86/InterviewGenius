@@ -27,7 +27,7 @@ interface LinkedInProfile {
 // Function to fetch the user profile from the OpenID Connect userinfo endpoint
 async function fetchLinkedInUserProfile(accessToken: string): Promise<LinkedInProfile> {
   try {
-    // Immediately log the access token (partially masked for security) as recommended in the debug steps
+    // Immediately log the access token (partially masked for security)
     console.log('LinkedIn access token (masked):', 
       accessToken ? accessToken.substring(0, 5) + '...' + accessToken.substring(accessToken.length - 5) : 'MISSING');
     
@@ -35,46 +35,68 @@ async function fetchLinkedInUserProfile(accessToken: string): Promise<LinkedInPr
       throw new Error('Access token is missing or empty');
     }
     
-    console.log('Fetching LinkedIn profile from userinfo endpoint...');
-    // Use the exact URL format from the debugging guide
-    console.log('Making request to LinkedIn userinfo endpoint...');
+    console.log('█▓▒░ LINKEDIN AUTHENTICATION DEBUGGING ░▒▓█');
+    console.log('1. Using correct OpenID Connect endpoint: https://api.linkedin.com/v2/userinfo');
+    console.log('2. Using ONLY Authorization header with Bearer token');
+    
+    // Step 1: Make the request with ONLY the Authorization header (no Accept, Content-Type, etc.)
     const response = await fetch('https://api.linkedin.com/v2/userinfo', {
       method: 'GET',
       headers: {
-        'Authorization': `Bearer ${accessToken}`,
-        'Accept': 'application/json',
+        // ONLY include the Authorization header as per LinkedIn's requirements
+        'Authorization': `Bearer ${accessToken}`
+        // DO NOT include any other headers
       },
     });
     
-    // Log the complete response for debugging
-    console.log('LinkedIn API response status:', response.status);
-    console.log('LinkedIn API response headers:', response.headers);
+    // Step 2: Log ALL response details for debugging
+    console.log('LinkedIn API Response Details:');
+    console.log('- Status:', response.status);
+    console.log('- Status Text:', response.statusText);
     
-    // Log the complete response for debugging (headers and status)
-    if (!response.ok) {
-      const responseText = await response.text();
-      console.error(`LinkedIn userinfo API error: ${response.status}`);
-      console.error('Response body:', responseText);
-      console.error('Request headers used:', {
-        Authorization: 'Bearer [REDACTED]',
-        Accept: 'application/json',
-      });
-      
-      // More specific error based on status code
-      if (response.status === 401) {
-        throw new Error('LinkedIn authentication failed: Invalid access token');
-      } else if (response.status === 403) {
-        throw new Error('LinkedIn authentication failed: Insufficient permissions');
-      } else {
-        throw new Error(`LinkedIn userinfo API error: ${response.status} - ${responseText}`);
-      }
+    // Log all response headers
+    const headers: Record<string, string> = {};
+    response.headers.forEach((value, key) => {
+      headers[key] = value;
+    });
+    console.log('- Response Headers:', JSON.stringify(headers, null, 2));
+    
+    // Log the complete response body for debugging
+    let responseText = '';
+    try {
+      // Clone the response to avoid consuming it
+      const clonedResponse = response.clone();
+      responseText = await clonedResponse.text();
+      console.log('- Response Body:', responseText);
+    } catch (err) {
+      console.error('- Failed to read response body:', err);
     }
     
-    // Parse response as JSON
+    // Step 3: Handle error cases with detailed logging
+    if (!response.ok) {
+      console.error(`⚠️ LinkedIn API Error (${response.status}): ${response.statusText}`);
+      console.error('Response Body:', responseText);
+      
+      // Log a helpful message based on status code
+      if (response.status === 401) {
+        console.error('AUTHENTICATION ERROR: The access token is invalid or expired.');
+        console.error('FIX: Ensure the app is properly configured with correct scopes.');
+      } else if (response.status === 403) {
+        console.error('PERMISSION ERROR: The access token does not have permission to access this resource.');
+        console.error('FIX: Verify your app has all required scopes (openid, profile, email).');
+      } else if (response.status === 404) {
+        console.error('ENDPOINT ERROR: The userinfo endpoint was not found.');
+        console.error('FIX: Ensure you are using the correct OpenID Connect endpoint: https://api.linkedin.com/v2/userinfo');
+      }
+      
+      throw new Error(`LinkedIn API error (${response.status}): ${responseText}`);
+    }
+    
+    // Step 4: Parse and validate the response JSON
     let data;
     try {
       data = await response.json();
-      console.log('LinkedIn userinfo response:', JSON.stringify(data, null, 2));
+      console.log('LinkedIn userinfo response JSON:', JSON.stringify(data, null, 2));
       
       // Validate that we have the expected data
       if (!data.sub) {
@@ -83,12 +105,12 @@ async function fetchLinkedInUserProfile(accessToken: string): Promise<LinkedInPr
       }
     } catch (error) {
       console.error('Failed to parse LinkedIn API response:', error);
-      // Safely extract error message
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      throw new Error(`Failed to parse LinkedIn profile data: ${errorMessage}`);
+      console.error('Raw response text:', responseText);
+      throw new Error(`Failed to parse LinkedIn profile data: ${error instanceof Error ? error.message : String(error)}`);
     }
     
-    // Convert OIDC format to passport profile format
+    // Step 5: Convert OIDC format to passport profile format
+    console.log('Successfully retrieved LinkedIn profile data!');
     return {
       id: data.sub,
       displayName: data.name || `${data.given_name || ''} ${data.family_name || ''}`.trim(),
@@ -97,7 +119,7 @@ async function fetchLinkedInUserProfile(accessToken: string): Promise<LinkedInPr
       profileUrl: data.profile || undefined
     };
   } catch (error) {
-    console.error('Error fetching LinkedIn profile:', error);
+    console.error('❌ Error fetching LinkedIn profile:', error);
     throw error;
   }
 }
