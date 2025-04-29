@@ -4,9 +4,20 @@ import { users, insertUserSchema } from "../../shared/schema";
 import { eq } from "drizzle-orm";
 import "express-session";
 
-// LinkedIn OAuth configuration
+// LinkedIn OAuth configuration with validation
 const LINKEDIN_CLIENT_ID = process.env.LINKEDIN_CLIENT_ID;
 const LINKEDIN_CLIENT_SECRET = process.env.LINKEDIN_CLIENT_SECRET;
+
+// Debug log for credentials
+console.log('LinkedIn Credentials Check:', {
+  hasClientId: !!LINKEDIN_CLIENT_ID,
+  hasClientSecret: !!LINKEDIN_CLIENT_SECRET,
+  envKeys: Object.keys(process.env)
+});
+
+if (!LINKEDIN_CLIENT_ID || !LINKEDIN_CLIENT_SECRET) {
+  console.error('Missing LinkedIn credentials. Please check your environment variables or secrets.');
+}
 
 // Determine the exact LinkedIn redirect URI to use
 // This must match the URI registered in the LinkedIn Developer app settings

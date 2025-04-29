@@ -80,10 +80,22 @@ export class LinkedInProvider {
   private config: LinkedInOAuthConfig;
 
   constructor(config: LinkedInOAuthConfig) {
-    // Validate required configuration
-    if (!config.clientId) throw new Error("LinkedIn client ID is required");
-    if (!config.clientSecret)
+    // Validate required configuration with detailed logging
+    if (!config.clientId) {
+      console.error("LinkedIn client ID missing in provider configuration");
+      throw new Error("LinkedIn client ID is required");
+    }
+    if (!config.clientSecret) {
+      console.error("LinkedIn client secret missing in provider configuration");
       throw new Error("LinkedIn client secret is required");
+    }
+
+    // Log successful configuration
+    console.log("LinkedIn provider configured successfully", {
+      hasClientId: !!config.clientId,
+      hasClientSecret: !!config.clientSecret,
+      callbackPath: config.callbackPath || "/api/auth/linkedin/callback"
+    });
 
     // Set defaults with the spread first to avoid overriding
     this.config = {
