@@ -4,7 +4,7 @@ import multer from "multer";
 import { generateInterview, getInterviewStatus, getInterviewHistory, saveUserResponse, getUserResponsesForInterview, gradeUserResponse } from "./controllers/interview";
 import { submitFeedback } from "./controllers/feedback";
 // Import the OpenID-based authentication instead of the deprecated LinkedIn OAuth
-import { ensureAuthenticated } from "./auth"; // Keep this temporarily for backward compatibility
+import { ensureAuthenticated } from "./linkedin-openid"; // Using the OpenID implementation
 import { setupLinkedInOpenID, setupLinkedInRoutes } from "./linkedin-openid";
 
 // Configure multer for memory storage (files are processed in memory)
@@ -27,16 +27,16 @@ const upload = multer({
 });
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Set up LinkedIn OpenID Connect authentication
-  console.log('Setting up LinkedIn OpenID Connect authentication routes...');
+  // Set up LinkedIn OAuth2 authentication
+  console.log('Setting up LinkedIn OAuth2 authentication routes...');
   
   // Detect current application host for callback URL
   const host = process.env.REPL_IDENTITY || process.env.REPLIT_CLUSTER || 'localhost:5000';
   const protocol = host.includes('localhost') ? 'http' : 'https';
-  const callbackURL = `${protocol}://${host}/auth/linkedin/callback/oidc`;
+  const callbackURL = `${protocol}://${host}/auth/linkedin/callback`;
   
-  // Initialize LinkedIn OpenID authentication
-  console.log('Initializing LinkedIn OpenID with callback URL:', callbackURL);
+  // Initialize LinkedIn authentication
+  console.log('Initializing LinkedIn OAuth2 with callback URL:', callbackURL);
   await setupLinkedInOpenID(app, callbackURL);
   
   // Set up LinkedIn authentication routes
