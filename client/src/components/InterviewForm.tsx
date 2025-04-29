@@ -4,7 +4,6 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Loader2, Upload } from "lucide-react";
-import { useAuth } from "@/hooks/useAuth";
 
 interface InterviewFormProps {
   onSubmit: (formData: FormData) => void;
@@ -15,7 +14,6 @@ const InterviewForm = ({ onSubmit, isSubmitting }: InterviewFormProps) => {
   const [jobUrl, setJobUrl] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [fileError, setFileError] = useState<string | null>(null);
-  const { user } = useAuth();
   
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -117,14 +115,6 @@ const InterviewForm = ({ onSubmit, isSubmitting }: InterviewFormProps) => {
               <p className="text-sm text-red-600">{fileError}</p>
             )}
           </div>
-          
-          {user?.linkedinProfileUrl && (
-            <div className="bg-blue-50 p-4 rounded-lg">
-              <p className="text-sm text-blue-800">
-                <span className="font-medium">LinkedIn Profile:</span> Your LinkedIn data will be automatically included from your connected profile.
-              </p>
-            </div>
-          )}
           
           <Button
             type="submit"

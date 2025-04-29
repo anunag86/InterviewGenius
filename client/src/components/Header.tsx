@@ -1,10 +1,9 @@
 import { Link } from "wouter";
-import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
-import UserProfileDisplay from "@/components/UserProfileDisplay";
 
 const Header = () => {
-  const { isAuthenticated } = useAuth();
+  // No authentication - all users have full access
+  const isAuthenticated = true;
 
   return (
     <header className="bg-white border-b shadow-sm py-3">
@@ -19,26 +18,16 @@ const Header = () => {
           <Link href="/" className="text-gray-700 hover:text-blue-600 font-medium">
             Home
           </Link>
-          {isAuthenticated && (
-            <Link href="/history" className="text-gray-700 hover:text-blue-600 font-medium">
-              My Interviews
-            </Link>
-          )}
+          <Link href="/history" className="text-gray-700 hover:text-blue-600 font-medium">
+            My Interviews
+          </Link>
           <Link href="/privacy" className="text-gray-700 hover:text-blue-600 font-medium">
             Privacy
           </Link>
         </nav>
 
         <div className="flex items-center gap-4">
-          {isAuthenticated ? (
-            <UserProfileDisplay />
-          ) : (
-            <Link href="/login">
-              <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
-                Sign In
-              </Button>
-            </Link>
-          )}
+          {/* No authentication UI needed */}
         </div>
       </div>
     </header>

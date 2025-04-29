@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
-import { useAuth } from "@/hooks/useAuth";
 import InterviewForm from "@/components/InterviewForm";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -8,18 +7,13 @@ import Footer from "@/components/Footer";
 const Home = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [, setLocation] = useLocation();
-  const { user } = useAuth();
-
+  
   const handleSubmit = async (formData: FormData) => {
     try {
       setIsSubmitting(true);
       
-      // Add the LinkedIn URL from user authentication
-      if (user?.linkedinProfileUrl) {
-        formData.set("linkedinUrl", user.linkedinProfileUrl);
-      }
-      
-      // Submit the form to the API
+      // Submit the form to the API without any LinkedIn URL
+      // (LinkedIn integration has been removed)
       const response = await fetch("/api/interview/generate", {
         method: "POST",
         body: formData,
