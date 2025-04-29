@@ -10,12 +10,16 @@ import History from "@/pages/History";
 import InterviewDetail from "@/pages/InterviewDetail";
 import PrivacyPolicy from "@/pages/PrivacyPolicy";
 import AuthPage from "@/pages/auth-page";
+import LinkedInTest from "@/pages/linkedin-test";
 
 function Router() {
   return (
     <Switch>
       <Route path="/auth" component={AuthPage} />
       <Route path="/privacy" component={PrivacyPolicy} />
+      
+      {/* LinkedIn Diagnostic Tool - public access */}
+      <Route path="/linkedin-test" component={LinkedInTest} />
       
       {/* Protected Routes - require authentication */}
       <ProtectedRoute path="/" component={Home} />
