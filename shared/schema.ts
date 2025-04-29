@@ -5,13 +5,19 @@ import { relations } from "drizzle-orm";
 
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
-  username: text("username").notNull().unique(),
-  password: text("password").notNull(),
+  linkedinId: text("linkedin_id").notNull().unique(),
+  displayName: text("display_name").notNull(),
+  email: text("email"),
+  profileUrl: text("profile_url"),
+  photoUrl: text("photo_url"),
+  accessToken: text("access_token"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
-export const insertUserSchema = createInsertSchema(users).pick({
-  username: true,
-  password: true,
+export const insertUserSchema = createInsertSchema(users, {
+  displayName: (schema) => schema.min(2, "Display name must be at least 2 characters"),
+  email: (schema) => schema.email("Must provide a valid email").optional(),
 });
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
