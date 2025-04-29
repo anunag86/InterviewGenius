@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import multer from "multer";
 import { generateInterview, getInterviewStatus, getInterviewHistory, saveUserResponse, getUserResponsesForInterview, gradeUserResponse } from "./controllers/interview";
 import { submitFeedback } from "./controllers/feedback";
+import { getLinkedInDiagnostic } from "./controllers/linkedin";
 // Import the OpenID-based authentication instead of the deprecated LinkedIn OAuth
 import { ensureAuthenticated } from "./linkedin-openid"; // Using the OpenID implementation
 import { setupLinkedInOpenID, setupLinkedInRoutes } from "./linkedin-openid";
@@ -68,6 +69,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         `https://${req.headers.host}/auth/linkedin/callback`
     });
   });
+  
+  // LinkedIn diagnostic endpoint for the client UI
+  app.get('/api/linkedin-diagnostic', getLinkedInDiagnostic);
   
   // Endpoint to get the current callback URL that needs to be registered in LinkedIn
   app.get('/api/auth/linkedin/callback-url', (req, res) => {
